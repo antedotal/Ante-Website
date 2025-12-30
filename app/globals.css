@@ -1,0 +1,98 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: var(--font-roboto-flex);
+  --font-serif: var(--font-young-serif);
+
+  --color-background: #ffffff;
+  --color-foreground: #111827;
+
+  --color-primary: #2953FF;
+  --color-primary-foreground: #ffffff;
+
+  --color-secondary: #f3f4f6;
+  --color-secondary-foreground: #1f2937;
+
+  --color-accent: #2953FF;
+  --color-accent-foreground: #ffffff;
+}
+
+/* Custom Utilities */
+@layer utilities {
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-linear-to-r from-blue-600 via-purple-500 to-blue-600 bg-size-[200%_auto];
+    animation: gradient 3s linear infinite;
+  }
+
+  .btn-gradient {
+    @apply bg-linear-to-r from-blue-600 via-purple-500 to-blue-600;
+    background-size: 200% auto;
+    background-position: 0% 50%;
+    color: #ffffff;
+    animation: gradient 3s linear infinite;
+  }
+
+  .glass-panel {
+    @apply bg-white/80 backdrop-blur-xl border border-white/20;
+  }
+
+  .font-serif-custom {
+    font-family: var(--font-young-serif), serif;
+  }
+
+  .font-sans-flex {
+    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+  }
+
+  .font-stretch-hover {
+    transition: letter-spacing 0.3s ease, font-weight 0.3s ease;
+  }
+
+  .font-stretch-hover:hover {
+    letter-spacing: 0.05em;
+    font-weight: 500;
+  }
+
+  .font-immersive {
+    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+    font-variation-settings: "wght" 520, "wdth" 100, "opsz" 18, "GRAD" 32;
+    transition: font-variation-settings 0.35s ease, letter-spacing 0.35s ease, color 0.35s ease;
+  }
+
+  .font-immersive:hover {
+    font-variation-settings: "wght" 720, "wdth" 108, "opsz" 28, "GRAD" 64;
+    letter-spacing: 0.02em;
+  }
+}
+
+@keyframes gradient {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animate-gradient {
+  animation: gradient 3s linear infinite;
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  overflow-x: hidden;
+  font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+  font-variation-settings: "wght" 520, "wdth" 100, "opsz" 16, "GRAD" 32;
+  letter-spacing: 0.01em;
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
