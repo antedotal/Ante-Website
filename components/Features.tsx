@@ -31,7 +31,7 @@ const features = [
     iconColor: "text-pink-500",
     iconBg: "bg-pink-100",
     className: "",
-    large: false,
+    large: false, 
   },
   {
     title: "Gamified Productivity",
@@ -92,7 +92,7 @@ export function Features() {
                 )}>
                   <div className={feature.showIcon ? "md:max-w-xl" : ""}>
                     <h3 className={cn(
-                      "text-[28px] font-bold mb-3 text-gray-900 font-subheading"
+                      "text-[28px] font-bold mb-3 text-gray-900 font-serif-custom"
                     )}>
                       {feature.title}
                     </h3>

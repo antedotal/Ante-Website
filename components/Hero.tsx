@@ -7,6 +7,7 @@ import { AuroraText } from "./ui/aurora-text";
 import { ShimmerButton } from "./ui/shimmer-button";
 import { Particles } from "./ui/particles";
 import { Button } from "./ui/Button";
+import TextType from "./ui/TextType";
 
 export function Hero() {
   return (
@@ -28,30 +29,28 @@ export function Hero() {
       <div className="container mx-auto max-w-5xl relative z-10 text-center">
         <BlurFade delay={0.1} duration={0.6}>
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight text-gray-900 font-serif-custom">
-            You know you{" "}
-            <AuroraText
-              className="font-serif-custom"
-              colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
-              speed={1}
-            >
-              won't
-            </AuroraText>{" "}
+            Accountability that actually
             <br />
-            complete your tasks. <br />
             <AuroraText
               className="font-serif-custom pb-2"
               colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
               speed={1}
             >
-              But your friends don't.
+              <TextType 
+                text={["costs to ignore.", "works.", "keeps everyone honest."]} 
+                typingSpeed={150} 
+                showCursor={false}
+                loop={true}
+                deletingSpeed={100}
+                pauseDuration={1500}
+              />
             </AuroraText>
           </h1>
         </BlurFade>
 
         <BlurFade delay={0.2} duration={0.6}>
           <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
-            Ante is the productivity app where your friends verify your tasks.
-            Fail twice? Pay the price. Literally.
+            Ante is the productivity app that 
           </p>
         </BlurFade>
 
