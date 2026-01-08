@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 const steps = [
   {
     id: 1,
-    title: "Set the Stakes",
-    description: "Create a task and set your forfeit price. How much is your procrastination worth to you? $5? $50?",
+    title: "Set Your Ante",
+    description: "Create a task and set your Ante. How much are your goals worth to you?",
     icon: DollarSign,
     iconColor: "text-green-600",
     iconBg: "bg-green-50",
@@ -18,7 +18,7 @@ const steps = [
   {
     id: 2,
     title: "Prove It",
-    description: "Snap a photo evidence of your completed task. No cheating—your friends are the judges.",
+    description: "Snap a photo evidence of your completed task. You can't cheat—your friends are the jury.",
     icon: Camera,
     iconColor: "text-blue-600",
     iconBg: "bg-blue-50",
@@ -27,7 +27,7 @@ const steps = [
   {
     id: 3,
     title: "The Verdict",
-    description: "Your friend reviews the photo. If they reject it twice, you pay the forfeit. Simple as that.",
+    description: "Your friend reviews the photo. If they reject it twice, you pay the Ante. Simple as that.",
     icon: Users,
     iconColor: "text-purple-600",
     iconBg: "bg-purple-50",
@@ -59,7 +59,6 @@ export function HowItWorks() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 relative">
           {/* Connecting Line (Desktop) */}
-          <div className="hidden md:block absolute top-1/2 left-0 w-full h-0.5 bg-linear-to-r from-transparent via-white/20 to-transparent -translate-y-1/2 z-0" />
 
           {steps.map((step, index) => (
             <BlurFade

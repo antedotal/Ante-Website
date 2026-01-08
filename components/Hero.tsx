@@ -58,17 +58,13 @@ export function Hero() {
               shimmerColor="#ffffff"
               shimmerSize="0.08em"
               shimmerDuration="2.5s"
-              background="linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
+              background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
               borderRadius="9999px"
               className="w-full sm:w-auto px-8 py-4 text-lg font-semibold"
             >
-              Download Ante
+              Early Access
               <ArrowRight className="w-4 h-4 ml-2" />
             </ShimmerButton>
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-              <Smartphone className="w-4 h-4" />
-              View Demo
-            </Button>
           </div>
         </BlurFade>
       </div>

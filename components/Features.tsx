@@ -53,7 +53,13 @@ export function Features() {
           <div className="mb-16 text-center md:text-left">
             <h2 className="text-4xl md:text-6xl mb-6 text-white font-serif-custom">
               Features that{" "}
-              actually work
+              <AuroraText
+                className="font-serif-custom"
+                colors={["#00BCD4", "#26C6DA", "#4DD0E1", "#80DEEA"]}
+                speed={1}
+              >
+                actually work
+              </AuroraText>
             </h2>
           </div>
         </BlurFade>

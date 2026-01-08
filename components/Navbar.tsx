@@ -60,11 +60,11 @@ export function Navbar() {
             shimmerColor="#ffffff"
             shimmerSize="0.05em"
             shimmerDuration="2s"
-            background="linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
+            background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
             borderRadius="9999px"
             className="text-xs px-4 py-2"
           >
-            Get App
+            Early Access
           </ShimmerButton>
         </div>
       </motion.div>
