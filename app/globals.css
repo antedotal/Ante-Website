@@ -62,7 +62,8 @@
   }
 
   .font-immersive {
-    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+    /* font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif; */
+    font-family: var(--font-young-serif), serif;
     font-optical-sizing: auto;
     font-variation-settings: "slnt" -10, "wdth" 155, "wght" 720, "GRAD" 31, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
     transition: font-variation-settings 0.35s ease, letter-spacing 0.35s ease, color 0.35s ease;

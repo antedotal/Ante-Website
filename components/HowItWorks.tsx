@@ -42,7 +42,7 @@ export function HowItWorks() {
         <BlurFade delay={0.1} duration={0.6}>
           <div className="text-center mb-20">
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 font-serif-custom">
-              The Loop of{" "}
+              The Pinnacle of{" "}
               <AuroraText
                 className="font-serif-custom"
                 colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}

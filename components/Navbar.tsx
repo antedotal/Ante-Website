@@ -50,7 +50,7 @@ export function Navbar() {
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <div className="font-bold text-xl tracking-tighter text-black font-sans-flex font-immersive">Ante</div>
+        <div className="font-bold text-xl tracking-tighter text-black font-immersive">Ante</div>
         <div className="hidden md:flex gap-6 text-sm font-medium text-gray-600 ml-auto md:ml-0">
           <a href="#" className="hover:text-black transition-colors font-stretch-hover">Features</a>
           <a href="#" className="hover:text-black transition-colors font-stretch-hover">How it Works</a>

@@ -1,6 +1,6 @@
 "use client";
 
-import { ShieldAlert, Zap, Heart, Trophy } from "lucide-react";
+import { ShieldAlert, Zap, Heart, Trophy, DollarSignIcon, DollarSign } from "lucide-react";
 import { BlurFade } from "./ui/blur-fade";
 import { AuroraText } from "./ui/aurora-text";
 import { cn } from "@/lib/utils";
@@ -8,8 +8,8 @@ import { cn } from "@/lib/utils";
 const features = [
   {
     title: "Financial Forfeits",
-    description: "Nothing motivates like the fear of losing money. Set your price, and if you fail verification twice, you pay up.",
-    icon: ShieldAlert,
+    description: "Nothing motivates like the fear of losing money. Set your task and price, and if you fail verification twice, you pay.",
+    icon: DollarSign,
     iconColor: "text-blue-600",
     iconBg: "bg-blue-100",
     className: "md:col-span-2 md:row-span-2",

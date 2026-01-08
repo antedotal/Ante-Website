@@ -5,8 +5,8 @@ export function Footer() {
     <footer className="min-h-[50vh] bg-white text-gray-900 flex flex-col justify-between p-8 md:p-16 overflow-hidden relative border-t border-gray-200">
       <div className="flex flex-col md:flex-row justify-between items-start w-full z-10">
         <div className="flex flex-col">
-          <div className="text-[15vw] leading-[0.8] font-bold tracking-tighter font-serif-custom">Ante</div>
-          <div className="text-xl md:text-2xl font-light opacity-60 ml-2 mt-4">by antedotal</div>
+          <div className="text-[12vw] leading-[0.8] font-bold tracking-tighter font-serif-custom">Ante</div>
+          <div className="text-xl md:text-2xl font-light opacity-60 ml-2 mt-4 font-serif-custom">by Antedotal</div>
         </div>
 
         <div className="flex flex-col gap-5 mt-12 md:mt-0 text-lg font-medium">
