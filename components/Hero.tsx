@@ -22,7 +22,7 @@ export function Hero() {
         vx={0.1}
         vy={0.1}
       />
-      
+
       <Scene />
 
       <div className="container mx-auto max-w-5xl relative z-10 text-center">
@@ -30,7 +30,7 @@ export function Hero() {
           <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight text-gray-900 font-serif-custom">
             You know you{" "}
             <AuroraText
-              className="font-sans-flex font-immersive"
+              className="font-serif-custom"
               colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
               speed={1}
             >
@@ -39,7 +39,7 @@ export function Hero() {
             <br />
             complete your tasks. <br />
             <AuroraText
-              className="font-sans-flex font-immersive pb-2"
+              className="font-serif-custom pb-2"
               colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
               speed={1}
             >

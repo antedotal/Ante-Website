@@ -54,7 +54,7 @@ export function Features() {
             <h2 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900 font-serif-custom">
               Features that{" "}
               <AuroraText
-                className="font-sans-flex font-immersive"
+                className="font-serif-custom"
                 colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
                 speed={1}
               >
@@ -92,13 +92,12 @@ export function Features() {
                 )}>
                   <div className={feature.showIcon ? "md:max-w-xl" : ""}>
                     <h3 className={cn(
-                      "font-bold mb-3 text-gray-900 font-immersive",
-                      feature.large ? "text-2xl md:text-3xl" : "text-xl"
+                      "text-[28px] font-bold mb-3 text-gray-900 font-subheading"
                     )}>
                       {feature.title}
                     </h3>
                     <p className={cn(
-                      "text-gray-500 font-immersive leading-relaxed",
+                      "text-gray-500 leading-relaxed",
                       feature.large ? "text-lg" : "text-sm"
                     )}>
                       {feature.description}

@@ -44,14 +44,14 @@ export function HowItWorks() {
             <h2 className="text-4xl md:text-5xl font-bold mb-6 text-gray-900 font-serif-custom">
               The Loop of{" "}
               <AuroraText
-                className="font-sans-flex font-immersive"
+                className="font-serif-custom"
                 colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
                 speed={1}
               >
                 Accountability
               </AuroraText>
             </h2>
-            <p className="text-xl text-gray-500 max-w-2xl mx-auto font-immersive">
+            <p className="text-xl text-gray-500 max-w-2xl mx-auto">
               It's not just a todo list. It's a social contract with financial consequences.
             </p>
           </div>
@@ -68,7 +68,7 @@ export function HowItWorks() {
               duration={0.6}
               className="relative z-10"
             >
-              <div className="h-full flex flex-col items-center text-center p-8 font-sans-flex bg-white rounded-3xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
+              <div className="h-full flex flex-col items-center text-center p-8 bg-white rounded-3xl border border-gray-200 hover:border-gray-300 hover:shadow-lg transition-all duration-300">
                 <div className={cn(
                   "w-16 h-16 rounded-full flex items-center justify-center mb-6 border",
                   step.iconBg,
@@ -76,8 +76,8 @@ export function HowItWorks() {
                 )}>
                   <step.icon className={cn("w-8 h-8", step.iconColor)} />
                 </div>
-                <h3 className="text-2xl font-bold mb-4 text-gray-900 font-immersive">{step.title}</h3>
-                <p className="text-gray-500 leading-relaxed font-immersive">
+                <h3 className="text-[28px] font-bold mb-4 text-gray-900 font-subheading">{step.title}</h3>
+                <p className="text-gray-500 leading-relaxed">
                   {step.description}
                 </p>
               </div>

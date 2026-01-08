@@ -1,10 +1,15 @@
 @import "tailwindcss";
 @import "tw-animate-css";
 
+:root {
+  --font-roboto-flex: "Roboto Flex";
+  --font-dm-sans: "DM Sans";
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: var(--font-roboto-flex);
+  --font-sans: var(--font-dm-sans);
   --font-serif: var(--font-young-serif);
 
   --color-background: #ffffff;
@@ -58,13 +63,21 @@
 
   .font-immersive {
     font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
-    font-variation-settings: "wght" 520, "wdth" 100, "opsz" 18, "GRAD" 32;
+    font-optical-sizing: auto;
+    font-variation-settings: "slnt" -10, "wdth" 155, "wght" 720, "GRAD" 31, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
     transition: font-variation-settings 0.35s ease, letter-spacing 0.35s ease, color 0.35s ease;
   }
 
   .font-immersive:hover {
-    font-variation-settings: "wght" 720, "wdth" 108, "opsz" 28, "GRAD" 64;
+    font-variation-settings: "slnt" -10, "wdth" 160, "wght" 820, "GRAD" 45, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
     letter-spacing: 0.02em;
+  }
+
+  .font-subheading {
+    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+    font-optical-sizing: auto;
+    font-variation-settings: "slnt" -10, "wdth" 155, "wght" 740, "GRAD" 31, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
+    letter-spacing: -0.01em;
   }
 }
 
@@ -90,8 +103,7 @@ body {
   background-color: var(--color-background);
   color: var(--color-foreground);
   overflow-x: hidden;
-  font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
-  font-variation-settings: "wght" 520, "wdth" 100, "opsz" 16, "GRAD" 32;
+  font-family: var(--font-dm-sans), var(--font-sans), system-ui, sans-serif;
   letter-spacing: 0.01em;
 }
 
@@ -142,54 +154,68 @@ html {
   --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
   --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
   --animate-gradient: gradient 8s linear infinite;
+
   @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
+    to {
+      transform: translate(calc(100cqw - 100%), 0);
     }
   }
+
   @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
+    0% {
+      transform: translateZ(0) rotate(0);
     }
-  15%, 35% {
-    transform: translateZ(0) rotate(90deg);
+
+    15%,
+    35% {
+      transform: translateZ(0) rotate(90deg);
     }
-  65%, 85% {
-    transform: translateZ(0) rotate(270deg);
+
+    65%,
+    85% {
+      transform: translateZ(0) rotate(270deg);
     }
-  100% {
-    transform: translateZ(0) rotate(360deg);
+
+    100% {
+      transform: translateZ(0) rotate(360deg);
     }
   }
+
   @keyframes gradient {
-  to {
-    background-position: var(--bg-size, 300%) 0;
+    to {
+      background-position: var(--bg-size, 300%) 0;
     }
   }
-  --animate-aurora: aurora 8s ease-in-out infinite alternate
-;
+
+  --animate-aurora: aurora 8s ease-in-out infinite alternate;
+
   @keyframes aurora {
-  0% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+    0% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
-  25% {
-    background-position: 50% 100%;
-    transform: rotate(5deg) scale(1.1);
+
+    25% {
+      background-position: 50% 100%;
+      transform: rotate(5deg) scale(1.1);
     }
-  50% {
-    background-position: 100% 50%;
-    transform: rotate(-3deg) scale(0.95);
+
+    50% {
+      background-position: 100% 50%;
+      transform: rotate(-3deg) scale(0.95);
     }
-  75% {
-    background-position: 50% 0%;
-    transform: rotate(3deg) scale(1.05);
+
+    75% {
+      background-position: 50% 0%;
+      transform: rotate(3deg) scale(1.05);
     }
-  100% {
-    background-position: 0% 50%;
-    transform: rotate(-5deg) scale(0.9);
+
+    100% {
+      background-position: 0% 50%;
+      transform: rotate(-5deg) scale(0.9);
     }
-  }}
+  }
+}
 
 :root {
   --radius: 0.625rem;
@@ -264,6 +290,7 @@ html {
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

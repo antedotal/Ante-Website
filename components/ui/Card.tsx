@@ -36,7 +36,7 @@ export function Card({ className, children, gradient = false, spotlightOnScroll 
     <motion.div
       {...motionProps}
       className={cn(
-        "rounded-3xl p-6 relative overflow-hidden font-sans-flex",
+        "rounded-3xl p-6 relative overflow-hidden",
         "bg-white border border-gray-100",
         gradient && "bg-linear-to-br from-white to-blue-50",
         className

@@ -24,14 +24,14 @@ export default function Home() {
           <h2 className="text-5xl md:text-7xl font-bold mb-8 tracking-tight text-gray-900 font-serif-custom">
             Ready to stop <br />
             <AuroraText
-              className="line-through decoration-red-500 decoration-4 font-sans-flex font-immersive"
+              className="line-through decoration-red-500 decoration-4 font-serif-custom"
               colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
               speed={1}
             >
               lying to yourself?
             </AuroraText>
           </h2>
-          <p className="text-xl text-gray-500 mb-10 font-immersive">
+          <p className="text-xl text-gray-500 mb-10">
             Join thousands of students who are finally getting things done.
             (Or paying for it).
           </p>
