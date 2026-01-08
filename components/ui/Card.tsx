@@ -29,7 +29,7 @@ export function Card({ className, children, gradient = false, spotlightOnScroll 
       initial: initialState,
       whileInView: whileInViewState,
       viewport: { once: false, amount: 0.6, margin: "-50px" },
-      transition: { duration: 0.5, type: spotlightOnScroll ? "spring" : "tween", stiffness: spotlightOnScroll ? 120 : undefined },
+      transition: { duration: 0.5, type: spotlightOnScroll ? "spring" as const : "tween" as const, stiffness: spotlightOnScroll ? 120 : undefined },
     };
 
   return (

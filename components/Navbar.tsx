@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
-import { Button } from "./ui/Button";
+import { ShimmerButton } from "./ui/shimmer-button";
 import { useState } from "react";
 
 export function Navbar() {
@@ -36,16 +36,18 @@ export function Navbar() {
         <div className="hidden md:flex gap-6 text-sm font-medium text-gray-600 ml-auto md:ml-0">
           <a href="#" className="hover:text-black transition-colors font-stretch-hover font-immersive">Features</a>
           <a href="#" className="hover:text-black transition-colors font-stretch-hover font-immersive">How it Works</a>
-          <a href="#" className="hover:text-black transition-colors font-stretch-hover font-immersive">Pricing</a>
         </div>
         <div className="ml-auto md:ml-0">
-          <Button
-            size="sm"
-            variant="primary"
-            className="text-xs px-4 py-2 h-auto animate-pulse hover:animate-none"
+          <ShimmerButton
+            shimmerColor="#ffffff"
+            shimmerSize="0.05em"
+            shimmerDuration="2s"
+            background="linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
+            borderRadius="9999px"
+            className="text-xs px-4 py-2"
           >
             Get App
-          </Button>
+          </ShimmerButton>
         </div>
       </motion.div>
     </motion.nav>
