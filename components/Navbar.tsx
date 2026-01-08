@@ -29,20 +29,20 @@ export function Navbar() {
           attached: {
             width: "auto",
             borderRadius: 9999,
-            backgroundColor: "rgba(255, 255, 255, 0.8)",
+            backgroundColor: "rgba(0, 46, 57, 0.8)",
             padding: "12px 24px",
             y: 0,
-            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.08)",
-            borderColor: "rgba(0, 0, 0, 0.06)",
+            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.2)",
+            borderColor: "rgba(255, 255, 255, 0.1)",
           },
           detached: {
             width: "auto",
             borderRadius: 9999,
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            backgroundColor: "rgba(0, 46, 57, 0.95)",
             padding: "10px 20px",
             y: 4,
-            boxShadow: "0 8px 32px -8px rgba(0,0,0,0.12)",
-            borderColor: "rgba(0, 0, 0, 0.08)",
+            boxShadow: "0 8px 32px -8px rgba(0,0,0,0.3)",
+            borderColor: "rgba(255, 255, 255, 0.15)",
           },
         }}
         transition={{
@@ -50,10 +50,10 @@ export function Navbar() {
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <div className="font-bold text-xl tracking-tighter text-black font-immersive">Ante</div>
-        <div className="hidden md:flex gap-6 text-sm font-medium text-gray-600 ml-auto md:ml-0">
-          <a href="#" className="hover:text-black transition-colors font-stretch-hover">Features</a>
-          <a href="#" className="hover:text-black transition-colors font-stretch-hover">How it Works</a>
+        <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
+        <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
+          <a href="#" className="hover:text-white transition-colors font-stretch-hover">Features</a>
+          <a href="#" className="hover:text-white transition-colors font-stretch-hover">How it Works</a>
         </div>
         <div className="ml-auto md:ml-0">
           <ShimmerButton

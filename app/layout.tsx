@@ -36,9 +36,24 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${youngSerif.variable} antialiased bg-gray-100 text-gray-900 font-sans selection:bg-blue-500 selection:text-white`}
+        className={`${dmSans.variable} ${youngSerif.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
+        style={{
+          background: 'linear-gradient(135deg, #003A4A 0%, #003040 33%, #002530 66%, #001A20 100%)',
+          minHeight: '100vh'
+        }}
       >
-        {children}
+        {/* Noise overlay */}
+        <div 
+          className="fixed inset-0 pointer-events-none"
+          style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
+            opacity: '0.18',
+            mixBlendMode: 'overlay'
+          }}
+        />
+        <div className="relative z-10">
+          {children}
+        </div>
       </body>
     </html>
   );
