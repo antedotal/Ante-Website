@@ -76,7 +76,7 @@ export function HowItWorks() {
                 )}>
                   <step.icon className={cn("w-8 h-8", step.iconColor)} />
                 </div>
-                <h3 className="text-[28px] font-bold mb-4 text-gray-900 font-subheading">{step.title}</h3>
+                <h3 className="text-[28px] font-bold mb-4 text-gray-900 font-serif-custom">{step.title}</h3>
                 <p className="text-gray-500 leading-relaxed">
                   {step.description}
                 </p>
