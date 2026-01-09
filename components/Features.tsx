@@ -51,11 +51,11 @@ export function Features() {
       <div className="container mx-auto max-w-6xl relative">
         <BlurFade delay={0.1} duration={0.6}>
           <div className="mb-16 text-center md:text-left">
-            <h2 className="text-4xl md:text-6xl font-bold mb-6 text-gray-900 font-serif-custom">
+            <h2 className="text-4xl md:text-6xl mb-6 text-white font-serif-custom">
               Features that{" "}
               <AuroraText
                 className="font-serif-custom"
-                colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
+                colors={["#00BCD4", "#26C6DA", "#4DD0E1", "#80DEEA"]}
                 speed={1}
               >
                 actually work
@@ -74,7 +74,7 @@ export function Features() {
             >
               <div
                 className={cn(
-                  "group relative h-full rounded-3xl border border-gray-200 bg-white p-6 md:p-8 transition-all duration-300 hover:border-gray-300 hover:shadow-lg",
+                  "group relative h-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 md:p-8 transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:shadow-lg",
                   feature.large ? "min-h-[280px] md:min-h-[320px]" : "min-h-[200px]"
                 )}
               >
@@ -92,12 +92,12 @@ export function Features() {
                 )}>
                   <div className={feature.showIcon ? "md:max-w-xl" : ""}>
                     <h3 className={cn(
-                      "text-[28px] font-bold mb-3 text-gray-900 font-serif-custom"
+                      "text-[28px] mb-3 text-white font-serif-custom"
                     )}>
                       {feature.title}
                     </h3>
                     <p className={cn(
-                      "text-gray-500 leading-relaxed",
+                      "text-white/70 leading-relaxed",
                       feature.large ? "text-lg" : "text-sm"
                     )}>
                       {feature.description}
@@ -105,7 +105,7 @@ export function Features() {
                   </div>
                   {feature.showIcon && (
                     <div className="hidden md:block">
-                      <Trophy className="w-24 h-24 text-yellow-500 rotate-12 opacity-80" />
+                      <Trophy className="w-24 h-24 text-yellow-400 rotate-12 opacity-80" />
                     </div>
                   )}
                 </div>

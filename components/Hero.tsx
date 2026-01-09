@@ -1,7 +1,6 @@
 "use client";
 
 import { ArrowRight, Smartphone } from "lucide-react";
-import Scene from "./Scene";
 import { BlurFade } from "./ui/blur-fade";
 import { AuroraText } from "./ui/aurora-text";
 import { ShimmerButton } from "./ui/shimmer-button";
@@ -19,37 +18,36 @@ export function Hero() {
         staticity={30}
         ease={80}
         size={0.5}
-        color="#3b82f6"
+        color="#80DEEA"
         vx={0.1}
         vy={0.1}
       />
 
-      <Scene />
-
       <div className="container mx-auto max-w-5xl relative z-10 text-center">
         <BlurFade delay={0.1} duration={0.6}>
-          <h1 className="text-5xl md:text-7xl font-bold tracking-tight mb-6 leading-tight text-gray-900 font-serif-custom">
-            Accountability that actually
+          <h1 className="text-5xl md:text-7xl tracking-tight mb-6 leading-tight text-white font-serif-custom">
+            Accountability That 
             <br />
+            Actually{" "}
             <AuroraText
               className="font-serif-custom pb-2"
-              colors={["#3b82f6", "#8b5cf6", "#06b6d4", "#3b82f6"]}
+              colors={["#FFFFFF", "#FFFFFF", "#FFFFFF", "#FFFFFF"]}
               speed={1}
             >
-              <TextType 
-                text={["costs to ignore.", "works.", "keeps everyone honest."]} 
-                typingSpeed={150} 
+            <TextType 
+                text={["Costs To Ignore", "Works", "Keeps You Honest"]} 
+                typingSpeed={130} 
                 showCursor={false}
                 loop={true}
-                deletingSpeed={100}
-                pauseDuration={1500}
+                deletingSpeed={0}
+                pauseDuration={2000}
               />
             </AuroraText>
           </h1>
         </BlurFade>
 
         <BlurFade delay={0.2} duration={0.6}>
-          <p className="text-xl text-gray-500 mb-10 max-w-2xl mx-auto">
+          <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
             Ante is the productivity app that 
           </p>
         </BlurFade>
@@ -60,17 +58,13 @@ export function Hero() {
               shimmerColor="#ffffff"
               shimmerSize="0.08em"
               shimmerDuration="2.5s"
-              background="linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)"
+              background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
               borderRadius="9999px"
               className="w-full sm:w-auto px-8 py-4 text-lg font-semibold"
             >
-              Download Ante
+              Early Access
               <ArrowRight className="w-4 h-4 ml-2" />
             </ShimmerButton>
-            <Button variant="secondary" size="lg" className="w-full sm:w-auto">
-              <Smartphone className="w-4 h-4" />
-              View Demo
-            </Button>
           </div>
         </BlurFade>
       </div>
