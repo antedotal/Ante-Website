@@ -48,7 +48,7 @@ export function Hero() {
 
         <BlurFade delay={0.2} duration={0.6}>
           <p className="text-xl text-white/80 mb-10 max-w-2xl mx-auto">
-            Ante is the productivity app that 
+            Unforgiving losses on unfulfilled goals. Unexploitable verification. <br></br>Friend leaderboards. And gamified productivity.
           </p>
         </BlurFade>
 

@@ -51,8 +51,8 @@ export function HowItWorks() {
                 Accountability
               </AuroraText>
             </h2>
-            <p className="text-xl text-white/80 max-w-2xl mx-auto">
-              It's not just a todo list. It's a social contract with financial consequences.
+            <p className="text-xl text-white/80 max-w-3xl mx-auto">
+              It's not just a todo list. <br></br> It's a social contract with financial consequences.
             </p>
           </div>
         </BlurFade>

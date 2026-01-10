@@ -16,7 +16,7 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Ante - The Social Task Manager",
+  title: "Ante",
   description: "You know you won't complete your tasks, but your friends don't. (Until now)",
 };
 
