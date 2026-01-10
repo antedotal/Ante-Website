@@ -11,7 +11,7 @@ interface TextTypeProps {
   cursorCharacter?: string | React.ReactNode;
   cursorBlinkDuration?: number;
   cursorClassName?: string;
-  text: string | string[];
+  text: string | readonly string[];
   as?: ElementType;
   typingSpeed?: number;
   initialDelay?: number;
