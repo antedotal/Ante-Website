@@ -6,7 +6,7 @@ export function Footer() {
       <div className="flex flex-col md:flex-row justify-between items-start w-full z-10">
         <div className="flex flex-col">
           <div className="text-[12vw] leading-[0.8] tracking-tighter font-serif-custom">Ante</div>
-          <div className="text-xl md:text-2xl font-light opacity-60 ml-2 mt-4 font-serif-custom">by Antedotal</div>
+          <div className="text-xl md:text-2xl font-light opacity-60 mt-4 font-serif-custom">by Antedotal</div>
         </div>
 
         <div className="flex flex-col gap-5 mt-6 md:mt-0 text-lg font-medium">
@@ -35,8 +35,8 @@ export function Footer() {
           </div>
 
           <div className="flex flex-col gap-3 text-base">
-            <a href="#" className="hover:opacity-80 transition-opacity font-stretch-hover">Terms</a>
-            <a href="#" className="hover:opacity-80 transition-opacity font-stretch-hover">Privacy</a>
+            <a href="/terms" className="hover:opacity-80 transition-opacity font-stretch-hover">Terms</a>
+            <a href="/privacy" className="hover:opacity-80 transition-opacity font-stretch-hover">Privacy</a>
           </div>
         </div>
       </div>

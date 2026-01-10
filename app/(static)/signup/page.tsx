@@ -1,0 +1,206 @@
+'use client';
+
+// Brand Kit Configuration - Easy to customize branding elements
+const BRAND_CONFIG = {
+  BRAND_NAME: 'Ante',
+  PRIMARY_COLOR: '#005b70', // Accent color for buttons and highlights
+  COPY_HEADLINE: ["Level up your game.", "Stay accountable.", "Get things done."],
+  COPY_SUBTEXT: 'Join the waitlist to be among the first to try Ante. We\'ll email you when we open up access—no spam, just an invite (and maybe a surprise).',
+  USE_TYPING_EFFECT: true, // Set to false to disable typing effect on headline
+} as const;
+
+import { motion } from 'framer-motion';
+import { Mail, Send } from 'lucide-react';
+import TextType from '@/components/ui/TextType';
+import Link from 'next/link';
+
+/**
+ * High-conversion waitlist/coming soon page with:
+ * - Light, cream-colored card design with soft shadows
+ * - Sophisticated typography (serif headings, sans-serif body)
+ * - Brand kit configuration for easy customization
+ * - Subtle Framer Motion animations
+ * - Optional typing effect on headline
+ * - Email input with icon
+ * - Full-width dark CTA button
+ * - Footer with Terms | Privacy links
+ */
+export default function SignUpPage() {
+  // Animation variants for Framer Motion
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        duration: 0.6,
+        staggerChildren: 0.1,
+      },
+    },
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+      },
+    },
+  };
+
+  const buttonVariants = {
+    rest: { scale: 1 },
+    hover: {
+      scale: 1.02,
+      transition: {
+        duration: 0.2,
+      },
+    },
+    tap: { scale: 0.98 },
+  };
+
+  return (
+    <main className="min-h-screen relative overflow-hidden">
+      {/* Background is inherited from layout.tsx - keeping it as is */}
+      
+      {/* Centered card container */}
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="w-full max-w-lg"
+        >
+          {/* Main card - off-white/cream with soft shadow */}
+          <motion.div
+            variants={itemVariants}
+            className="w-full rounded-3xl bg-[#faf9f6] px-8 py-12 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:px-12 md:py-16"
+          >
+            {/* Logo placeholder - square with rounded corners, centered */}
+            <motion.div
+              variants={itemVariants}
+              className="mb-6 flex justify-center"
+            >
+              <div
+                className="h-16 w-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
+                style={{ backgroundColor: BRAND_CONFIG.PRIMARY_COLOR }}
+              >
+                {BRAND_CONFIG.BRAND_NAME.charAt(0)}
+              </div>
+            </motion.div>
+
+            {/* Brand name - large serif, centered */}
+            <motion.h1
+              variants={itemVariants}
+              className="mb-8 text-center text-4xl font-serif-custom tracking-tight text-slate-900 md:text-5xl"
+            >
+              {BRAND_CONFIG.BRAND_NAME}
+            </motion.h1>
+
+            {/* Headline - with optional typing effect */}
+            <motion.div
+              variants={itemVariants}
+              className="mb-6 text-center"
+            >
+              {BRAND_CONFIG.USE_TYPING_EFFECT ? (
+                <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
+                  <TextType
+                    text={BRAND_CONFIG.COPY_HEADLINE}
+                    typingSpeed={100}
+                    showCursor={false}
+                    cursorCharacter="|"
+                    cursorBlinkDuration={0.8}
+                    className="inline-block"
+                  />
+                </h2>
+              ) : (
+                <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
+                  {BRAND_CONFIG.COPY_HEADLINE}
+                </h2>
+              )}
+            </motion.div>
+
+            {/* Sub-headline - lighter grey, sans-serif */}
+            <motion.p
+              variants={itemVariants}
+              className="mb-10 text-center text-base leading-relaxed text-slate-600 md:text-lg"
+            >
+              {BRAND_CONFIG.COPY_SUBTEXT}
+            </motion.p>
+
+            {/* Email input with icon */}
+            <motion.div
+              variants={itemVariants}
+              className="mb-6"
+            >
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <input
+                  id="email"
+                  type="email"
+                  required
+                  placeholder="you@example.com"
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-12 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none ring-0 transition-all"
+                  style={{
+                    '--primary-color': BRAND_CONFIG.PRIMARY_COLOR,
+                  } as React.CSSProperties & { '--primary-color': string }}
+                  onFocus={(e) => {
+                    const color = BRAND_CONFIG.PRIMARY_COLOR;
+                    e.currentTarget.style.borderColor = color;
+                    e.currentTarget.style.boxShadow = `0 0 0 2px ${color}33`;
+                  }}
+                  onBlur={(e) => {
+                    e.currentTarget.style.borderColor = '';
+                    e.currentTarget.style.boxShadow = '';
+                  }}
+                />
+              </div>
+            </motion.div>
+
+            {/* Join Waitlist button - full width, dark background */}
+            <motion.div
+              variants={itemVariants}
+              className="mb-8"
+            >
+              <motion.button
+                type="submit"
+                variants={buttonVariants}
+                initial="rest"
+                whileHover="hover"
+                whileTap="tap"
+                className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all"
+                style={{
+                  backgroundColor: BRAND_CONFIG.PRIMARY_COLOR,
+                }}
+              >
+                Join Waitlist
+                <Send className="h-4 w-4" />
+              </motion.button>
+            </motion.div>
+
+            {/* Footer - Terms | Privacy Policy */}
+            <motion.div
+              variants={itemVariants}
+              className="flex justify-center gap-4 text-xs text-slate-500"
+            >
+              <Link
+                href="/terms"
+                className="transition-colors hover:text-slate-700"
+              >
+                Terms
+              </Link>
+              <span>|</span>
+              <Link
+                href="/privacy"
+                className="transition-colors hover:text-slate-700"
+              >
+                Privacy Policy
+              </Link>
+            </motion.div>
+          </motion.div>
+        </motion.div>
+      </div>
+    </main>
+  );
+}
