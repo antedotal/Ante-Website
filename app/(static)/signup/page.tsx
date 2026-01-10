@@ -10,7 +10,7 @@ const BRAND_CONFIG = {
 } as const;
 
 import { motion } from 'framer-motion';
-import { Mail, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Send } from 'lucide-react';
 import TextType from '@/components/ui/TextType';
 import Link from 'next/link';
 
@@ -77,6 +77,26 @@ export default function SignUpPage() {
             variants={itemVariants}
             className="w-full rounded-3xl bg-[#faf9f6] px-8 py-12 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:px-12 md:py-16"
           >
+            {/* Back to home link */}
+            {/* 
+              Back to home button - 
+              Provide a small, touch-friendly clickable area confined to the size of the icon on the card.
+              This fixes the issue where the clickable area stretches to the right edge.
+            */}
+            <div className="mb-4">
+              <a
+                href="/"
+                className="inline-flex items-center opacity-50 hover:opacity-100 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
+                aria-label="Back to home"
+                style={{
+                  // Ensures the link only wraps the icon and margin can be adjusted via container.
+                  boxSizing: "content-box",
+                }}
+              >
+                <ArrowLeft className="h-5 w-5 mx-auto" />
+              </a>
+            </div>
+
             {/* Logo placeholder - square with rounded corners, centered */}
             <motion.div
               variants={itemVariants}
@@ -89,6 +109,7 @@ export default function SignUpPage() {
                 {BRAND_CONFIG.BRAND_NAME.charAt(0)}
               </div>
             </motion.div>
+
 
             {/* Brand name - large serif, centered */}
             <motion.h1
