@@ -5,7 +5,7 @@ const BRAND_CONFIG = {
   BRAND_NAME: 'Ante',
   PRIMARY_COLOR: '#005b70', // Accent color for buttons and highlights
   COPY_HEADLINE: ["Level up your game.", "Stay accountable.", "Get things done."],
-  COPY_SUBTEXT: 'Join the waitlist to be among the first to try Ante. We\'ll email you when we open up access—no spam, just an invite (and maybe a surprise).',
+  COPY_SUBTEXT: 'Join the waitlist to be among the first to try Ante. We\'ll email you when we enter Early Access—no spam, just an invite (and perhaps a surprise!).',
   USE_TYPING_EFFECT: true, // Set to false to disable typing effect on headline
 } as const;
 

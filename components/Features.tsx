@@ -47,7 +47,7 @@ const features = [
 
 export function Features() {
   return (
-    <section className="relative px-4 py-24 md:py-32">
+    <section id="features" className="relative px-4 py-24 md:py-32">
       <div className="container mx-auto max-w-6xl relative">
         <BlurFade delay={0.1} duration={0.6}>
           <div className="mb-16 text-center md:text-left">

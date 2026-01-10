@@ -52,8 +52,44 @@ export function Navbar() {
       >
         <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
         <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
-          <a href="#" className="hover:text-white transition-colors font-stretch-hover">Features</a>
-          <a href="#" className="hover:text-white transition-colors font-stretch-hover">How it Works</a>
+          <a 
+            href="#how-it-works" 
+            className="hover:text-white transition-colors font-stretch-hover"
+            onClick={(e) => {
+              e.preventDefault();
+              const element = document.getElementById('how-it-works');
+              if (element) {
+                const offset = 100; // Account for fixed navbar height
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              }
+            }}
+          >
+            How it Works
+          </a>
+          <a 
+            href="#features" 
+            className="hover:text-white transition-colors font-stretch-hover"
+            onClick={(e) => {
+              e.preventDefault();
+              const element = document.getElementById('features');
+              if (element) {
+                const offset = 100; // Account for fixed navbar height
+                const elementPosition = element.getBoundingClientRect().top;
+                const offsetPosition = elementPosition + window.pageYOffset - offset;
+                window.scrollTo({
+                  top: offsetPosition,
+                  behavior: 'smooth'
+                });
+              }
+            }}
+          >
+            Features
+          </a>
         </div>
         <div className="ml-auto md:ml-0">
           <ShimmerButton

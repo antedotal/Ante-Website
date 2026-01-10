@@ -37,7 +37,7 @@ const steps = [
 
 export function HowItWorks() {
   return (
-    <section className="py-24 px-4 relative">
+    <section id="how-it-works" className="py-24 px-4 relative">
       <div className="container mx-auto max-w-6xl">
         <BlurFade delay={0.1} duration={0.6}>
           <div className="text-center mb-20">
