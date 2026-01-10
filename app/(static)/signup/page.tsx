@@ -104,7 +104,7 @@ export default function SignUpPage() {
               className="mb-6 text-center"
             >
               {BRAND_CONFIG.USE_TYPING_EFFECT ? (
-                <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
+                <h2 className="text-xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
                   <TextType
                     text={BRAND_CONFIG.COPY_HEADLINE}
                     typingSpeed={100}

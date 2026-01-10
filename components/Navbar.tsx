@@ -63,6 +63,7 @@ export function Navbar() {
             background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
             borderRadius="9999px"
             className="text-xs px-4 py-2"
+            href="/signup"
           >
             Early Access
           </ShimmerButton>

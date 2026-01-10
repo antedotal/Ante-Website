@@ -40,5 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 CURRENT_SQL.md
+.cursor
 
 

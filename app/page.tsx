@@ -41,6 +41,7 @@ export default function Home() {
               background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
               borderRadius="9999px"
               className="px-8 py-4 text-lg font-bold"
+              href="/signup"
             >
               Early Access
               <ArrowRight className="w-5 h-5 ml-2" />

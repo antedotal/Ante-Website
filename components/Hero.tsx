@@ -61,6 +61,8 @@ export function Hero() {
               background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
               borderRadius="9999px"
               className="w-full sm:w-auto px-8 py-4 text-lg font-semibold"
+              href="/signup"
+
             >
               Early Access
               <ArrowRight className="w-4 h-4 ml-2" />
