@@ -9,10 +9,12 @@ const BRAND_CONFIG = {
   USE_TYPING_EFFECT: true, // Set to false to disable typing effect on headline
 } as const;
 
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Mail, Send } from 'lucide-react';
+import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import TextType from '@/components/ui/TextType';
 import Link from 'next/link';
+import { addToWaitlist } from '@/lib/waitlist';
 
 /**
  * High-conversion waitlist/coming soon page with:
@@ -26,6 +28,56 @@ import Link from 'next/link';
  * - Footer with Terms | Privacy links
  */
 export default function SignUpPage() {
+  // State management for form submission
+  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  // Honeypot field for bot detection - real users won't fill this out
+  const [honeypot, setHoneypot] = useState('');
+
+  /**
+   * Handles the waitlist submission when the button is clicked.
+   * Validates the email, calls the addToWaitlist function, and manages loading/error/success states.
+   */
+  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    
+    // Reset previous states
+    setError(null);
+    setSuccess(false);
+
+    // Basic client-side validation
+    if (!email.trim()) {
+      setError('Please enter your email address');
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Pass email, referralSource (null), marketingConsent (true), and honeypot for bot detection
+      const { data, error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
+      
+      if (waitlistError) {
+        // Handle error from waitlist function
+        setError(waitlistError.message || 'Something went wrong. Please try again.');
+      } else {
+        // Success - clear email and show success message
+        setEmail('');
+        setHoneypot(''); // Reset honeypot field
+        setSuccess(true);
+        // Clear success message after 5 seconds
+        setTimeout(() => setSuccess(false), 5000);
+      }
+    } catch (err) {
+      // Handle unexpected errors
+      setError('An unexpected error occurred. Please try again later.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Animation variants for Framer Motion
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -161,8 +213,11 @@ export default function SignUpPage() {
                   id="email"
                   type="email"
                   required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-12 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none ring-0 transition-all"
+                  disabled={isLoading || success}
+                  className="w-full rounded-2xl border border-slate-300 bg-white px-12 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   style={{
                     '--primary-color': BRAND_CONFIG.PRIMARY_COLOR,
                   } as React.CSSProperties & { '--primary-color': string }}
@@ -177,7 +232,59 @@ export default function SignUpPage() {
                   }}
                 />
               </div>
+              {/* 
+                Honeypot field for bot detection - hidden from real users
+                Bots will automatically fill this field, allowing us to reject their submissions
+                Uses multiple hiding techniques: absolute positioning, opacity, height, tabindex
+              */}
+              <div 
+                aria-hidden="true"
+                style={{
+                  position: 'absolute',
+                  left: '-9999px',
+                  opacity: 0,
+                  height: 0,
+                  overflow: 'hidden',
+                }}
+              >
+                <label htmlFor="website">Website</label>
+                <input
+                  type="text"
+                  id="website"
+                  name="website"
+                  value={honeypot}
+                  onChange={(e) => setHoneypot(e.target.value)}
+                  tabIndex={-1}
+                  autoComplete="off"
+                />
+              </div>
             </motion.div>
+
+            {/* Error message display */}
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700"
+              >
+                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <span>{error}</span>
+              </motion.div>
+            )}
+
+            {/* Success message display */}
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
+              >
+                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <span>Thanks for joining the waitlist! We'll be in touch soon.</span>
+              </motion.div>
+            )}
 
             {/* Join Waitlist button - full width, dark background */}
             <motion.div
@@ -185,18 +292,34 @@ export default function SignUpPage() {
               className="mb-8"
             >
               <motion.button
-                type="submit"
+                type="button"
+                onClick={handleSubmit}
+                disabled={isLoading || success}
                 variants={buttonVariants}
                 initial="rest"
-                whileHover="hover"
-                whileTap="tap"
-                className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all"
+                whileHover={!isLoading && !success ? "hover" : "rest"}
+                whileTap={!isLoading && !success ? "tap" : "rest"}
+                className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                 style={{
                   backgroundColor: BRAND_CONFIG.PRIMARY_COLOR,
                 }}
               >
-                Join Waitlist
-                <Send className="h-4 w-4" />
+                {isLoading ? (
+                  <>
+                    <span>Joining...</span>
+                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  </>
+                ) : success ? (
+                  <>
+                    <span>Joined!</span>
+                    <CheckCircle2 className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Join Waitlist
+                    <Send className="h-4 w-4" />
+                  </>
+                )}
               </motion.button>
             </motion.div>
 

@@ -228,6 +228,8 @@ These are composed in `app/page.tsx`.
 
 - `lib/utils.ts` – common place for utilities, e.g., `cn` className helper or other shared logic.
   - When adding reusable **non-UI** helpers, prefer placing them here.
+- `lib/supabase.ts` – Supabase client initialization using environment variables.
+- `lib/waitlist.ts` – Waitlist signup function with enterprise-grade security (see Section 10).
 
 ### 3.4 `public/`
 
@@ -441,3 +443,66 @@ From `app/layout.tsx`:
   - `components/ui/bento-grid.tsx`
   - `components/ui/TextType.tsx`
 
+---
+
+## 10. Security Implementation
+
+### 10.1 Waitlist Security (`lib/waitlist.ts`)
+
+The waitlist signup function implements enterprise-grade security measures:
+
+#### Input Validation & Sanitization
+1. **Type checking** – Validates email is provided and is a string
+2. **Email format validation** – RFC 5322 compliant regex pattern
+3. **Email length validation** – RFC 5321 limits (320 total, 64 local part, 255 domain)
+4. **Sanitization** – Trim whitespace, lowercase normalization
+
+#### Attack Prevention
+5. **SQL injection protection** – Supabase uses parameterized queries automatically
+6. **XSS prevention** – HTML tags stripped from all inputs
+7. **Unicode/homograph attack prevention** – Blocks suspicious unicode characters that could impersonate legitimate addresses
+8. **Control character filtering** – Removes null bytes, zero-width characters, etc.
+
+#### Spam & Abuse Prevention
+9. **Email provider whitelist** – Only accepts major providers (Gmail, Outlook, iCloud, Yahoo, ProtonMail, etc.)
+10. **Disposable email blocking** – Blocks 100+ known temporary email services
+11. **Gmail normalization** – Prevents duplicate signups via Gmail dot/plus variations
+12. **Duplicate email detection** – Checks before insert for better UX
+13. **Honeypot bot detection** – Hidden field that real users won't fill out
+
+#### Error Handling
+14. **Consistent error messages** – Security-conscious messaging that doesn't leak system details
+15. **Error codes** – Internal error codes for debugging without exposing to users
+16. **Unexpected error catching** – Graceful handling of network/system failures
+
+### 10.2 Frontend Security (`app/(static)/signup/page.tsx`)
+
+The signup page includes:
+- **Honeypot field** – Hidden input for bot detection (position: absolute, opacity: 0, tabindex: -1)
+- **Disabled states** – Prevents double submission during loading
+- **Client-side validation** – Basic validation before server call
+
+### 10.3 Supabase RLS Policies
+
+The waitlist table requires Row Level Security (RLS) policies to function. Run the migration file `supabase/migrations/fix_waitlist_rls_v2.sql` in Supabase SQL Editor.
+
+Required policies:
+- **Allow anonymous waitlist signups** (INSERT, anon) - Lets public users sign up
+- **Allow authenticated waitlist signups** (INSERT, authenticated) - Lets logged-in users sign up
+- **Admins can manage waitlist** (ALL, service_role) - Admin access
+
+**IMPORTANT**: The waitlist insert does NOT chain `.select()` after `.insert()` because:
+- `.select()` requires SELECT permission on the table
+- Anonymous users only have INSERT permission (by design for security)
+- Chaining `.select().single()` would cause RLS policy violations
+- Since we already have the email from input, we don't need to fetch it back from DB
+
+### 10.4 Security Best Practices
+
+When extending the codebase:
+- Always use Supabase's built-in parameterized queries for SQL operations
+- Sanitize and validate all user inputs server-side
+- Never expose internal error details to users
+- Use TypeScript types for all function parameters and returns
+- Log security events (bot detection, suspicious activity) for monitoring
+- Configure appropriate RLS policies for each table

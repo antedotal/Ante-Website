@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+Thumbs.db
 
 # debug
 npm-debug.log*
@@ -40,6 +41,21 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 CURRENT_SQL.md
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+*.swp
+*.swo
+*~
+
+# backup files
+*.bak
+*.backup
+*.tmp
+
+# cursor
 .cursor
 
 
