@@ -292,10 +292,7 @@ export const Particles: React.FC<ParticlesProps> = ({
         circle.y > canvasSize.current.h + circle.size
       ) {
         // remove the circle from the array
-        circles.current.splice(i, 1)
-        // create a new circle
-        const newCircle = circleParams()
-        drawCircle(newCircle)
+        circles.current[i] = circleParams()
       }
     })
     rafID.current = window.requestAnimationFrame(animate)
