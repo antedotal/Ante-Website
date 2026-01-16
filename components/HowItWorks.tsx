@@ -18,7 +18,7 @@ const steps = [
   {
     id: 2,
     title: "Prove It",
-    description: "Snap a photo evidence of your completed task. You can&apos;t cheat—your friends are the jury.",
+    description: "Snap a photo evidence of your completed task. You can't cheat—your friends are the jury.",
     icon: Camera,
     iconColor: "text-blue-600",
     iconBg: "bg-blue-50",
@@ -52,7 +52,7 @@ export function HowItWorks() {
               </AuroraText>
             </h2>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              It&apos;s not just a todo list. <br></br> It&apos;s a social contract with financial consequences.
+              It's not just a todo list. <br></br> It's a social contract with financial consequences.
             </p>
           </div>
         </BlurFade>

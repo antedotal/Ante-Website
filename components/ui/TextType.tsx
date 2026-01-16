@@ -1,6 +1,6 @@
 'use client';
 
-import { ElementType, useEffect, useRef, useState, createElement, useMemo, useCallback } from 'react';
+import { ElementType, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap';
 import './TextType.css';
 
@@ -12,7 +12,6 @@ interface TextTypeProps {
   cursorBlinkDuration?: number;
   cursorClassName?: string;
   text: string | readonly string[];
-  as?: ElementType;
   typingSpeed?: number;
   initialDelay?: number;
   pauseDuration?: number;
@@ -27,7 +26,6 @@ interface TextTypeProps {
 
 const TextType = ({
   text,
-  as: Component = 'div',
   typingSpeed = 50,
   initialDelay = 0,
   pauseDuration = 2000,
@@ -52,7 +50,7 @@ const TextType = ({
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(!startOnVisible);
   const cursorRef = useRef<HTMLSpanElement>(null);
-  const containerRef = useRef<HTMLElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   const textArray = useMemo(() => (Array.isArray(text) ? text : [text]), [text]);
 
@@ -166,34 +164,34 @@ const TextType = ({
     reverseMode,
     variableSpeed,
     onSentenceComplete,
-    getRandomSpeed
+    getRandomSpeed,
   ]);
 
   const shouldHideCursor =
     hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
-    return (
-        <Component
-          ref={containerRef}
-          className={`text-type ${className}`}
-          {...props}
+  return (
+    <div
+      ref={containerRef}
+      className={`text-type ${className}`}
+      {...props}
+    >
+      <span
+        className={`text-type__content ${!displayedText ? 'text-type__content--empty' : ''}`}
+        style={{ color: getCurrentTextColor() || 'inherit' }}
+      >
+        {displayedText || ' '}
+      </span>
+      {showCursor && (
+        <span
+          ref={cursorRef}
+          className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''}`}
         >
-          <span
-            className={`text-type__content ${!displayedText ? 'text-type__content--empty' : ''}`}
-            style={{ color: getCurrentTextColor() || 'inherit' }}
-          >
-            {displayedText || '\u00A0'}
-          </span>
-          {showCursor && (
-            <span
-              ref={cursorRef}
-              className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''}`}
-            >
-              {cursorCharacter}
-            </span>
-          )}
-        </Component>
-      );
+          {cursorCharacter}
+        </span>
+      )}
+    </div>
+  );
 };
 
 export default TextType;
