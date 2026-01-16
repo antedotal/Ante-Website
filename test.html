@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Ante - Accountability Platform</title>
+<!-- Tailwind CSS v3 with Plugins -->
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<!-- Google Fonts: Playfair Display (Serif) & Inter (Sans) -->
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet"/>
+<!-- Custom Configuration for Tailwind -->
+<script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            serif: ['"Playfair Display"', 'serif'],
+            sans: ['"Inter"', 'sans-serif'],
+          },
+          colors: {
+            ante: {
+              bg: '#041C23', // Deep teal/black
+              card: '#0F2930', // Card bg
+              accent: '#4FFFC0', // Cyan
+              gold: '#FFD700',
+            }
+          },
+          backgroundImage: {
+            'hero-radial': 'radial-gradient(circle at center, #114B5F 0%, #021217 100%)',
+          }
+        }
+      }
+    }
+  </script>
+<!-- Custom CSS for specialized effects -->
+<style data-purpose="animations-and-glows">
+    /* Subtle star background pattern */
+    .stars-bg {
+      background-image: 
+        radial-gradient(white, rgba(255,255,255,.2) 2px, transparent 3px),
+        radial-gradient(white, rgba(255,255,255,.15) 1px, transparent 2px),
+        radial-gradient(white, rgba(255,255,255,.1) 2px, transparent 3px);
+      background-size: 550px 550px, 350px 350px, 250px 250px;
+      background-position: 0 0, 40px 60px, 130px 270px;
+    }
+
+    /* Glassmorphism utility - Updated */
+    .glass-panel {
+      background: rgba(13, 30, 40, 0.6);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    }
+
+    /* Center Trophy Glow */
+    .trophy-glow {
+      background: radial-gradient(circle, rgba(79, 255, 192, 0.25) 0%, rgba(37, 170, 225, 0.1) 40%, transparent 70%);
+      filter: blur(40px);
+    }
+  </style>
+</head>
+<body class="bg-ante-bg text-white font-sans min-h-screen relative overflow-x-hidden selection:bg-ante-accent selection:text-ante-bg">
+<!-- BEGIN: Background Layer -->
+<!-- This creates the deep space radial gradient and star overlay -->
+<div class="fixed inset-0 w-full h-full bg-hero-radial -z-20"></div>
+<div class="fixed inset-0 w-full h-full stars-bg opacity-30 -z-10 pointer-events-none"></div>
+<!-- END: Background Layer -->
+<!-- BEGIN: Navigation -->
+<header class="fixed top-6 left-0 right-0 z-50 flex justify-center w-full px-4">
+<nav class="glass-panel rounded-full px-6 py-3 flex items-center gap-8 shadow-lg shadow-black/20">
+<!-- Logo -->
+<a class="font-serif font-bold text-xl text-white tracking-wide" href="#">Ante</a>
+<!-- Links (Desktop) -->
+<div class="hidden md:flex items-center gap-6 text-sm font-medium text-gray-300">
+<a class="hover:text-white transition-colors" href="#">How it Works</a>
+<a class="hover:text-white transition-colors" href="#">Features</a>
+</div>
+<!-- CTA -->
+<a class="bg-ante-card border border-white/10 hover:bg-white/10 text-xs tracking-wider font-semibold py-2 px-4 rounded-full transition-all text-ante-accent shadow-[0_0_15px_rgba(79,255,192,0.1)]" href="#">Early Access</a>
+</nav>
+</header>
+<!-- END: Navigation -->
+<!-- BEGIN: Main Hero Section -->
+<main class="relative min-h-screen flex flex-col justify-center items-center pt-24 pb-12 px-4">
+<!-- BEGIN: Dashboard Graphic Area -->
+<!-- This section contains the 3 floating elements: Leaderboard, Trophy, Goal Commitment -->
+<section class="relative w-full max-w-5xl mx-auto mb-16 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+<!-- 1. Left Card: Friend Leaderboard -->
+<div class="md:col-span-3 flex justify-center md:justify-end">
+<div class="glass-panel p-5 rounded-[20px] w-full max-w-[280px] transform hover:scale-105 transition-transform duration-500">
+<h3 class="text-sm font-medium text-gray-300 mb-4">Friend Leaderboard</h3>
+<div class="space-y-3">
+<!-- Rank 1 -->
+<div class="flex items-center justify-between text-xs">
+<div class="flex items-center gap-2">
+<span class="text-lg">🥇</span>
+<img alt="Alex D." class="w-8 h-8 rounded-full border border-white/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD7ThTcacrHeC4iiRE2Zj4fGkBUwAy-GP-K613aylK9rnoWK6PV3dbC3WU-nJVoIc1WL0G29MMT0647P1eNWyLA1dleWZ2kH3Z6n6sEdohJt15xd0W2v-ovqEQ_y6JclGgBqCcQhZqh6e0ZxfjA9s0du8LSmoPAP9E5euC3mH_ue55aTC6jY2vw6syaIbk4O9VYS3CnWsJP3SA1tAnssAJGotzj4uM1dxY_BbOXPPWbUz8fmkhcQU7iaJIsbPqn3t6gk9BpTuiSew"/>
+<span class="text-white font-medium">Alex D.</span>
+</div>
+<div class="flex items-center gap-1 text-ante-gold font-bold">
+<span>🪙</span> 1200
+              </div>
+</div>
+<!-- Rank 2 -->
+<div class="flex items-center justify-between text-xs">
+<div class="flex items-center gap-2">
+<span class="text-lg">🥈</span>
+<img alt="Maria K." class="w-8 h-8 rounded-full border border-white/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA1fpqoLsI0EBpprwMdnB-7LXSZTey2VGFpbo5Xyib8U-2pne7wmXqcg6UQoHBy2ZJqMEA8l47D08UwvUNA9f0l3D6bc4GiKWMMcqBddd4MTiJIcK6gucfuI7borXqD0Jp1IJRkhhkBoTaX1AJ0iEwL_WiWKo2maDsDU73SFVSgQTVTMpQ5C8Kh4yvCHQdDVWA75GX9PCK_G1CVF0oXt37Krf9iL1t5IoD2KoBP_cGee50Jd20jaJGb0g_pByPlXKrgXgP3QcvXsQ"/>
+<span class="text-white font-medium">Maria K.</span>
+</div>
+<div class="flex items-center gap-1 text-ante-gold font-bold opacity-90">
+<span>🪙</span> 1150
+              </div>
+</div>
+<!-- Rank 3 -->
+<div class="flex items-center justify-between text-xs">
+<div class="flex items-center gap-2 pl-1">
+<span class="w-5 text-center font-bold text-gray-400">3</span>
+<img alt="Chris P." class="w-8 h-8 rounded-full border border-white/20" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJ04k9I_hr7tp4r0JFOejQ1maomsFcv1vxMcms0J4c4m98h9w5NWD6PHQB0jGCgoeNHy5uiolmdh7fW9uONknDi-e_hVEaEGC4SmIfS_68JXUzF6jVGLSHkH-pj5Djc5Ug1lEaCgqKfZzeuAc5L36CSKhkNiNvQS2GTsJ50dk9v5zdk4r6NcpJn7CAENS3m5Ysp26xs8rWVC0JPymHB_udK4D5C7KOyoDqEXYieECTciCYMfuov8Q8NgV9NkSI-yehN0RSxU3lLQ"/>
+<span class="text-white font-medium">Chris P.</span>
+</div>
+<div class="flex items-center gap-1 text-ante-gold font-bold opacity-80">
+<span>🪙</span> 980
+              </div>
+</div>
+</div>
+</div>
+</div>
+<!-- 2. Center Graphic: Trophy & Progress -->
+<div class="md:col-span-6 relative flex flex-col items-center justify-center z-10">
+<!-- Glow Effect Behind -->
+<div class="absolute inset-0 trophy-glow w-[300px] h-[300px] mx-auto rounded-full -z-10"></div>
+<!-- Trophy Container -->
+<div class="relative w-64 h-64 flex items-center justify-center">
+<!-- SVG Ring -->
+<svg class="absolute inset-0 w-full h-full drop-shadow-[0_0_10px_rgba(79,255,192,0.5)]" style="filter: drop-shadow(0 0 10px rgba(79, 255, 192, 0.6));" viewbox="0 0 100 100">
+<defs>
+<lineargradient id="progressGradient" x1="0%" x2="100%" y1="0%" y2="0%">
+<stop offset="0%" stop-color="#4FFFC0"></stop>
+<stop offset="100%" stop-color="#10B981"></stop>
+</lineargradient>
+</defs>
+<!-- Background circle track -->
+<circle cx="50" cy="50" fill="none" r="45" stroke="rgba(255,255,255,0.1)" stroke-width="10"></circle>
+<!-- Progress Ring (75% filled, open at bottom) -->
+<!-- Rotated 135deg to place the gap at the bottom -->
+<circle cx="50" cy="50" fill="none" r="45" stroke="url(#progressGradient)" stroke-dasharray="212 283" stroke-linecap="round" stroke-width="10" transform="rotate(135 50 50)"></circle>
+</svg>
+<!-- Main Trophy Image -->
+<img alt="Golden Trophy" class="relative z-20 w-48 h-48 object-contain drop-shadow-2xl" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBGgxTq__9L7-qudvL89SdbnHKuNVE1deyF7OGfESB-t1TZqx-2CZED-GhL5m4ljQKSTVxuuX_M1vbiFDSh_5NkLq_ZwDyCqMIWLYzrVqv4-YqbsHQYp3Jr3XyZjyXFqEH9tpMf0gD2sGCf3qVEey4Y8XsLneRB8Rbj6j0-1C6kayYv0kfiKCTji7qai8oWMvOJAT1tWLazXuK0TEGRImiW4eMxX-AcMeHf1TcdRgEjR3BDgU8ppmwIdQ7p59liwtpSJeznlRIGQQ" style="mix-blend-mode: normal; border-radius: 50%; width: 60%;"/>
+<!-- Particles (CSS Dots) -->
+<div class="absolute top-10 left-10 w-1 h-1 bg-ante-accent rounded-full animate-pulse"></div>
+<div class="absolute bottom-12 right-12 w-1.5 h-1.5 bg-white rounded-full animate-bounce"></div>
+<div class="absolute top-1/2 left-4 w-1 h-1 bg-ante-gold rounded-full opacity-60"></div>
+</div>
+<!-- Level Text -->
+<div class="text-center mt-2 relative z-20">
+<h2 class="text-4xl font-bold text-white drop-shadow-lg tracking-tight">5,420 <span class="text-lg font-normal text-white">PTS</span></h2>
+<p class="text-xs font-bold tracking-[0.2em] uppercase mt-1 opacity-80 text-white">Level 7</p>
+</div>
+</div>
+<!-- 3. Right Card: Goal Commitment -->
+<div class="md:col-span-3 flex justify-center md:justify-start">
+<div class="glass-panel p-5 rounded-[20px] w-full max-w-[280px] transform hover:scale-105 transition-transform duration-500">
+<div class="flex justify-between items-start mb-3">
+<h3 class="text-sm font-medium text-gray-300">Goal Commitment</h3>
+<svg class="w-4 h-4 text-gray-500 hover:text-white cursor-pointer" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</div>
+<!-- Countdown Box -->
+<div class="rounded-lg p-4 text-center border border-white/5 mb-3 bg-black/30">
+<div class="font-mono text-xl text-white tracking-widest font-semibold shadow-inner">
+               2 Days
+             </div>
+<div class="font-mono text-sm text-gray-300 tracking-wider mt-1">
+               04:15:30
+             </div>
+</div>
+<div class="text-center">
+<p class="text-[10px] uppercase tracking-wider text-gray-400">Potential Loss</p>
+<p class="text-[#FF6B6B] font-bold text-lg drop-shadow-md">$50</p>
+</div>
+</div>
+</div>
+</section>
+<!-- END: Dashboard Graphic Area -->
+<!-- BEGIN: Text Content -->
+<section class="text-center max-w-4xl mx-auto px-6 relative z-10">
+<h1 class="font-serif text-6xl md:text-8xl text-white mb-6 leading-tight drop-shadow-xl">
+        Accountability That <br/>
+        Actually <em class="italic text-gray-100">Costs</em> To Ignore
+      </h1>
+<p class="font-sans text-gray-400 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10">
+        Unforgiving losses on unfulfilled goals. Unexploitable verification. 
+        <br class="hidden md:block"/>
+        Friend leaderboards. And gamified productivity.
+      </p>
+<!-- CTA Button -->
+<div class="group relative inline-block">
+<!-- Button Glow -->
+<div class="absolute -inset-1 bg-gradient-to-r from-cyan-400 to-blue-600 rounded-full blur opacity-40 group-hover:opacity-75 transition duration-200"></div>
+<a class="relative flex items-center gap-2 bg-gradient-to-b from-cyan-500 to-blue-600 text-white font-semibold text-lg py-4 px-10 rounded-full shadow-2xl hover:shadow-[0_0_30px_rgba(37,170,225,0.6)] transition-all transform group-hover:-translate-y-0.5 border border-white/20" href="#">
+          Early Access 
+          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewbox="0 0 24 24"><path d="M14 5l7 7m0 0l-7 7m7-7H3" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path></svg>
+</a>
+</div>
+</section>
+<!-- END: Text Content -->
+</main>
+<!-- END: Main Hero Section -->
+</body></html>

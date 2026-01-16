@@ -7,7 +7,7 @@ export default function PrivacyPage() {
         </h1>
         <div className="prose prose-invert max-w-none">
           <p className="text-white/80">
-            Privacy policy content coming soon...
+            ...
           </p>
         </div>
       </div>

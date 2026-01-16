@@ -7,7 +7,7 @@ export default function TermsPage() {
         </h1>
         <div className="prose prose-invert max-w-none">
           <p className="text-white/80">
-            Terms and conditions content coming soon...
+            ...
           </p>
         </div>
       </div>
