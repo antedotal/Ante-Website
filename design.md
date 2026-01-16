@@ -404,7 +404,7 @@ From `app/layout.tsx`:
     - **Footer**: Small text with "Terms | Privacy Policy" links.
     - **Optional typing effect**: Uses `TextType` component from `components/ui/TextType.tsx` when `USE_TYPING_EFFECT` is enabled.
     - **Animations**: Staggered fade-in animations for all elements using Framer Motion variants.
-    - Currently **no form submission wiring** – button is presentational only.
+    - **Form wiring**: The signup form is fully functional. It validates the email, submits to the `addToWaitlist` function (in `lib/waitlist.ts`), and handles loading/success/error states.
   - As real signup flows are implemented (e.g., linking to a separate app or embedded form), document:
     - Where the logic lives.
     - Any external services used (Supabase, Auth0, custom backend, etc.).

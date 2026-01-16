@@ -1,0 +1,14 @@
+
+> ante-website@0.1.0 dev
+> next dev
+
+▲ Next.js 16.1.1 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.0.2:3000
+
+✓ Starting...
+✓ Ready in 1138ms
+○ Compiling /signup ...
+ GET /signup 200 in 6.9s (compile: 6.2s, render: 725ms)
+ GET /signup 200 in 113ms (compile: 9ms, render: 104ms)
+ GET /signup 200 in 189ms (compile: 12ms, render: 177ms)
