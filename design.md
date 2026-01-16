@@ -119,6 +119,7 @@ High-level layout under the repo root:
   - `signup/page.tsx`
   - `privacy/page.tsx`
   - `terms/page.tsx`
+  - `stitch/page.tsx`
 
 #### 3.1.1 `app/layout.tsx` (Root Layout)
 
@@ -171,6 +172,7 @@ This layout is shared by **all routes** under `app/`.
 - `app/(static)/signup/page.tsx` → `/signup`
 - `app/(static)/privacy/page.tsx` → `/privacy`
 - `app/(static)/terms/page.tsx` → `/terms`
+- `app/(static)/stitch/page.tsx` → `/stitch`
 
 Each of these pages:
 - Uses `<main className="min-h-screen text-white relative">`.
@@ -212,6 +214,7 @@ These are composed in `app/page.tsx`.
 - `blur-fade.tsx` – blur/fade animation wrapper.
 - `particles.tsx` – particle effect component.
 - `globe.tsx` – 3D/visual globe (likely uses `three`, `@react-three/fiber`, `cobe`).
+- `Plexus.tsx` – 3D/visual plexus animation.
 - `shimmer-button.tsx` – gradient/shimmer button used in CTA.
 - `aurora-text.tsx` – animated gradient/aurora text component.
 - `animated-gradient-text.tsx` – generalized gradient text animation.
@@ -251,6 +254,7 @@ The App Router derives routes from the `app/` filesystem:
 - `/signup` → `app/(static)/signup/page.tsx`
 - `/privacy` → `app/(static)/privacy/page.tsx`
 - `/terms` → `app/(static)/terms/page.tsx`
+- `/stitch` → `app/(static)/stitch/page.tsx`
 
 **Route groups**:
 - `(static)` is a **group only**, not part of the URL. It’s a good place to keep all mostly-static, simple pages (signup stub, legal docs, etc.).
@@ -423,6 +427,7 @@ From `app/layout.tsx`:
   - `/signup` – Waitlist-style signup page (`app/(static)/signup/page.tsx`)
   - `/privacy` – Privacy policy stub (`app/(static)/privacy/page.tsx`)
   - `/terms` – Terms & conditions stub (`app/(static)/terms/page.tsx`)
+  - `/stitch` – Stitch page (`app/(static)/stitch/page.tsx`)
 
 - **Main layout**:
   - `app/layout.tsx` – global fonts, background, noise overlay.
@@ -442,6 +447,7 @@ From `app/layout.tsx`:
   - `components/ui/magic-card.tsx`
   - `components/ui/bento-grid.tsx`
   - `components/ui/TextType.tsx`
+  - `components/ui/Plexus.tsx`
 
 ---
 
