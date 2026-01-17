@@ -149,17 +149,16 @@ export default function SignUpPage() {
               </a>
             </div>
 
-            {/* Logo placeholder - square with rounded corners, centered */}
+            {/* Logo - favicon with rounded corners, centered */}
             <motion.div
               variants={itemVariants}
               className="mb-6 flex justify-center"
             >
-              <div
-                className="h-16 w-16 rounded-2xl flex items-center justify-center text-2xl font-bold text-white"
-                style={{ backgroundColor: BRAND_CONFIG.PRIMARY_COLOR }}
-              >
-                {BRAND_CONFIG.BRAND_NAME.charAt(0)}
-              </div>
+              <img
+                src="/favicon.ico"
+                alt={`${BRAND_CONFIG.BRAND_NAME} logo`}
+                className="h-16 w-16 rounded-2xl object-contain"
+              />
             </motion.div>
 
 
