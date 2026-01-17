@@ -66,7 +66,7 @@ function StatItem({ value, label, suffix = "", prefix = "", icon: Icon, delay, i
       <div className="relative p-8 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300">
         {/* Icon */}
         <div className={`inline-flex items-center justify-center rounded-2xl p-3 mb-4 ${iconBg}`}>
-          <Icon className={`w-6 h-6 ${iconColor}`} />
+          {/* <Icon className={`w-6 h-6 ${iconColor}`} /> */}
         </div>
 
         {/* Animated Counter */}
