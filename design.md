@@ -404,7 +404,11 @@ From `app/layout.tsx`:
     - **Footer**: Small text with "Terms | Privacy Policy" links.
     - **Optional typing effect**: Uses `TextType` component from `components/ui/TextType.tsx` when `USE_TYPING_EFFECT` is enabled.
     - **Animations**: Staggered fade-in animations for all elements using Framer Motion variants.
-    - Currently **no form submission wiring** – button is presentational only.
+    - **Form Wiring**:
+      - Wrapped in a semantic `<form>` element for accessibility and proper submission flow (Enter key support).
+      - Wired to `addToWaitlist` in `lib/waitlist.ts` for secure submission.
+      - Includes client-side validation, loading states, error handling, and success feedback.
+      - Accessibility features: ARIA labels, live regions for alerts, and focus management.
   - As real signup flows are implemented (e.g., linking to a separate app or embedded form), document:
     - Where the logic lives.
     - Any external services used (Supabase, Auth0, custom backend, etc.).
@@ -481,6 +485,7 @@ The signup page includes:
 - **Honeypot field** – Hidden input for bot detection (position: absolute, opacity: 0, tabindex: -1)
 - **Disabled states** – Prevents double submission during loading
 - **Client-side validation** – Basic validation before server call
+- **Semantic Form** – Uses standard HTML form submission handler.
 
 ### 10.3 Supabase RLS Policies
 
