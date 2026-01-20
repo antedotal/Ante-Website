@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ShimmerButton } from "./ui/shimmer-button";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -50,7 +51,13 @@ export function Navbar() {
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
+        <Link
+          href="/"
+          className="text-xl tracking-tighter text-white font-immersive"
+          aria-label="Ante Home"
+        >
+          Ante
+        </Link>
         <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
           <a 
             href="#how-it-works" 

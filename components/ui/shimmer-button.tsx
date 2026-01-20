@@ -113,6 +113,7 @@ export const ShimmerButton = React.forwardRef<
             ref={ref as React.ForwardedRef<HTMLAnchorElement>}
             {...(target && { target })}
             {...(rel && { rel })}
+            {...props}
           >
             {sharedContent}
           </Link>
@@ -127,6 +128,7 @@ export const ShimmerButton = React.forwardRef<
             ref={ref as React.ForwardedRef<HTMLAnchorElement>}
             target={target || "_blank"}
             rel={rel || "noopener noreferrer"}
+            {...props}
           >
             {sharedContent}
           </a>
