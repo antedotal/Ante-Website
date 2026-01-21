@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import { ShimmerButton } from "./ui/shimmer-button";
 import { useState, useEffect } from "react";
 
@@ -50,7 +51,9 @@ export function Navbar() {
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
+        <Link href="/" aria-label="Home" className="text-xl tracking-tighter text-white font-immersive">
+          Ante
+        </Link>
         <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
           <a 
             href="#how-it-works" 
@@ -100,6 +103,7 @@ export function Navbar() {
             borderRadius="9999px"
             className="text-xs px-4 py-2"
             href="/signup"
+            aria-label="Get early access to Ante"
           >
             Early Access
           </ShimmerButton>

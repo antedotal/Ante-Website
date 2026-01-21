@@ -62,7 +62,7 @@ export function Hero() {
               borderRadius="9999px"
               className="w-full sm:w-auto px-8 py-4 text-lg font-semibold"
               href="/signup"
-
+              aria-label="Get early access to Ante"
             >
               Early Access
               <ArrowRight className="w-4 h-4 ml-2" />
