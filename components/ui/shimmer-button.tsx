@@ -49,7 +49,7 @@ export const ShimmerButton = React.forwardRef<
     // Shared className for both button and anchor elements
     const sharedClassName = cn(
       "group relative z-0 flex cursor-pointer items-center justify-center overflow-hidden [border-radius:var(--radius)] border border-white/10 px-6 py-3 whitespace-nowrap text-white [background:var(--bg)]",
-      "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px",
+      "transform-gpu transition-transform duration-300 ease-in-out active:translate-y-px focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50",
       className
     )
 
@@ -113,6 +113,7 @@ export const ShimmerButton = React.forwardRef<
             ref={ref as React.ForwardedRef<HTMLAnchorElement>}
             {...(target && { target })}
             {...(rel && { rel })}
+            {...props as any} // eslint-disable-line @typescript-eslint/no-explicit-any
           >
             {sharedContent}
           </Link>
@@ -127,6 +128,7 @@ export const ShimmerButton = React.forwardRef<
             ref={ref as React.ForwardedRef<HTMLAnchorElement>}
             target={target || "_blank"}
             rel={rel || "noopener noreferrer"}
+            {...props as any} // eslint-disable-line @typescript-eslint/no-explicit-any
           >
             {sharedContent}
           </a>
