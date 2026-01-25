@@ -40,7 +40,7 @@ export default function SignUpPage() {
    * Handles the waitlist submission when the button is clicked.
    * Validates the email, calls the addToWaitlist function, and manages loading/error/success states.
    */
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Reset previous states
@@ -125,9 +125,10 @@ export default function SignUpPage() {
           className="w-full max-w-lg"
         >
           {/* Main card - off-white/cream with soft shadow */}
-          <motion.div
+          <motion.form
             variants={itemVariants}
             className="w-full rounded-3xl bg-[#faf9f6] px-8 py-12 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:px-12 md:py-16"
+            onSubmit={handleSubmit}
           >
             {/* Back to home link */}
             {/* 
@@ -208,6 +209,7 @@ export default function SignUpPage() {
             >
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                <label htmlFor="email" className="sr-only">Email address</label>
                 <input
                   id="email"
                   type="email"
@@ -291,8 +293,7 @@ export default function SignUpPage() {
               className="mb-8"
             >
               <motion.button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isLoading || success}
                 variants={buttonVariants}
                 initial="rest"
@@ -341,7 +342,7 @@ export default function SignUpPage() {
                 Privacy Policy
               </Link>
             </motion.div>
-          </motion.div>
+          </motion.form>
         </motion.div>
       </div>
     </main>
