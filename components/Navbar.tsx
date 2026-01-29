@@ -3,6 +3,7 @@
 import { motion } from "framer-motion";
 import { ShimmerButton } from "./ui/shimmer-button";
 import { useState, useEffect } from "react";
+import Link from "next/link";
 
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -21,6 +22,12 @@ export function Navbar() {
 
   return (
     <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center pt-4">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-[60] focus:px-6 focus:py-3 focus:bg-white focus:text-black focus:rounded-lg focus:shadow-xl focus:font-medium transition-transform"
+      >
+        Skip to content
+      </a>
       <motion.div
         className="flex items-center gap-8 backdrop-blur-xl border border-transparent"
         animate={isScrolled ? "detached" : "attached"}
@@ -50,7 +57,7 @@ export function Navbar() {
           ease: [0.25, 0.1, 0.25, 1]
         }}
       >
-        <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
+        <Link href="/" aria-label="Home" className="text-xl tracking-tighter text-white font-immersive">Ante</Link>
         <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
           <a 
             href="#how-it-works" 
