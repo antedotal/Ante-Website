@@ -20,7 +20,7 @@ export default function Home() {
           setTimeout(() => {
             window.location.href = deepLink;
             setTimeout(() => setShowCode(true), 1500);
-          }, 300);
+          }, 299);
         }
       }
     }
