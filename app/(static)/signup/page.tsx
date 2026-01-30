@@ -40,7 +40,7 @@ export default function SignUpPage() {
    * Handles the waitlist submission when the button is clicked.
    * Validates the email, calls the addToWaitlist function, and manages loading/error/success states.
    */
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
     // Reset previous states
@@ -57,7 +57,7 @@ export default function SignUpPage() {
 
     try {
       // Pass email, referralSource (null), marketingConsent (true), and honeypot for bot detection
-      const { data, error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
+      const { error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
       
       if (waitlistError) {
         // Handle error from waitlist function
@@ -70,7 +70,7 @@ export default function SignUpPage() {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000);
       }
-    } catch (err) {
+    } catch {
       // Handle unexpected errors
       setError('An unexpected error occurred. Please try again later.');
     } finally {
@@ -136,7 +136,7 @@ export default function SignUpPage() {
               This fixes the issue where the clickable area stretches to the right edge.
             */}
             <div className="mb-4">
-              <a
+              <Link
                 href="/"
                 className="inline-flex items-center opacity-50 hover:opacity-100 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Back to home"
@@ -146,7 +146,7 @@ export default function SignUpPage() {
                 }}
               >
                 <ArrowLeft className="h-5 w-5 mx-auto" />
-              </a>
+              </Link>
             </div>
 
             {/* Logo - favicon with rounded corners, centered */}
@@ -201,126 +201,131 @@ export default function SignUpPage() {
               {BRAND_CONFIG.COPY_SUBTEXT}
             </motion.p>
 
-            {/* Email input with icon */}
-            <motion.div
-              variants={itemVariants}
-              className="mb-6"
+            <motion.form
+              className="w-full"
+              onSubmit={handleSubmit}
+              noValidate
             >
-              <div className="relative">
-                <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
-                <input
-                  id="email"
-                  type="email"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="you@example.com"
-                  disabled={isLoading || success}
-                  className="w-full rounded-2xl border border-slate-300 bg-white px-12 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              {/* Email input with icon */}
+              <motion.div
+                variants={itemVariants}
+                className="mb-6"
+              >
+                <div className="relative">
+                  <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-400" />
+                  <input
+                    id="email"
+                    type="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="you@example.com"
+                    disabled={isLoading || success}
+                    className="w-full rounded-2xl border border-slate-300 bg-white px-12 py-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none ring-0 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                    style={{
+                      '--primary-color': BRAND_CONFIG.PRIMARY_COLOR,
+                    } as React.CSSProperties & { '--primary-color': string }}
+                    onFocus={(e) => {
+                      const color = BRAND_CONFIG.PRIMARY_COLOR;
+                      e.currentTarget.style.borderColor = color;
+                      e.currentTarget.style.boxShadow = `0 0 0 2px ${color}33`;
+                    }}
+                    onBlur={(e) => {
+                      e.currentTarget.style.borderColor = '';
+                      e.currentTarget.style.boxShadow = '';
+                    }}
+                  />
+                </div>
+                {/*
+                  Honeypot field for bot detection - hidden from real users
+                  Bots will automatically fill this field, allowing us to reject their submissions
+                  Uses multiple hiding techniques: absolute positioning, opacity, height, tabindex
+                */}
+                <div
+                  aria-hidden="true"
                   style={{
-                    '--primary-color': BRAND_CONFIG.PRIMARY_COLOR,
-                  } as React.CSSProperties & { '--primary-color': string }}
-                  onFocus={(e) => {
-                    const color = BRAND_CONFIG.PRIMARY_COLOR;
-                    e.currentTarget.style.borderColor = color;
-                    e.currentTarget.style.boxShadow = `0 0 0 2px ${color}33`;
+                    position: 'absolute',
+                    left: '-9999px',
+                    opacity: 0,
+                    height: 0,
+                    overflow: 'hidden',
                   }}
-                  onBlur={(e) => {
-                    e.currentTarget.style.borderColor = '';
-                    e.currentTarget.style.boxShadow = '';
+                >
+                  <label htmlFor="website">Website</label>
+                  <input
+                    type="text"
+                    id="website"
+                    name="website"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                    tabIndex={-1}
+                    autoComplete="off"
+                  />
+                </div>
+              </motion.div>
+
+              {/* Error message display */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700"
+                >
+                  <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                  <span>{error}</span>
+                </motion.div>
+              )}
+
+              {/* Success message display */}
+              {success && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
+                >
+                  <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                  <span>Thanks for joining the waitlist! We&apos;ll be in touch soon.</span>
+                </motion.div>
+              )}
+
+              {/* Join Waitlist button - full width, dark background */}
+              <motion.div
+                variants={itemVariants}
+                className="mb-8"
+              >
+                <motion.button
+                  type="submit"
+                  disabled={isLoading || success}
+                  variants={buttonVariants}
+                  initial="rest"
+                  whileHover={!isLoading && !success ? "hover" : "rest"}
+                  whileTap={!isLoading && !success ? "tap" : "rest"}
+                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  style={{
+                    backgroundColor: BRAND_CONFIG.PRIMARY_COLOR,
                   }}
-                />
-              </div>
-              {/* 
-                Honeypot field for bot detection - hidden from real users
-                Bots will automatically fill this field, allowing us to reject their submissions
-                Uses multiple hiding techniques: absolute positioning, opacity, height, tabindex
-              */}
-              <div 
-                aria-hidden="true"
-                style={{
-                  position: 'absolute',
-                  left: '-9999px',
-                  opacity: 0,
-                  height: 0,
-                  overflow: 'hidden',
-                }}
-              >
-                <label htmlFor="website">Website</label>
-                <input
-                  type="text"
-                  id="website"
-                  name="website"
-                  value={honeypot}
-                  onChange={(e) => setHoneypot(e.target.value)}
-                  tabIndex={-1}
-                  autoComplete="off"
-                />
-              </div>
-            </motion.div>
-
-            {/* Error message display */}
-            {error && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700"
-              >
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
-                <span>{error}</span>
+                >
+                  {isLoading ? (
+                    <>
+                      <span>Joining...</span>
+                      <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    </>
+                  ) : success ? (
+                    <>
+                      <span>Joined!</span>
+                      <CheckCircle2 className="h-4 w-4" />
+                    </>
+                  ) : (
+                    <>
+                      Join Waitlist
+                      <Send className="h-4 w-4" />
+                    </>
+                  )}
+                </motion.button>
               </motion.div>
-            )}
-
-            {/* Success message display */}
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
-              >
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span>Thanks for joining the waitlist! We'll be in touch soon.</span>
-              </motion.div>
-            )}
-
-            {/* Join Waitlist button - full width, dark background */}
-            <motion.div
-              variants={itemVariants}
-              className="mb-8"
-            >
-              <motion.button
-                type="button"
-                onClick={handleSubmit}
-                disabled={isLoading || success}
-                variants={buttonVariants}
-                initial="rest"
-                whileHover={!isLoading && !success ? "hover" : "rest"}
-                whileTap={!isLoading && !success ? "tap" : "rest"}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style={{
-                  backgroundColor: BRAND_CONFIG.PRIMARY_COLOR,
-                }}
-              >
-                {isLoading ? (
-                  <>
-                    <span>Joining...</span>
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  </>
-                ) : success ? (
-                  <>
-                    <span>Joined!</span>
-                    <CheckCircle2 className="h-4 w-4" />
-                  </>
-                ) : (
-                  <>
-                    Join Waitlist
-                    <Send className="h-4 w-4" />
-                  </>
-                )}
-              </motion.button>
-            </motion.div>
+            </motion.form>
 
             {/* Footer - Terms | Privacy Policy */}
             <motion.div
