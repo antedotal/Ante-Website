@@ -113,7 +113,11 @@ export default function SignUpPage() {
   };
 
   return (
-    <main className="min-h-screen relative overflow-hidden">
+    <main
+      id="main-content"
+      tabIndex={-1}
+      className="min-h-screen relative overflow-hidden outline-none"
+    >
       {/* Background is inherited from layout.tsx - keeping it as is */}
       
       {/* Centered card container */}
@@ -136,7 +140,7 @@ export default function SignUpPage() {
               This fixes the issue where the clickable area stretches to the right edge.
             */}
             <div className="mb-4">
-              <a
+              <Link
                 href="/"
                 className="inline-flex items-center opacity-50 hover:opacity-100 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Back to home"
@@ -146,7 +150,7 @@ export default function SignUpPage() {
                 }}
               >
                 <ArrowLeft className="h-5 w-5 mx-auto" />
-              </a>
+              </Link>
             </div>
 
             {/* Logo - favicon with rounded corners, centered */}
@@ -281,7 +285,7 @@ export default function SignUpPage() {
                 className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
               >
                 <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span>Thanks for joining the waitlist! We'll be in touch soon.</span>
+                <span>Thanks for joining the waitlist! We&apos;ll be in touch soon.</span>
               </motion.div>
             )}
 
