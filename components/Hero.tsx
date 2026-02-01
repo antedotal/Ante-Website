@@ -1,16 +1,19 @@
 "use client";
 
-import { ArrowRight, Smartphone } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { BlurFade } from "./ui/blur-fade";
 import { AuroraText } from "./ui/aurora-text";
 import { ShimmerButton } from "./ui/shimmer-button";
 import { Particles } from "./ui/particles";
-import { Button } from "./ui/Button";
 import TextType from "./ui/TextType";
 
 export function Hero() {
   return (
-    <section className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 pt-20">
+    <section
+      id="main-content"
+      tabIndex={-1}
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 pt-20 outline-none"
+    >
       {/* Particles Background */}
       <Particles
         className="absolute inset-0 -z-10"

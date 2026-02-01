@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Young_Serif } from "next/font/google";
+import { SkipToContent } from "@/components/ui/SkipToContent";
 import "./globals.css";
 
 const youngSerif = Young_Serif({
@@ -42,6 +43,7 @@ export default function RootLayout({
           minHeight: '100vh'
         }}
       >
+        <SkipToContent />
         {/* Noise overlay */}
         <div 
           className="fixed inset-0 pointer-events-none"

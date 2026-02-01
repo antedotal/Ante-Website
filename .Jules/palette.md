@@ -1,0 +1,3 @@
+## 2024-05-21 - Skip Links in Full-Screen Layouts
+**Learning:** When using full-screen interactive backgrounds (like particles or noise overlays) with fixed navigation, "Skip to content" links are critical but can be tricky to position z-index wise. They must sit above the overlays but below the top-level modals. Also, targeting the correct container in a nested layout (Next.js `layout.tsx` vs `page.tsx`) requires ensuring the target ID (`#main-content`) exists on all routes, including static ones.
+**Action:** Always verify "Skip to content" functionality across different route types (marketing home vs static pages) to ensure the target ID is consistently present and focusable (`tabIndex={-1}` and `outline-none`).
