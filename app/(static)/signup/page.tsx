@@ -10,6 +10,7 @@ const BRAND_CONFIG = {
 } as const;
 
 import { useState } from 'react';
+import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import TextType from '@/components/ui/TextType';
@@ -42,7 +43,7 @@ export default function SignUpPage() {
    */
   const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
-    
+
     // Reset previous states
     setError(null);
     setSuccess(false);
@@ -57,8 +58,8 @@ export default function SignUpPage() {
 
     try {
       // Pass email, referralSource (null), marketingConsent (true), and honeypot for bot detection
-      const { data, error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
-      
+      const { error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
+
       if (waitlistError) {
         // Handle error from waitlist function
         setError(waitlistError.message || 'Something went wrong. Please try again.');
@@ -70,7 +71,7 @@ export default function SignUpPage() {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000);
       }
-    } catch (err) {
+    } catch {
       // Handle unexpected errors
       setError('An unexpected error occurred. Please try again later.');
     } finally {
@@ -115,7 +116,7 @@ export default function SignUpPage() {
   return (
     <main className="min-h-screen relative overflow-hidden">
       {/* Background is inherited from layout.tsx - keeping it as is */}
-      
+
       {/* Centered card container */}
       <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
         <motion.div
@@ -136,7 +137,7 @@ export default function SignUpPage() {
               This fixes the issue where the clickable area stretches to the right edge.
             */}
             <div className="mb-4">
-              <a
+              <Link
                 href="/"
                 className="inline-flex items-center opacity-50 hover:opacity-100 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Back to home"
@@ -146,7 +147,7 @@ export default function SignUpPage() {
                 }}
               >
                 <ArrowLeft className="h-5 w-5 mx-auto" />
-              </a>
+              </Link>
             </div>
 
             {/* Logo - favicon with rounded corners, centered */}
@@ -154,9 +155,11 @@ export default function SignUpPage() {
               variants={itemVariants}
               className="mb-6 flex justify-center"
             >
-              <img
+              <Image
                 src="/favicon.ico"
                 alt={`${BRAND_CONFIG.BRAND_NAME} logo`}
+                width={64}
+                height={64}
                 className="h-16 w-16 rounded-2xl object-contain"
               />
             </motion.div>
@@ -236,7 +239,7 @@ export default function SignUpPage() {
                 Bots will automatically fill this field, allowing us to reject their submissions
                 Uses multiple hiding techniques: absolute positioning, opacity, height, tabindex
               */}
-              <div 
+              <div
                 aria-hidden="true"
                 style={{
                   position: 'absolute',
@@ -281,7 +284,7 @@ export default function SignUpPage() {
                 className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
               >
                 <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span>Thanks for joining the waitlist! We'll be in touch soon.</span>
+                <span>Thanks for joining the waitlist! We will be in touch soon.</span>
               </motion.div>
             )}
 

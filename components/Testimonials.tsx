@@ -75,7 +75,7 @@ const staggerDelays = [0, 0.08, 0.16, 0.24, 0.12, 0.20];
 function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; index: number }) {
   // Use pre-calculated delay based on position for wave effect
   const delay = staggerDelays[index % staggerDelays.length];
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -88,7 +88,7 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
       }}
       className="flex-shrink-0 w-[320px] md:w-[350px] mx-2 md:mx-3"
     >
-      <div className="h-full p-5 md:p-6 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300">
+      <div className="h-full p-5 md:p-6 rounded-3xl bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-all duration-300">
         {/* Quote Icon */}
         <div className="mb-3 md:mb-4">
           <Quote className="w-6 h-6 md:w-8 md:h-8 text-cyan-400 opacity-50" />

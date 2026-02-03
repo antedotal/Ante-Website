@@ -1,116 +1,143 @@
 "use client";
 
-import { ShieldAlert, Zap, Heart, Trophy, DollarSignIcon, DollarSign } from "lucide-react";
-import { BlurFade } from "./ui/blur-fade";
-import { AuroraText } from "./ui/aurora-text";
-import { cn } from "@/lib/utils";
+import { useLayoutEffect, useMemo, useRef } from "react";
+import Image from "next/image";
+import { gsap } from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 
-const features = [
-  {
-    title: "Financial Forfeits",
-    description: "Nothing motivates like the fear of losing money. Set your task and price, and if you fail verification twice, you pay.",
-    icon: DollarSign,
-    iconColor: "text-blue-600",
-    iconBg: "bg-blue-100",
-    className: "md:col-span-2 md:row-span-2",
-    large: true,
-  },
-  {
-    title: "Lightning Fast",
-    description: "Snap, send, verified. No friction.",
-    icon: Zap,
-    iconColor: "text-yellow-500",
-    iconBg: "bg-yellow-100",
-    className: "",
-    large: false,
-  },
-  {
-    title: "Social Proof",
-    description: "Your friends keep you honest. And humble.",
-    icon: Heart,
-    iconColor: "text-pink-500",
-    iconBg: "bg-pink-100",
-    className: "",
-    large: false, 
-  },
-  {
-    title: "Gamified Productivity",
-    description: "Earn streaks, unlock badges, and compete with friends. Who is the most reliable?",
-    icon: Trophy,
-    iconColor: "text-yellow-500",
-    iconBg: "bg-yellow-100",
-    className: "md:col-span-3",
-    large: true,
-    showIcon: true,
-  },
-];
+gsap.registerPlugin(ScrollTrigger);
 
+// Feature grid showcasing Ante capabilities with GSAP fades.
 export function Features() {
+  const sectionRef = useRef<HTMLElement>(null);
+
+  const features = useMemo(
+    () => [
+      {
+        title: "Verify Friends",
+        description: "Make sure they also aren’t being lazy.",
+        image: "https://placehold.co/420x280/png?text=Verify+Friends",
+      },
+      {
+        title: "Set reminders",
+        description: "So you don’t forget you should be off your phone.",
+        image: "https://placehold.co/420x280/png?text=Reminders",
+      },
+      {
+        title: "Set an Ante",
+        description: "Pay for your laziness, literally.",
+        image: "https://placehold.co/420x280/png?text=Set+an+Ante",
+      },
+      {
+        title: "Set lists",
+        description: "Organise everything in one clean view.",
+        image: "https://placehold.co/420x280/png?text=Lists",
+      },
+      {
+        title: "Add custom emojis",
+        description: "Make every task unique.",
+        image: "https://placehold.co/420x280/png?text=Custom+Emojis",
+      },
+    ],
+    []
+  );
+
+  useLayoutEffect(() => {
+    if (!sectionRef.current) {
+      return;
+    }
+
+    const context = gsap.context(() => {
+      ensureGsapEase();
+      // Fade the grid cards in sequentially as the section scrolls into view.
+      gsap.from("[data-feature-card]", {
+        opacity: 0,
+        y: 24,
+        duration: 0.8,
+        ease: NATURAL_EASE,
+        stagger: 0.12,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 70%",
+        },
+      });
+
+      // Fade elements in/out as they enter and leave the viewport.
+      const fadeTargets = gsap.utils.toArray<HTMLElement>("[data-scroll-fade]");
+      fadeTargets.forEach((target) => {
+        gsap.set(target, { opacity: 0, y: 24 });
+        ScrollTrigger.create({
+          trigger: target,
+          start: "top 80%",
+          end: "bottom 20%",
+          onEnter: () =>
+            gsap.to(target, { opacity: 1, y: 0, duration: 0.5, ease: NATURAL_EASE }),
+          onLeave: () =>
+            gsap.to(target, { opacity: 0, y: -24, duration: 0.4, ease: NATURAL_EASE }),
+          onEnterBack: () =>
+            gsap.to(target, { opacity: 1, y: 0, duration: 0.5, ease: NATURAL_EASE }),
+          onLeaveBack: () =>
+            gsap.to(target, { opacity: 0, y: 24, duration: 0.4, ease: NATURAL_EASE }),
+        });
+      });
+    }, sectionRef);
+
+    return () => context.revert();
+  }, []);
+
   return (
-    <section id="features" className="relative px-4 py-24 md:py-32">
+    <section
+      id="features"
+      ref={sectionRef}
+      data-cursor-color="#003949"
+      className="relative px-6 py-24 md:py-32 bg-white text-[#003949]"
+    >
       <div className="container mx-auto max-w-6xl relative">
-        <BlurFade delay={0.1} duration={0.6}>
-          <div className="mb-16 text-center md:text-left">
-            <h2 className="text-4xl md:text-6xl mb-6 text-white font-serif-custom">
-              Features that{" "}
-              <AuroraText
-                className="font-serif-custom"
-                colors={["#00BCD4", "#26C6DA", "#4DD0E1", "#80DEEA"]}
-                speed={1}
-              >
-                actually work
-              </AuroraText>
-            </h2>
-          </div>
-        </BlurFade>
+        <div className="mb-16 text-center" data-scroll-fade>
+          <h2 className="text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
+            What else can Ante do?
+          </h2>
+          <p className="text-lg md:text-xl text-[#003949]/70">
+            Everything you need to keep yourself (and your friends) honest.
+          </p>
+        </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6">
-          {features.map((feature, index) => (
-            <BlurFade
+        <div
+          className="grid justify-center"
+          style={{
+            gridTemplateColumns: "repeat(2, 20vw)",
+            columnGap: "5vw",
+            rowGap: "5vw",
+            paddingLeft: "27.5vw",
+            paddingRight: "27.5vw",
+          }}
+        >
+          {features.map((feature) => (
+            <article
               key={feature.title}
-              delay={0.15 + index * 0.1}
-              duration={0.5}
-              className={feature.className}
+              data-feature-card
+              data-scroll-fade
+              className="rounded-[28px] bg-[#E0F0F3] p-5 flex flex-col justify-between w-[20vw] h-[20vw]"
             >
-              <div
-                className={cn(
-                  "group relative h-full rounded-3xl border border-white/10 bg-white/5 backdrop-blur-sm p-6 md:p-8 transition-all duration-300 hover:border-white/20 hover:bg-white/10 hover:shadow-lg",
-                  feature.large ? "min-h-[280px] md:min-h-[320px]" : "min-h-[200px]"
-                )}
-              >
-                {/* Icon */}
-                <div className={cn(
-                  "inline-flex items-center justify-center rounded-2xl p-3 mb-4",
-                  feature.iconBg
-                )}>
-                  <feature.icon className={cn("w-6 h-6", feature.iconColor)} />
-                </div>
-
-                {/* Content */}
-                <div className={cn(
-                  feature.large && feature.showIcon ? "flex flex-col md:flex-row md:items-center md:justify-between" : ""
-                )}>
-                  <div className={feature.showIcon ? "md:max-w-xl" : ""}>
-                    <h3 className={cn(
-                      "text-[28px] mb-3 text-white font-serif-custom"
-                    )}>
-                      {feature.title}
-                    </h3>
-                    <p className={cn(
-                      "text-white/70 leading-relaxed",
-                      feature.large ? "text-lg" : "text-sm"
-                    )}>
-                      {feature.description}
-                    </p>
-                  </div>
-                  {feature.showIcon && (
-                    <div className="hidden md:block">
-                      <Trophy className="w-24 h-24 text-yellow-400 rotate-12 opacity-80" />
-                    </div>
-                  )}
-                </div>
+              <div>
+                <h3 className="text-2xl md:text-3xl font-serif-custom font-semibold mb-3">
+                  {feature.title}
+                </h3>
+                <p className="text-base md:text-lg text-[#003949]/70">
+                  {feature.description}
+                </p>
               </div>
-            </BlurFade>
+              <div className="mt-6 rounded-2xl overflow-hidden bg-white">
+                <Image
+                  src={feature.image}
+                  alt={feature.title}
+                  width={420}
+                  height={280}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+            </article>
           ))}
         </div>
       </div>
