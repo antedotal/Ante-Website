@@ -13,17 +13,6 @@ interface WaitlistResponse {
   error: { message: string; code?: string } | null;
 }
 
-/**
- * Input parameters for addToWaitlist function
- * Optional honeypot field for bot detection
- */
-interface WaitlistInput {
-  email: string;
-  referralSource?: string | null;
-  marketingConsent?: boolean;
-  honeypot?: string; // Hidden field for bot detection - should be empty
-}
-
 // =============================================================================
 // SECURITY CONSTANTS
 // =============================================================================
@@ -265,69 +254,9 @@ function sanitizeString(input: string): string {
   return sanitized.trim().slice(0, MAX_REFERRAL_SOURCE_LENGTH);
 }
 
-/**
- * Checks if an email already exists in the waitlist
- * Provides better UX than relying solely on database constraint errors
- * 
- * @param {string} email - Email to check
- * @returns {Promise<boolean>} True if email already exists
- */
-async function emailExistsInWaitlist(email: string): Promise<boolean> {
-  // Use Supabase's parameterized query for SQL injection protection
-  const { data, error } = await supabase
-    .from('waitlist')
-    .select('email')
-    .eq('email', email)
-    .maybeSingle();
-  
-  // If there's an error, we'll let the insert handle it
-  if (error) {
-    console.error('[Waitlist] Error checking email existence:', error.message);
-    return false;
-  }
-  
-  return data !== null;
-}
 
-/**
- * Checks if normalized Gmail already exists (for duplicate detection)
- * Prevents users from signing up multiple times with Gmail dot/plus variations
- * 
- * @param {string} normalizedEmail - Normalized Gmail address
- * @param {string} originalEmail - Original email (to exclude from check)
- * @returns {Promise<boolean>} True if a variation already exists
- */
-async function gmailVariationExists(normalizedEmail: string, originalEmail: string): Promise<boolean> {
-  const [normalizedLocal, domain] = normalizedEmail.split('@');
-  
-  // Only check for Gmail addresses
-  if (domain !== 'gmail.com') {
-    return false;
-  }
-  
-  // Query for Gmail addresses, then check if any normalize to the same address
-  const { data, error } = await supabase
-    .from('waitlist')
-    .select('email')
-    .or(`email.ilike.%@gmail.com,email.ilike.%@googlemail.com`);
-  
-  if (error || !data) {
-    return false;
-  }
-  
-  // Check if any existing email normalizes to the same address
-  for (const row of data) {
-    if (row.email.toLowerCase() === originalEmail) {
-      continue; // Skip the original email
-    }
-    const existingNormalized = normalizeGmailAddress(row.email.toLowerCase());
-    if (existingNormalized === normalizedEmail) {
-      return true;
-    }
-  }
-  
-  return false;
-}
+
+
 
 // =============================================================================
 // MAIN FUNCTION
@@ -502,7 +431,7 @@ export async function addToWaitlist(
   // SECURITY CHECK 9: Gmail normalization for duplicate detection
   // Normalize Gmail addresses to prevent duplicate signups via variations
   // ---------------------------------------------------------------------------
-  const normalizedEmail = normalizeGmailAddress(sanitizedEmail);
+  // const normalizedEmail = normalizeGmailAddress(sanitizedEmail);
   
   // ---------------------------------------------------------------------------
   // NOTE: Duplicate detection

@@ -240,6 +240,7 @@ export default function ColorBends({
         container.removeChild(renderer.domElement);
       }
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

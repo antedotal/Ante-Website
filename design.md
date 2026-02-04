@@ -212,6 +212,7 @@ These are composed in `app/page.tsx`.
 - `Card.tsx` – card layout component.
 - `magic-card.tsx` – fancier card with hover/3D-like effects.
 - `border-beam.tsx` – animated border visual.
+- `Beams.tsx` – animated light beams background using deterministically seeded randoms.
 - `bento-grid.tsx` – bento-style grid layout.
 - `blur-fade.tsx` – blur/fade animation wrapper.
 - `particles.tsx` – particle effect component.
@@ -479,9 +480,8 @@ The waitlist signup function implements enterprise-grade security measures:
 #### Spam & Abuse Prevention
 9. **Email provider whitelist** – Only accepts major providers (Gmail, Outlook, iCloud, Yahoo, ProtonMail, etc.)
 10. **Disposable email blocking** – Blocks 100+ known temporary email services
-11. **Gmail normalization** – Prevents duplicate signups via Gmail dot/plus variations
-12. **Duplicate email detection** – Checks before insert for better UX
-13. **Honeypot bot detection** – Hidden field that real users won't fill out
+11. **Duplicate email detection** – Handled via database unique constraint with friendly error messaging
+12. **Honeypot bot detection** – Hidden field that real users won't fill out
 
 #### Error Handling
 14. **Consistent error messages** – Security-conscious messaging that doesn't leak system details

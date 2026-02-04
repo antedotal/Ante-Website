@@ -123,19 +123,19 @@ export function HowItWorks() {
       // Fade pinned content in/out as the section enters/leaves the viewport.
       const fadeTargets = gsap.utils.toArray<HTMLElement>("[data-scroll-fade]");
       fadeTargets.forEach((target) => {
-        gsap.set(target, { opacity: 0, y: 24 });
+        gsap.set(target, { opacity: 0, scale: 0.95, filter: "blur(10px)" });
         ScrollTrigger.create({
           trigger: target,
           start: "top 85%",
           end: "bottom 15%",
           onEnter: () =>
-            gsap.to(target, { opacity: 1, y: 0, duration: 0.5, ease: NATURAL_EASE }),
+            gsap.to(target, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }),
           onLeave: () =>
-            gsap.to(target, { opacity: 0, y: -24, duration: 0.4, ease: NATURAL_EASE }),
+            gsap.to(target, { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }),
           onEnterBack: () =>
-            gsap.to(target, { opacity: 1, y: 0, duration: 0.5, ease: NATURAL_EASE }),
+            gsap.to(target, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }),
           onLeaveBack: () =>
-            gsap.to(target, { opacity: 0, y: 24, duration: 0.4, ease: NATURAL_EASE }),
+            gsap.to(target, { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }),
         });
       });
 

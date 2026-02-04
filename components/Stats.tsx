@@ -35,7 +35,7 @@ interface StatItemProps {
   iconBg: string;
 }
 
-function StatItem({ value, label, suffix = "", prefix = "", icon: Icon, delay, iconColor, iconBg }: StatItemProps) {
+function StatItem({ value, label, suffix = "", prefix = "", delay, iconBg }: StatItemProps) {
   const count = useMotionValue(0);
   const rounded = useTransform(count, (latest) => Math.round(latest));
   const nodeRef = useRef<HTMLDivElement>(null);

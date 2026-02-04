@@ -2,7 +2,7 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
+import { ensureGsapEase } from "@/lib/gsap";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ArrowRightIcon } from "@/components/ui/icons";
@@ -21,9 +21,10 @@ export function CallToAction() {
             // Sequential fade-in for CTA copy and button.
             gsap.from([headingRef.current, copyRef.current, buttonRef.current], {
                 opacity: 0,
-                y: 24,
+                scale: 0.95,
+                filter: "blur(10px)",
                 duration: 0.9,
-                ease: NATURAL_EASE,
+                ease: "power3.out",
                 stagger: 0.16,
                 scrollTrigger: {
                     trigger: sectionRef.current,
