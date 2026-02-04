@@ -14,6 +14,7 @@ import { motion } from 'framer-motion';
 import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import TextType from '@/components/ui/TextType';
 import Link from 'next/link';
+import Image from 'next/image';
 import { addToWaitlist } from '@/lib/waitlist';
 
 /**
@@ -40,7 +41,7 @@ export default function SignUpPage() {
    * Handles the waitlist submission when the button is clicked.
    * Validates the email, calls the addToWaitlist function, and manages loading/error/success states.
    */
-  const handleSubmit = async (e: React.MouseEvent<HTMLButtonElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Reset previous states
@@ -57,7 +58,7 @@ export default function SignUpPage() {
 
     try {
       // Pass email, referralSource (null), marketingConsent (true), and honeypot for bot detection
-      const { data, error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
+      const { error: waitlistError } = await addToWaitlist(email, null, true, honeypot);
       
       if (waitlistError) {
         // Handle error from waitlist function
@@ -70,7 +71,7 @@ export default function SignUpPage() {
         // Clear success message after 5 seconds
         setTimeout(() => setSuccess(false), 5000);
       }
-    } catch (err) {
+    } catch {
       // Handle unexpected errors
       setError('An unexpected error occurred. Please try again later.');
     } finally {
@@ -125,9 +126,11 @@ export default function SignUpPage() {
           className="w-full max-w-lg"
         >
           {/* Main card - off-white/cream with soft shadow */}
-          <motion.div
+          <motion.form
             variants={itemVariants}
             className="w-full rounded-3xl bg-[#faf9f6] px-8 py-12 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:px-12 md:py-16"
+            onSubmit={handleSubmit}
+            noValidate
           >
             {/* Back to home link */}
             {/* 
@@ -136,7 +139,7 @@ export default function SignUpPage() {
               This fixes the issue where the clickable area stretches to the right edge.
             */}
             <div className="mb-4">
-              <a
+              <Link
                 href="/"
                 className="inline-flex items-center opacity-50 hover:opacity-100 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400"
                 aria-label="Back to home"
@@ -146,7 +149,7 @@ export default function SignUpPage() {
                 }}
               >
                 <ArrowLeft className="h-5 w-5 mx-auto" />
-              </a>
+              </Link>
             </div>
 
             {/* Logo - favicon with rounded corners, centered */}
@@ -154,10 +157,12 @@ export default function SignUpPage() {
               variants={itemVariants}
               className="mb-6 flex justify-center"
             >
-              <img
+              <Image
                 src="/favicon.ico"
                 alt={`${BRAND_CONFIG.BRAND_NAME} logo`}
-                className="h-16 w-16 rounded-2xl object-contain"
+                width={64}
+                height={64}
+                className="rounded-2xl object-contain"
               />
             </motion.div>
 
@@ -281,7 +286,7 @@ export default function SignUpPage() {
                 className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
               >
                 <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
-                <span>Thanks for joining the waitlist! We'll be in touch soon.</span>
+                <span>Thanks for joining the waitlist! We&apos;ll be in touch soon.</span>
               </motion.div>
             )}
 
@@ -291,8 +296,7 @@ export default function SignUpPage() {
               className="mb-8"
             >
               <motion.button
-                type="button"
-                onClick={handleSubmit}
+                type="submit"
                 disabled={isLoading || success}
                 variants={buttonVariants}
                 initial="rest"
@@ -341,7 +345,7 @@ export default function SignUpPage() {
                 Privacy Policy
               </Link>
             </motion.div>
-          </motion.div>
+          </motion.form>
         </motion.div>
       </div>
     </main>
