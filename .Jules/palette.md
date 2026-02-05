@@ -1,0 +1,3 @@
+## 2025-02-18 - [Skip to Content]
+**Learning:** Next.js App Router layouts often obscure the document structure needed for accessibility features like "Skip to Content". Specifically, `app/layout.tsx` wraps all pages, but individual pages define the `<main>` tag. This requires careful coordination to ensure the skip link in layout targets a consistent ID present in all pages.
+**Action:** When setting up Next.js projects, enforce a convention where every `page.tsx`'s root element (or the main content wrapper) always has `id="main-content"` and `tabIndex={-1}` to support global accessibility features defined in the root layout.
