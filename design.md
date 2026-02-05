@@ -98,6 +98,18 @@ From `package.json` `dependencies`:
 High-level layout under the repo root:
 
 - `app/` – Next.js App Router entry point (layouts, pages, global styles).
+
+### Recent Changes
+
+#### 2026-02-05
+- **Beams Component Optimization**:
+  - **Fixed WebGL Error**: Removed unused `varying vec3 vPosition` from `vertexShader` in `components/ui/Beams.tsx` to fix the "Fragment shader is not compiled" error caused by mismatched varyings.
+  - **Logic Fix**: Updated `fragmentShader` to correctly utilize the `uNoiseIntensity` uniform for alpha modulation.
+  - **Performance**: Added `dpr={[1, 1.5]}` to the default `Canvas` configuration to cap pixel density on high-DPI screens, reducing GPU load.
+  - **Movement & Performance Tuning**:
+    - Lowered default `beamNumber` and `speed` to reduce visual motion and draw calls.
+    - Throttled `uTime` updates to ~30fps for lighter CPU/GPU usage.
+    - Tightened DPR cap and disabled antialiasing for improved fragment performance.
 - `components/` – Shared UI components and page sections.
 - `lib/` – Utilities (e.g., `utils.ts`).
 - `public/` – Static assets (SVGs, images).
