@@ -9,10 +9,11 @@ import { ArrowRight } from "lucide-react";
 
 export default function Home() {
   return (
-    <main className="min-h-screen text-white relative">
+    <>
       <Navbar />
-      <Hero />
-      <HowItWorks />
+      <main id="main-content" tabIndex={-1} className="min-h-screen text-white relative outline-none">
+        <Hero />
+        <HowItWorks />
       <Features />
 
       {/* CTA Section */}
@@ -51,6 +52,7 @@ export default function Home() {
       </section>
 
       <Footer />
-    </main>
+      </main>
+    </>
   );
 }

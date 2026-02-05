@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Sans, Young_Serif } from "next/font/google";
+import { SkipLink } from "@/components/ui/skip-link";
 import "./globals.css";
 
 const youngSerif = Young_Serif({
@@ -43,6 +44,7 @@ export default function RootLayout({
         }}
       >
         {/* Noise overlay */}
+        <SkipLink />
         <div 
           className="fixed inset-0 pointer-events-none"
           style={{
