@@ -52,7 +52,7 @@ export function HowItWorks() {
               </AuroraText>
             </h2>
             <p className="text-xl text-white/80 max-w-3xl mx-auto">
-              It's not just a todo list. <br></br> It's a social contract with financial consequences.
+              It&apos;s not just a todo list. <br></br> It&apos;s a social contract with financial consequences.
             </p>
           </div>
         </BlurFade>
