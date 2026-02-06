@@ -177,6 +177,7 @@ export default function ColorBends({
       alpha: true
     });
     rendererRef.current = renderer;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (renderer as any).outputColorSpace = (THREE as any).SRGBColorSpace;
     renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     renderer.setClearColor(0x000000, transparent ? 0 : 1);

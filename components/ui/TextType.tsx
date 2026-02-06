@@ -1,6 +1,6 @@
 'use client';
 
-import { ElementType, useEffect, useRef, useState, createElement, useMemo, useCallback } from 'react';
+import { ElementType, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap';
 import './TextType.css';
 
@@ -171,27 +171,30 @@ const TextType = ({
   const shouldHideCursor =
     hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
-  return createElement(
-    Component,
-    {
-      ref: containerRef,
-      className: `text-type ${className}`,
-      ...props
-    },
-    <span 
-      className={`text-type__content ${!displayedText ? 'text-type__content--empty' : ''}`} 
-      style={{ color: getCurrentTextColor() || 'inherit' }}
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const Tag = Component as any;
+
+  return (
+    <Tag
+      ref={containerRef}
+      className={`text-type ${className}`}
+      {...props}
     >
-      {displayedText || '\u00A0'}
-    </span>,
-    showCursor && (
       <span
-        ref={cursorRef}
-        className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''}`}
+        className={`text-type__content ${!displayedText ? 'text-type__content--empty' : ''}`}
+        style={{ color: getCurrentTextColor() || 'inherit' }}
       >
-        {cursorCharacter}
+        {displayedText || '\u00A0'}
       </span>
-    )
+      {showCursor && (
+        <span
+          ref={cursorRef}
+          className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''}`}
+        >
+          {cursorCharacter}
+        </span>
+      )}
+    </Tag>
   );
 };
 
