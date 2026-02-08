@@ -9,7 +9,7 @@ export function LenisProvider() {
         const lenis = new Lenis({
             lerp: 0.08,
             smoothWheel: true,
-            smoothTouch: false,
+            // smoothTouch: false,
         });
 
         let frameId = 0;
