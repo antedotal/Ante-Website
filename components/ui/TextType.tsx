@@ -13,7 +13,7 @@ interface TextTypeBaseProps {
   cursorBlinkDuration?: number;
   cursorClassName?: string;
   text: string | readonly string[];
-  as?: keyof JSX.IntrinsicElements;
+  as?: keyof React.JSX.IntrinsicElements;
   typingSpeed?: number;
   initialDelay?: number;
   pauseDuration?: number;
