@@ -249,6 +249,7 @@ These are composed in `app/page.tsx`.
 - `HowItWorks` scroll lock starts slightly earlier to account for the fixed navbar and ends exactly with the final card.
 - `Features` grid uses fixed 20vw square tiles with 27.5vw outer padding and 5vw gutters.
 - `data-scroll-fade` elements fade in/out as they enter and leave the viewport.
+- `TextType` now uses polymorphic `as` typing to avoid React children type conflicts while still forwarding valid element props.
 
 ### 3.3 `lib/`
 

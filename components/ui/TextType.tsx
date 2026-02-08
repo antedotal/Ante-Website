@@ -4,7 +4,8 @@ import { ElementType, useEffect, useRef, useState, useMemo, useCallback } from '
 import { gsap } from 'gsap';
 import './TextType.css';
 
-interface TextTypeProps {
+// Defines the core text typing configuration for the TextType component.
+interface TextTypeBaseProps {
   className?: string;
   showCursor?: boolean;
   hideCursorWhileTyping?: boolean;
@@ -25,9 +26,15 @@ interface TextTypeProps {
   reverseMode?: boolean;
 }
 
-const TextType = ({
+// Provides a polymorphic prop type that safely forwards element props without allowing external children.
+type TextTypeProps<C extends ElementType = 'div'> = TextTypeBaseProps & {
+  as?: C;
+} & Omit<React.ComponentPropsWithoutRef<C>, keyof TextTypeBaseProps | 'as' | 'children'>;
+
+// Renders animated typing text with optional cursor, supporting polymorphic tags via the `as` prop.
+const TextType = <C extends ElementType = 'div'>({
   text,
-  as: Component = 'div',
+  as,
   typingSpeed = 50,
   initialDelay = 0,
   pauseDuration = 2000,
@@ -45,7 +52,7 @@ const TextType = ({
   startOnVisible = false,
   reverseMode = false,
   ...props
-}: TextTypeProps & React.HTMLAttributes<HTMLElement>) => {
+}: TextTypeProps<C>) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -172,7 +179,8 @@ const TextType = ({
   const shouldHideCursor =
     hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
-  const ComponentTag = Component as ElementType;
+  // Ensures a valid element tag is used when a custom `as` prop is not provided.
+  const ComponentTag = (as ?? 'div') as ElementType;
 
   return (
     <ComponentTag ref={containerRef} className={`text-type ${className}`} {...props}>
