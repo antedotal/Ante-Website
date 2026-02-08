@@ -26,13 +26,13 @@ interface TextTypeBaseProps {
   reverseMode?: boolean;
 }
 
-// Provides a polymorphic prop type that safely forwards element props without allowing external children.
-type TextTypeProps<C extends ElementType = 'div'> = TextTypeBaseProps & {
-  as?: C;
-} & Omit<React.ComponentPropsWithoutRef<C>, keyof TextTypeBaseProps | 'as' | 'children'>;
+// Provides a safe prop surface that forwards standard HTML attributes without allowing external children.
+type TextTypeProps = TextTypeBaseProps & {
+  as?: ElementType;
+} & Omit<React.HTMLAttributes<HTMLElement>, 'children'>;
 
-// Renders animated typing text with optional cursor, supporting polymorphic tags via the `as` prop.
-const TextType = <C extends ElementType = 'div'>({
+// Renders animated typing text with optional cursor, supporting simple polymorphic tags via the `as` prop.
+const TextType = ({
   text,
   as,
   typingSpeed = 50,
@@ -52,7 +52,7 @@ const TextType = <C extends ElementType = 'div'>({
   startOnVisible = false,
   reverseMode = false,
   ...props
-}: TextTypeProps<C>) => {
+}: TextTypeProps) => {
   const [displayedText, setDisplayedText] = useState('');
   const [currentCharIndex, setCurrentCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
