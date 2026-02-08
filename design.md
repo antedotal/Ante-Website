@@ -236,20 +236,19 @@ These are composed in `app/page.tsx`.
 - `icons.tsx` – inline SVG icons for buttons and footer links.
 - `aurora-text.tsx` – animated gradient/aurora text component.
 - `animated-gradient-text.tsx` – generalized gradient text animation.
-- `TextType.tsx`, `TextType.css` – typing effect text UI + its CSS.
 
 **Usage conventions:**
 - Prefer these primitives when building new sections:
   - For CTAs → `Button` / `shimmer-button`.
   - For highlighted content blocks → `Card`, `magic-card`, `bento-grid`.
-  - For animated headers → `aurora-text`, `animated-gradient-text`, `TextType`.
+  - For animated headers → `aurora-text`, `animated-gradient-text`.
   - For backgrounds → `ColorBendBackground`, `particles`, `globe`, `border-beam`.
 
 **Recent adjustments:**
 - `HowItWorks` scroll lock starts slightly earlier to account for the fixed navbar and ends exactly with the final card.
 - `Features` grid uses fixed 20vw square tiles with 27.5vw outer padding and 5vw gutters.
 - `data-scroll-fade` elements fade in/out as they enter and leave the viewport.
-- `TextType` now uses polymorphic `as` typing to avoid React children type conflicts while still forwarding valid element props.
+- `TextType` typing effect was removed in favor of static headline copy.
 
 ### 3.3 `lib/`
 
@@ -423,15 +422,13 @@ From `app/layout.tsx`:
       - `PRIMARY_COLOR`: Accent color (#005b70)
       - `COPY_HEADLINE`: Main headline text
       - `COPY_SUBTEXT`: Supporting description
-      - `USE_TYPING_EFFECT`: Boolean to enable/disable typing effect on headline
     - **Typography**: Serif font (`font-serif-custom`) for headings and brand name, sans-serif for body text.
     - **Logo placeholder**: Square with rounded corners displaying the first letter of the brand name.
     - **Email input**: Single input field with mail icon on the left, light border, rounded corners.
     - **Join Waitlist button**: Full-width, dark background using `PRIMARY_COLOR`, includes Send icon, with hover/tap animations via Framer Motion.
     - **Footer**: Small text with "Terms | Privacy Policy" links.
-    - **Optional typing effect**: Uses `TextType` component from `components/ui/TextType.tsx` when `USE_TYPING_EFFECT` is enabled.
     - **Animations**: Staggered fade-in animations for all elements using Framer Motion variants.
-    - Currently **no form submission wiring** – button is presentational only.
+    - **Waitlist submission**: Uses `addToWaitlist` from `lib/waitlist.ts` with client-side validation and honeypot bot detection.
   - As real signup flows are implemented (e.g., linking to a separate app or embedded form), document:
     - Where the logic lives.
     - Any external services used (Supabase, Auth0, custom backend, etc.).
@@ -468,7 +465,6 @@ From `app/layout.tsx`:
   - `components/ui/Card.tsx`
   - `components/ui/magic-card.tsx`
   - `components/ui/bento-grid.tsx`
-  - `components/ui/TextType.tsx`
 
 ---
 

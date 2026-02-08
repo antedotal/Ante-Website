@@ -4,16 +4,14 @@
 const BRAND_CONFIG = {
   BRAND_NAME: 'Ante',
   PRIMARY_COLOR: '#005b70', // Accent color for buttons and highlights
-  COPY_HEADLINE: ["Level up your game.", "Stay accountable.", "Get things done."],
+  COPY_HEADLINE: 'Level up your game. Stay accountable. Get things done.',
   COPY_SUBTEXT: 'Join the waitlist to be among the first to try Ante. We\'ll email you when we enter Early Access—no spam, just an invite (and perhaps a surprise!).',
-  USE_TYPING_EFFECT: true, // Set to false to disable typing effect on headline
 } as const;
 
 import { useState } from 'react';
 import Image from 'next/image';
 import { motion } from 'framer-motion';
 import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
-import TextType from '@/components/ui/TextType';
 import Link from 'next/link';
 import { addToWaitlist } from '@/lib/waitlist';
 
@@ -173,27 +171,14 @@ export default function SignUpPage() {
               {BRAND_CONFIG.BRAND_NAME}
             </motion.h1>
 
-            {/* Headline - with optional typing effect */}
+            {/* Headline - static text for clarity and reliability */}
             <motion.div
               variants={itemVariants}
               className="mb-6 text-center"
             >
-              {BRAND_CONFIG.USE_TYPING_EFFECT ? (
-                <h2 className="text-xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
-                  <TextType
-                    text={BRAND_CONFIG.COPY_HEADLINE}
-                    typingSpeed={100}
-                    showCursor={false}
-                    cursorCharacter="|"
-                    cursorBlinkDuration={0.8}
-                    className="inline-block"
-                  />
-                </h2>
-              ) : (
-                <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
-                  {BRAND_CONFIG.COPY_HEADLINE}
-                </h2>
-              )}
+              <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
+                {BRAND_CONFIG.COPY_HEADLINE}
+              </h2>
             </motion.div>
 
             {/* Sub-headline - lighter grey, sans-serif */}
@@ -270,7 +255,7 @@ export default function SignUpPage() {
                 exit={{ opacity: 0 }}
                 className="mb-4 flex items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm text-red-700"
               >
-                <AlertCircle className="h-4 w-4 flex-shrink-0" />
+                <AlertCircle className="h-4 w-4 shrink-0" />
                 <span>{error}</span>
               </motion.div>
             )}
@@ -283,7 +268,7 @@ export default function SignUpPage() {
                 exit={{ opacity: 0 }}
                 className="mb-4 flex items-center gap-2 rounded-lg bg-green-50 px-4 py-2.5 text-sm text-green-700"
               >
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
+                <CheckCircle2 className="h-4 w-4 shrink-0" />
                 <span>Thanks for joining the waitlist! We will be in touch soon.</span>
               </motion.div>
             )}
