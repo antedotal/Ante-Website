@@ -1,6 +1,6 @@
 'use client';
 
-import { ElementType, useEffect, useRef, useState, useMemo, useCallback } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap';
 import './TextType.css';
 
@@ -13,7 +13,7 @@ interface TextTypeBaseProps {
   cursorBlinkDuration?: number;
   cursorClassName?: string;
   text: string | readonly string[];
-  as?: ElementType;
+  as?: keyof JSX.IntrinsicElements;
   typingSpeed?: number;
   initialDelay?: number;
   pauseDuration?: number;
@@ -27,9 +27,7 @@ interface TextTypeBaseProps {
 }
 
 // Provides a safe prop surface that forwards standard HTML attributes without allowing external children.
-type TextTypeProps = TextTypeBaseProps & {
-  as?: ElementType;
-} & Omit<React.HTMLAttributes<HTMLElement>, 'children'>;
+type TextTypeProps = TextTypeBaseProps & Omit<React.HTMLAttributes<HTMLElement>, 'children'>;
 
 // Renders animated typing text with optional cursor, supporting simple polymorphic tags via the `as` prop.
 const TextType = ({
@@ -180,7 +178,7 @@ const TextType = ({
     hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
 
   // Ensures a valid element tag is used when a custom `as` prop is not provided.
-  const ComponentTag = (as ?? 'div') as ElementType;
+  const ComponentTag = as ?? 'div';
 
   return (
     <ComponentTag ref={containerRef} className={`text-type ${className}`} {...props}>
