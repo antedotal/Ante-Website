@@ -33,7 +33,7 @@ export function Navbar() {
             padding: "12px 24px",
             y: 0,
             boxShadow: "0 4px 24px -4px rgba(0,0,0,0.2)",
-            borderColor: "rgba(255, 255, 255, 0.1)",
+            borderColor: "rgba(255, 255, 255, 0)",
           },
           detached: {
             width: "auto",
@@ -42,7 +42,7 @@ export function Navbar() {
             padding: "10px 20px",
             y: 4,
             boxShadow: "0 8px 32px -8px rgba(0,0,0,0.3)",
-            borderColor: "rgba(255, 255, 255, 0.15)",
+            borderColor: "rgba(255, 255, 255, 0)",
           },
         }}
         transition={{
@@ -52,11 +52,12 @@ export function Navbar() {
       >
         <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
         <div className="hidden md:flex gap-6 text-sm font-medium text-white/80 ml-auto md:ml-0">
-          <a 
-            href="#how-it-works" 
+          <a
+            href="#how-it-works"
             className="hover:text-white transition-colors font-stretch-hover"
             onClick={(e) => {
               e.preventDefault();
+              // Smooth-scroll anchor with offset for the fixed navbar.
               const element = document.getElementById('how-it-works');
               if (element) {
                 const offset = 100; // Account for fixed navbar height
@@ -71,11 +72,12 @@ export function Navbar() {
           >
             How it Works
           </a>
-          <a 
-            href="#features" 
+          <a
+            href="#features"
             className="hover:text-white transition-colors font-stretch-hover"
             onClick={(e) => {
               e.preventDefault();
+              // Smooth-scroll anchor with offset for the fixed navbar.
               const element = document.getElementById('features');
               if (element) {
                 const offset = 100; // Account for fixed navbar height

@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 :root {
-  --font-roboto-flex: "Roboto Flex";
+  --font-bricolage-grotesque: "Bricolage Grotesque";
   --font-dm-sans: "DM Sans";
 }
 
@@ -10,18 +10,18 @@
 
 @theme {
   --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-young-serif);
+  --font-serif: var(--font-bricolage-grotesque);
 
-  --color-background: #002E39;
+  --color-background: #003949;
   --color-foreground: #ffffff;
 
-  --color-primary: #2953FF;
+  --color-primary: #003949;
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #f3f4f6;
   --color-secondary-foreground: #1f2937;
 
-  --color-accent: #2953FF;
+  --color-accent: #003949;
   --color-accent-foreground: #ffffff;
 }
 
@@ -45,11 +45,13 @@
   }
 
   .font-serif-custom {
-    font-family: var(--font-young-serif), serif;
+    /* Display font for headings and hero copy. */
+    font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
   }
 
   .font-sans-flex {
-    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+    /* Body font with a clean, neutral feel. */
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
   }
 
   .font-stretch-hover {
@@ -62,23 +64,26 @@
   }
 
   .font-immersive {
-    /* font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif; */
-    font-family: var(--font-young-serif), serif;
+    /* Interactive brand mark with subtle typography motion. */
+    font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
     font-optical-sizing: auto;
-    font-variation-settings: "slnt" -10, "wdth" 155, "wght" 720, "GRAD" 31, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
-    transition: font-variation-settings 0.35s ease, letter-spacing 0.35s ease, color 0.35s ease;
+    transition: letter-spacing 0.35s ease, color 0.35s ease;
   }
 
   .font-immersive:hover {
-    font-variation-settings: "slnt" -10, "wdth" 160, "wght" 820, "GRAD" 45, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
     letter-spacing: 0.02em;
   }
 
   .font-subheading {
-    font-family: var(--font-roboto-flex), var(--font-sans), system-ui, sans-serif;
+    /* Secondary headline styling for supporting copy. */
+    font-family: var(--font-dm-sans), system-ui, sans-serif;
     font-optical-sizing: auto;
-    font-variation-settings: "slnt" -10, "wdth" 155, "wght" 740, "GRAD" 31, "XOPQ" 116, "XTRA" 531, "YOPQ" 79, "YTDE" -203, "YTFI" 738, "YTLC" 514, "YTUC" 712;
     letter-spacing: -0.01em;
+  }
+
+  .cursor-surface {
+    /* Utility for cursor color swapping based on background. */
+    position: relative;
   }
 }
 
@@ -110,6 +115,56 @@ body {
 /* Smooth scrolling */
 html {
   scroll-behavior: smooth;
+}
+
+.custom-cursor {
+  /* Fixed wrapper to keep cursor elements above the UI. */
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.custom-cursor__dot,
+.custom-cursor__ring {
+  /* Base cursor geometry for dot and ring. */
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 9999px;
+  transform: translate3d(-50%, -50%, 0);
+  background-color: #ffffff;
+}
+
+.custom-cursor__dot {
+  /* Small dot for precise pointer feedback. */
+  width: 10px;
+  height: 10px;
+}
+
+.custom-cursor__ring {
+  /* Larger ring for soft trailing effect. */
+  width: 38px;
+  height: 38px;
+  background-color: transparent;
+  border: 1.5px solid #ffffff;
+  opacity: 0.5;
+}
+
+@media (pointer: coarse) {
+
+  /* Disable custom cursor on touch-first devices. */
+  .custom-cursor {
+    display: none;
+  }
+}
+
+@media (pointer: fine) {
+
+  /* Hide the native cursor when the custom cursor is active. */
+  body {
+    cursor: none;
+  }
 }
 
 @theme inline {

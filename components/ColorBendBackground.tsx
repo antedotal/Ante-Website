@@ -66,17 +66,17 @@ void main() {
 }
 `;
 
-function GradientPlane() {
+function GradientPlane({ colors }: { colors?: [string, string, string] }) {
   const meshRef = useRef<THREE.Mesh>(null);
-  
+
   const uniforms = useMemo(
     () => ({
       uTime: { value: 0 },
-      uColor1: { value: new THREE.Color("#eff6ff") }, // Light Blue 50
-      uColor2: { value: new THREE.Color("#dbeafe") }, // Light Blue 100
-      uColor3: { value: new THREE.Color("#bfdbfe") }, // Light Blue 200
+      uColor1: { value: new THREE.Color(colors?.[0] || "#eff6ff") },
+      uColor2: { value: new THREE.Color(colors?.[1] || "#dbeafe") },
+      uColor3: { value: new THREE.Color(colors?.[2] || "#bfdbfe") },
     }),
-    []
+    [colors]
   );
 
   useFrame((state) => {
@@ -97,11 +97,11 @@ function GradientPlane() {
   );
 }
 
-export default function ColorBendBackground() {
+export default function ColorBendBackground({ className, colors }: { className?: string, colors?: [string, string, string] }) {
   return (
-    <div className="fixed inset-0 -z-20 h-full w-full">
+    <div className={className || "fixed inset-0 -z-20 h-full w-full"}>
       <Canvas camera={{ position: [0, 0, 1] }}>
-        <GradientPlane />
+        <GradientPlane colors={colors} />
       </Canvas>
     </div>
   );

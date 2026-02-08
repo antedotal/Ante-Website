@@ -34,9 +34,8 @@ Key config files:
 - **Tailwind CSS v4** (`tailwindcss` and `@tailwindcss/postcss` in `devDependencies`).
 - Global stylesheet: `app/globals.css`.
 - **Fonts**:
-  - `DM_Sans` and `Young_Serif` loaded via `next/font/google` in `app/layout.tsx`.
-  - Additional `Roboto Flex` loaded via `<link>` tags in `<head>` (also in `app/layout.tsx`).
-  - Fonts are exposed as CSS variables (`--font-dm-sans`, `--font-young-serif`) and applied via classes like `font-sans`, `font-serif-custom`.
+  - `DM_Sans` and `Bricolage_Grotesque` loaded via `next/font/google` in `app/layout.tsx`.
+  - Fonts are exposed as CSS variables (`--font-dm-sans`, `--font-bricolage-grotesque`) and applied via classes like `font-sans`, `font-serif-custom`.
 
 **Global theme (from `app/layout.tsx`):**
 - `body` has a teal/blue **diagonal gradient** background:
@@ -54,6 +53,9 @@ From `package.json` `dependencies`:
   - `framer-motion`
   - `motion`
   - `gsap`
+  - `lenis` for smooth scrolling behavior
+  - GSAP ScrollTrigger is used for pinned scroll sections and sequential fades.
+  - A GSAP-driven custom cursor adapts its color based on section data attributes.
 - **3D / visual effects**:
   - `three`
   - `@react-three/fiber`
@@ -96,6 +98,18 @@ From `package.json` `dependencies`:
 High-level layout under the repo root:
 
 - `app/` – Next.js App Router entry point (layouts, pages, global styles).
+
+### Recent Changes
+
+#### 2026-02-05
+- **Beams Component Optimization**:
+  - **Fixed WebGL Error**: Removed unused `varying vec3 vPosition` from `vertexShader` in `components/ui/Beams.tsx` to fix the "Fragment shader is not compiled" error caused by mismatched varyings.
+  - **Logic Fix**: Updated `fragmentShader` to correctly utilize the `uNoiseIntensity` uniform for alpha modulation.
+  - **Performance**: Added `dpr={[1, 1.5]}` to the default `Canvas` configuration to cap pixel density on high-DPI screens, reducing GPU load.
+  - **Movement & Performance Tuning**:
+    - Lowered default `beamNumber` and `speed` to reduce visual motion and draw calls.
+    - Throttled `uTime` updates to ~30fps for lighter CPU/GPU usage.
+    - Tightened DPR cap and disabled antialiasing for improved fragment performance.
 - `components/` – Shared UI components and page sections.
 - `lib/` – Utilities (e.g., `utils.ts`).
 - `public/` – Static assets (SVGs, images).
@@ -126,12 +140,13 @@ Key responsibilities:
 - Sets `<html lang="en">` and `<body>` wrapper.
 - Loads Google fonts via `next/font/google`:
   - `DM_Sans` → `dmSans.variable`
-  - `Young_Serif` → `youngSerif.variable`
-- Adds additional `<link>` tags for `Roboto Flex` from Google Fonts.
+  - `Bricolage_Grotesque` → `bricolageGrotesque.variable`
 - Applies:
   - Global typography classes on `<body>`: `antialiased text-white font-sans`.
   - Background gradient and min-height via inline `style`.
 - Renders:
+  - `LenisProvider` to enable smooth scrolling across the site.
+  - The global `CustomCursor` for cursor color and hover feedback.
   - A fixed, full-screen noise overlay `div`.
   - A nested `<div className="relative z-10">` wrapping `{children}` to ensure content is above the noise overlay.
 
@@ -151,12 +166,12 @@ This layout is shared by **all routes** under `app/`.
     - `<Footer />`
 - Uses UI primitives:
   - `ShimmerButton` from `components/ui/shimmer-button`
-  - `AuroraText` from `components/ui/aurora-text`
+  - `MagneticButton` from `components/ui/MagneticButton`
   - `ArrowRight` icon from `lucide-react`
 - CTA section:
-  - Large heading with `AuroraText` span (“a better person?”).
-  - Supporting copy: “Join the people who actually get things done…”
-  - Primary button: “Early Access” + arrow icon.
+  - Large heading: “Ready to be a better person?”
+  - Supporting copy: “Join the people who actually get things done.”
+  - Primary button: “Join the waitlist” + arrow icon.
 
 **Where to extend the homepage:**
 - Add new sections by:
@@ -189,6 +204,7 @@ Top-level components:
 - `Hero.tsx`
 - `HowItWorks.tsx`
 - `Features.tsx`
+- `CallToAction.tsx`
 - `Footer.tsx`
 - `ColorBendBackground.tsx`
 
@@ -208,11 +224,16 @@ These are composed in `app/page.tsx`.
 - `Card.tsx` – card layout component.
 - `magic-card.tsx` – fancier card with hover/3D-like effects.
 - `border-beam.tsx` – animated border visual.
+- `Beams.tsx` – animated light beams background using deterministically seeded randoms.
 - `bento-grid.tsx` – bento-style grid layout.
 - `blur-fade.tsx` – blur/fade animation wrapper.
 - `particles.tsx` – particle effect component.
 - `globe.tsx` – 3D/visual globe (likely uses `three`, `@react-three/fiber`, `cobe`).
 - `shimmer-button.tsx` – gradient/shimmer button used in CTA.
+- `MagneticButton.tsx` – magnetic hover wrapper for CTA buttons.
+- `CustomCursor.tsx` – GSAP-driven cursor with color swapping per section.
+- `LenisProvider.tsx` – smooth scrolling provider using Lenis.
+- `icons.tsx` – inline SVG icons for buttons and footer links.
 - `aurora-text.tsx` – animated gradient/aurora text component.
 - `animated-gradient-text.tsx` – generalized gradient text animation.
 - `TextType.tsx`, `TextType.css` – typing effect text UI + its CSS.
@@ -224,10 +245,16 @@ These are composed in `app/page.tsx`.
   - For animated headers → `aurora-text`, `animated-gradient-text`, `TextType`.
   - For backgrounds → `ColorBendBackground`, `particles`, `globe`, `border-beam`.
 
+**Recent adjustments:**
+- `HowItWorks` scroll lock starts slightly earlier to account for the fixed navbar and ends exactly with the final card.
+- `Features` grid uses fixed 20vw square tiles with 27.5vw outer padding and 5vw gutters.
+- `data-scroll-fade` elements fade in/out as they enter and leave the viewport.
+
 ### 3.3 `lib/`
 
 - `lib/utils.ts` – common place for utilities, e.g., `cn` className helper or other shared logic.
   - When adding reusable **non-UI** helpers, prefer placing them here.
+- `lib/gsap.ts` – shared GSAP custom ease registration for natural motion.
 - `lib/supabase.ts` – Supabase client initialization using environment variables.
 - `lib/waitlist.ts` – Waitlist signup function with enterprise-grade security (see Section 10).
 
@@ -294,10 +321,9 @@ From `app/layout.tsx`:
 
 - Fonts:
   - `DM Sans` used for general copy and UI text.
-  - `Young Serif` used for headings / display text.
-  - `Roboto Flex` available for more expressive typography (e.g., Hero/brand copy).
+  - `Bricolage Grotesque` used for headings / display text.
 - Tailwind-style custom font utility classes:
-  - `font-serif-custom` is used in headings (e.g., on the CTA `<h2>`).
+  - `font-serif-custom` is used in headings and hero copy.
 
 **Guideline for new components:**
 - Use `font-serif-custom` for hero-like headings and brand moments.
@@ -313,7 +339,7 @@ From `app/layout.tsx`:
 
 - Imports:
   - `Hero`, `HowItWorks`, `Features`, `Navbar`, `Footer` from `components/`.
-  - `ShimmerButton`, `AuroraText` from `components/ui/`.
+  - `ShimmerButton`, `MagneticButton` from `components/ui/`.
   - `ArrowRight` icon from `lucide-react`.
 
 - Render structure:
@@ -321,10 +347,10 @@ From `app/layout.tsx`:
   2. `<Hero />`
   3. `<HowItWorks />`
   4. `<Features />`
-  5. CTA section:
-     - Big heading including `AuroraText`.
-     - Copy encouraging early access.
-     - `ShimmerButton` with “Early Access” label + `ArrowRight`.
+    5. CTA section:
+      - Big heading: “Ready to be a better person?”
+      - Copy encouraging waitlist signup.
+      - `MagneticButton` wrapping `ShimmerButton` with “Join the waitlist” + `ArrowRight`.
   6. `<Footer />`
 
 ### 6.2 Data & State
@@ -466,9 +492,8 @@ The waitlist signup function implements enterprise-grade security measures:
 #### Spam & Abuse Prevention
 9. **Email provider whitelist** – Only accepts major providers (Gmail, Outlook, iCloud, Yahoo, ProtonMail, etc.)
 10. **Disposable email blocking** – Blocks 100+ known temporary email services
-11. **Gmail normalization** – Prevents duplicate signups via Gmail dot/plus variations
-12. **Duplicate email detection** – Checks before insert for better UX
-13. **Honeypot bot detection** – Hidden field that real users won't fill out
+11. **Duplicate email detection** – Handled via database unique constraint with friendly error messaging
+12. **Honeypot bot detection** – Hidden field that real users won't fill out
 
 #### Error Handling
 14. **Consistent error messages** – Security-conscious messaging that doesn't leak system details

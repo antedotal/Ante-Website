@@ -35,7 +35,7 @@ interface StatItemProps {
   iconBg: string;
 }
 
-function StatItem({ value, label, suffix = "", prefix = "", icon: Icon, delay, iconColor, iconBg }: StatItemProps) {
+function StatItem({ value, label, suffix = "", prefix = "", delay, iconBg }: StatItemProps) {
   const count = useMotionValue(0);
   const rounded = useTransform(count, (latest) => Math.round(latest));
   const nodeRef = useRef<HTMLDivElement>(null);
@@ -63,7 +63,7 @@ function StatItem({ value, label, suffix = "", prefix = "", icon: Icon, delay, i
         delay,
       }}
     >
-      <div className="relative p-8 rounded-3xl bg-white/5 backdrop-blur-sm border border-white/10 hover:border-white/20 hover:bg-white/10 transition-all duration-300">
+      <div className="relative p-8 rounded-3xl bg-white/10 backdrop-blur-sm hover:bg-white/15 transition-all duration-300">
         {/* Icon */}
         <div className={`inline-flex items-center justify-center rounded-2xl p-3 mb-4 ${iconBg}`}>
           {/* <Icon className={`w-6 h-6 ${iconColor}`} /> */}
