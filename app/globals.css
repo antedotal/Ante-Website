@@ -27,23 +27,6 @@
 
 /* Custom Utilities */
 @layer utilities {
-  .text-gradient {
-    @apply bg-clip-text text-transparent bg-linear-to-r from-blue-600 via-purple-500 to-blue-600 bg-size-[200%_auto];
-    animation: gradient 3s linear infinite;
-  }
-
-  .btn-gradient {
-    @apply bg-linear-to-r from-blue-600 via-purple-500 to-blue-600;
-    background-size: 200% auto;
-    background-position: 0% 50%;
-    color: #ffffff;
-    animation: gradient 3s linear infinite;
-  }
-
-  .glass-panel {
-    @apply bg-white/80 backdrop-blur-xl border border-white/20;
-  }
-
   .font-serif-custom {
     /* Display font for headings and hero copy. */
     font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
@@ -52,15 +35,6 @@
   .font-sans-flex {
     /* Body font with a clean, neutral feel. */
     font-family: var(--font-dm-sans), system-ui, sans-serif;
-  }
-
-  .font-stretch-hover {
-    transition: letter-spacing 0.3s ease, font-weight 0.3s ease;
-  }
-
-  .font-stretch-hover:hover {
-    letter-spacing: 0.05em;
-    font-weight: 500;
   }
 
   .font-immersive {

@@ -2,76 +2,120 @@
 
 import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
-import { ensureGsapEase } from "@/lib/gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 import { ShimmerButton } from "@/components/ui/shimmer-button";
 import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
-// Final CTA section with magnetic button and GSAP fade-in.
+gsap.registerPlugin(ScrollTrigger);
+
+// CTA heading text — split into individual characters for staggered entrance.
+const CTA_HEADING = "Ready to be a better person?";
+
+// Final CTA section with character-split GSAP entrance and radial glow.
 export function CallToAction() {
-    const sectionRef = useRef<HTMLElement>(null);
-    const headingRef = useRef<HTMLHeadingElement>(null);
-    const copyRef = useRef<HTMLParagraphElement>(null);
-    const buttonRef = useRef<HTMLDivElement>(null);
+  const sectionRef = useRef<HTMLElement>(null);
+  const copyRef = useRef<HTMLParagraphElement>(null);
+  const buttonRef = useRef<HTMLDivElement>(null);
 
-    useLayoutEffect(() => {
-        ensureGsapEase();
+  useLayoutEffect(() => {
+    if (!sectionRef.current) return;
 
-        const context = gsap.context(() => {
-            // Sequential fade-in for CTA copy and button.
-            gsap.from([headingRef.current, copyRef.current, buttonRef.current], {
-                opacity: 0,
-                scale: 0.95,
-                filter: "blur(10px)",
-                duration: 0.9,
-                ease: "power3.out",
-                stagger: 0.16,
-                scrollTrigger: {
-                    trigger: sectionRef.current,
-                    start: "top 70%",
-                },
-            });
-        }, sectionRef);
+    ensureGsapEase();
 
-        return () => context.revert();
-    }, []);
+    const context = gsap.context(() => {
+      // Character-split staggered entrance for the heading.
+      const chars = gsap.utils.toArray<HTMLSpanElement>("[data-cta-char]");
+      gsap.from(chars, {
+        y: 60,
+        opacity: 0,
+        duration: 0.7,
+        ease: NATURAL_EASE,
+        stagger: 0.02,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 70%",
+        },
+      });
 
-    return (
-        <section
-            ref={sectionRef}
-            data-cursor-color="#ffffff"
-            className="py-16 sm:py-20 md:py-32 px-4 sm:px-6 text-center relative overflow-hidden bg-[#003949]"
-        >
-            <div className="absolute inset-0 bg-linear-to-b from-white/5 to-transparent pointer-events-none" />
-            <div className="container mx-auto max-w-3xl relative z-10">
-                <h2
-                    ref={headingRef}
-                    className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl mb-6 sm:mb-8 tracking-tight text-white font-serif-custom font-semibold"
-                >
-                    Ready to be a better person?
-                </h2>
-                <p ref={copyRef} className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12">
-                    Join the people who actually get things done.
-                </p>
-                <div ref={buttonRef} className="flex justify-center">
-                    <MagneticButton>
-                        <ShimmerButton
-                            shimmerColor="#ffffff"
-                            shimmerSize="0.08em"
-                            shimmerDuration="2.5s"
-                            background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
-                            borderRadius="9999px"
-                            className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-bold"
-                            href="/signup"
-                        >
-                            Join the waitlist
-                            <span className="ml-2 inline-flex items-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1">
-                                <ArrowRightIcon className="w-5 h-5" />
-                            </span>
-                        </ShimmerButton>
-                    </MagneticButton>
-                </div>
-            </div>
-        </section>
-    );
+      // Subtitle fades in after heading.
+      gsap.from(copyRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 0.8,
+        ease: NATURAL_EASE,
+        delay: 0.4,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 70%",
+        },
+      });
+
+      // Button fades in after subtitle.
+      gsap.from(buttonRef.current, {
+        opacity: 0,
+        y: 20,
+        duration: 0.8,
+        ease: NATURAL_EASE,
+        delay: 0.55,
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top 70%",
+        },
+      });
+    }, sectionRef);
+
+    return () => context.revert();
+  }, []);
+
+  return (
+    <section
+      ref={sectionRef}
+      data-cursor-color="#ffffff"
+      className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden"
+    >
+      {/* Radial glow background */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background: "radial-gradient(ellipse at center, rgba(0,164,198,0.06) 0%, transparent 70%)",
+        }}
+      />
+
+      <div className="container mx-auto max-w-3xl relative z-10">
+        {/* Character-split heading */}
+        <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl mb-6 sm:mb-8 tracking-tight text-white font-serif-custom font-semibold leading-tight">
+          {CTA_HEADING.split("").map((char, i) => (
+            <span key={i} data-cta-char className="inline-block">
+              {char === " " ? "\u00A0" : char}
+            </span>
+          ))}
+        </h2>
+
+        <p ref={copyRef} className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12">
+          Join the people who actually get things done.
+        </p>
+
+        <div ref={buttonRef} className="flex justify-center">
+          <MagneticButton>
+            <ShimmerButton
+              shimmerColor="#ffffff"
+              shimmerSize="0.08em"
+              shimmerDuration="2.5s"
+              background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
+              borderRadius="9999px"
+              className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-bold"
+              href="/signup"
+            >
+              Join the waitlist
+              <span className="ml-2 inline-flex items-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1">
+                <ArrowRightIcon className="w-5 h-5" />
+              </span>
+            </ShimmerButton>
+          </MagneticButton>
+        </div>
+      </div>
+    </section>
+  );
 }

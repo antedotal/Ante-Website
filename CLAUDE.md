@@ -8,13 +8,8 @@ Ante Website is the marketing/landing site for **Ante – The Social Task Manage
 
 ## Commands
 
-| Command | Purpose |
-|---------|---------|
-| `npm run dev` | Start dev server (localhost:3000) |
-| `npm run build` | Production build |
-| `npm run start` | Start production server |
-| `npm run lint` | Run ESLint |
-| `tsc --noEmit` | Type check without emitting |
+use pnpm
+
 
 ## Architecture
 

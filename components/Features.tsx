@@ -4,83 +4,68 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import { ensureGsapEase } from "@/lib/gsap";
+import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Feature grid showcasing Ante capabilities with GSAP fades.
+// Horizontal scroll feature showcase with CSS scroll-snap.
+// Section header fades in with REVEAL_Y on scroll enter; cards scroll natively.
 export function Features() {
   const sectionRef = useRef<HTMLElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
 
   const features = useMemo(
     () => [
       {
+        label: "Accountability",
         title: "Verify Friends",
-        description: "Make sure they also aren’t being lazy.",
-        image: "https://placehold.co/420x280/png?text=Verify+Friends",
+        description: "Make sure they also aren't being lazy.",
+        image: "https://placehold.co/560x420/F0F0F0/666?text=Verify+Friends",
       },
       {
+        label: "Reminders",
         title: "Set reminders",
-        description: "So you don’t forget you should be off your phone.",
-        image: "https://placehold.co/420x280/png?text=Reminders",
+        description: "So you don't forget you should be off your phone.",
+        image: "https://placehold.co/560x420/F0F0F0/666?text=Reminders",
       },
       {
+        label: "Stakes",
         title: "Set an Ante",
         description: "Pay for your laziness, literally.",
-        image: "https://placehold.co/420x280/png?text=Set+an+Ante",
+        image: "https://placehold.co/560x420/F0F0F0/666?text=Set+an+Ante",
       },
       {
+        label: "Organisation",
         title: "Set lists",
         description: "Organise everything in one clean view.",
-        image: "https://placehold.co/420x280/png?text=Lists",
+        image: "https://placehold.co/560x420/F0F0F0/666?text=Lists",
       },
       {
+        label: "Personalisation",
         title: "Add custom emojis",
         description: "Make every task unique.",
-        image: "https://placehold.co/420x280/png?text=Custom+Emojis",
+        image: "https://placehold.co/560x420/F0F0F0/666?text=Custom+Emojis",
       },
     ],
     []
   );
 
   useLayoutEffect(() => {
-    if (!sectionRef.current) {
-      return;
-    }
+    if (!sectionRef.current || !headerRef.current) return;
+
+    ensureGsapEase();
 
     const context = gsap.context(() => {
-      ensureGsapEase();
-      // Fade the grid cards in sequentially as the section scrolls into view.
-      gsap.from("[data-feature-card]", {
+      // Fade the section header in when it enters the viewport.
+      gsap.from(headerRef.current, {
         opacity: 0,
-        scale: 0.95,
-        filter: "blur(10px)",
-        duration: 0.8,
-        ease: "power3.out",
-        stagger: 0.12,
+        y: 40,
+        duration: 0.9,
+        ease: NATURAL_EASE,
         scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top 70%",
-        },
-      });
-
-      // Fade elements in/out as they enter and leave the viewport.
-      const fadeTargets = gsap.utils.toArray<HTMLElement>("[data-scroll-fade]");
-      fadeTargets.forEach((target) => {
-        gsap.set(target, { opacity: 0, scale: 0.95, filter: "blur(10px)" });
-        ScrollTrigger.create({
-          trigger: target,
+          trigger: headerRef.current,
           start: "top 80%",
-          end: "bottom 20%",
-          onEnter: () =>
-            gsap.to(target, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }),
-          onLeave: () =>
-            gsap.to(target, { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }),
-          onEnterBack: () =>
-            gsap.to(target, { opacity: 1, scale: 1, filter: "blur(0px)", duration: 0.8, ease: "power3.out" }),
-          onLeaveBack: () =>
-            gsap.to(target, { opacity: 0, scale: 0.95, filter: "blur(10px)", duration: 0.6, ease: "power3.in" }),
-        });
+        },
       });
     }, sectionRef);
 
@@ -91,47 +76,64 @@ export function Features() {
     <section
       id="features"
       ref={sectionRef}
-      data-cursor-color="#003949"
-      className="relative px-6 py-12 md:py-24 bg-white text-[#003949]"
+      data-cursor-color="#1a1a1a"
+      className="relative py-16 md:py-24 bg-[#FAFBFC] text-[#1a1a1a]"
     >
-      <div className="container mx-auto max-w-6xl relative">
-        <div className="mb-12 text-center" data-scroll-fade>
-          <h2 className="text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
-            What else can Ante do?
-          </h2>
-          <p className="text-lg md:text-xl text-[#003949]/70">
-            Everything you need to keep yourself (and your friends) honest.
-          </p>
-        </div>
+      {/* Section header */}
+      <div ref={headerRef} className="container mx-auto max-w-6xl px-6 text-center mb-12 md:mb-16">
+        <h2 className="text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
+          What else can Ante do?
+        </h2>
+        <p className="text-lg md:text-xl text-[#1a1a1a]/60">
+          Everything you need to keep yourself (and your friends) honest.
+        </p>
+      </div>
 
-        {/* Responsive grid: single column on mobile, 2-col on md+ */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10 max-w-4xl mx-auto">
+      {/* Horizontal scroll container with CSS scroll-snap */}
+      <div
+        className="overflow-x-auto pb-8 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#00A4C6]/30 hover:scrollbar-thumb-[#00A4C6]/50"
+        style={{
+          scrollSnapType: "x mandatory",
+          WebkitOverflowScrolling: "touch",
+        }}
+      >
+        <div className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
           {features.map((feature) => (
             <article
               key={feature.title}
-              data-feature-card
-              data-scroll-fade
-              className="rounded-[28px] bg-[#E0F0F3] p-5 flex flex-col justify-between min-h-[280px] sm:min-h-[300px]"
+              className="min-w-[280px] md:min-w-[420px] flex-shrink-0"
+              style={{ scrollSnapAlign: "start" }}
             >
-              <div>
-                <h3 className="text-xl sm:text-2xl md:text-3xl font-serif-custom font-semibold mb-3">
-                  {feature.title}
-                </h3>
-                <p className="text-base md:text-lg text-[#003949]/70">
-                  {feature.description}
-                </p>
-              </div>
-              <div className="mt-6 rounded-2xl overflow-hidden bg-white">
+              {/* Feature image */}
+              <div className="rounded-xl bg-[#F0F0F0] aspect-[4/3] overflow-hidden mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
-                  width={420}
-                  height={280}
+                  width={560}
+                  height={420}
                   className="w-full h-full object-cover"
                 />
               </div>
+
+              {/* Feature label */}
+              <span className="text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
+                {feature.label}
+              </span>
+
+              {/* Feature title */}
+              <h3 className="text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-2">
+                {feature.title}
+              </h3>
+
+              {/* Feature description */}
+              <p className="text-base text-[#1a1a1a]/60 mt-2">
+                {feature.description}
+              </p>
             </article>
           ))}
+
+          {/* Spacer to prevent last card from edge-clipping */}
+          <div className="min-w-[1px] flex-shrink-0" aria-hidden="true" />
         </div>
       </div>
     </section>

@@ -1,132 +1,151 @@
 "use client";
 
-import { useLayoutEffect, useRef } from "react";
+import { useLayoutEffect, useRef, useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { ArrowRightIcon } from "./ui/icons";
 import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import { ShimmerButton } from "./ui/shimmer-button";
 import Beams from "./ui/Beams";
 
-// Hero section with GSAP entrance animation and typewriter headline.
+// Words that cycle in the "Stop ___." headline.
+const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
+const LONGEST_WORD = ROTATING_WORDS.reduce((a, b) => (a.length > b.length ? a : b));
+const WORD_HOLD_DURATION = 2500; // ms each word stays visible
+
+// Hero section with staggered y-translate entrance and rotating single word.
 export function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const eyebrowRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
-  const phrases = [
-    "Always Procrastinating?",
-    "Been putting off something important?",
-    "Stuck scrolling reels?",
-  ];
+  const wordContainerRef = useRef<HTMLSpanElement>(null);
 
+  const [currentWordIndex, setCurrentWordIndex] = useState(0);
+  const [isAnimating, setIsAnimating] = useState(false);
+
+  // GSAP entrance: staggered y + opacity (eyebrow → heading → subtitle → button).
   useLayoutEffect(() => {
     ensureGsapEase();
     const context = gsap.context(() => {
-      // Sequential hero reveal for a smooth, guided entrance.
-      gsap.from([headingRef.current, subtitleRef.current, actionRef.current], {
-        opacity: 0,
-        y: 24,
-        duration: 1,
-        ease: NATURAL_EASE,
-        stagger: 0.18,
-      });
-
-      // Loop through hero phrases with a blur/scale effect.
-      const phraseEls = gsap.utils.toArray<HTMLElement>("[data-hero-phrase]");
-      
-      // Initialize state: hidden, blurred, slightly scaled down
-      gsap.set(phraseEls, { opacity: 0, scale: 0.95, filter: "blur(8px)" });
-
-      const phraseTimeline = gsap.timeline({ repeat: -1 });
-
-      phraseEls.forEach((element) => {
-        // Entrance: Fade in, focus, scale to normal
-        phraseTimeline.to(element, {
-          opacity: 1,
-          scale: 1,
-          filter: "blur(0px)",
-          duration: 0.8,
-          ease: "power3.out",
-        });
-
-        // Exit: Fade out, blur, scale up slightly
-        phraseTimeline.to(
-          element,
-          {
-            opacity: 0,
-            scale: 1.05,
-            filter: "blur(8px)",
-            duration: 0.6,
-            ease: "power3.in",
-          },
-          "+=2"
-        );
-        
-        // Reset for next loop
-        phraseTimeline.set(element, { opacity: 0, scale: 0.95, filter: "blur(8px)" });
-      });
+      gsap.from(
+        [eyebrowRef.current, headingRef.current, subtitleRef.current, actionRef.current],
+        {
+          opacity: 0,
+          y: 40,
+          duration: 0.9,
+          ease: NATURAL_EASE,
+          stagger: 0.15,
+        }
+      );
     }, sectionRef);
 
     return () => context.revert();
   }, []);
 
+  // Rotating word animation: slide up/out → slide in from below.
+  const animateWord = useCallback(() => {
+    if (!wordContainerRef.current || isAnimating) return;
+
+    setIsAnimating(true);
+    const container = wordContainerRef.current;
+
+    // Slide current word up and fade out
+    gsap.to(container, {
+      y: -30,
+      opacity: 0,
+      duration: 0.4,
+      ease: "power2.in",
+      onComplete: () => {
+        setCurrentWordIndex((prev) => (prev + 1) % ROTATING_WORDS.length);
+        // Position new word below, then animate in
+        gsap.set(container, { y: 30, opacity: 0 });
+        gsap.to(container, {
+          y: 0,
+          opacity: 1,
+          duration: 0.5,
+          ease: "power2.out",
+          onComplete: () => setIsAnimating(false),
+        });
+      },
+    });
+  }, [isAnimating]);
+
+  // Timer loop to cycle words every WORD_HOLD_DURATION.
+  useEffect(() => {
+    const interval = setInterval(animateWord, WORD_HOLD_DURATION);
+    return () => clearInterval(interval);
+  }, [animateWord]);
+
   return (
     <section
       ref={sectionRef}
       data-cursor-color="#ffffff"
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 pt-16 sm:pt-20 md:pt-24 pb-12 sm:pb-16 md:pb-20"
+      className="relative min-h-screen flex items-center justify-center overflow-hidden px-4 sm:px-6"
     >
+      {/* Reduced beams: 6 beams, speed 0.4, muted colors */}
       <Beams
         className="absolute inset-0 -z-10 h-full w-full bg-[#003949]"
-        colors={["#006480", "#008EB0", "#00A4C6", "#D4F1F9"]}
+        colors={["#004d5e", "#006880", "#007d99", "#D4F1F9"]}
         beamWidth={8}
         beamHeight={20}
-        beamNumber={12}
-        speed={0.8}
+        beamNumber={6}
+        speed={0.4}
       />
-      <div className="container mx-auto max-w-5xl relative z-10 text-center">
-        <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-[32px] sm:rounded-[40px] md:rounded-[48px] p-5 sm:p-8 md:p-12 lg:p-20 overflow-hidden shadow-2xl ring-1 ring-white/10">
-          <h1
-            ref={headingRef}
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 leading-tight text-white font-serif-custom font-semibold"
+
+      {/* Content directly on teal background — no glass panel */}
+      <div className="container mx-auto max-w-4xl relative z-10 text-center">
+        {/* Eyebrow */}
+        <p
+          ref={eyebrowRef}
+          className="uppercase tracking-[0.2em] text-white/50 text-xs sm:text-sm mb-6"
+        >
+          The Social Task Manager
+        </p>
+
+        {/* Heading with rotating word — invisible placeholder reserves width for longest word */}
+        <h1
+          ref={headingRef}
+          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 sm:mb-8 leading-[1.1] text-white font-serif-custom font-semibold"
+        >
+          Stop{" "}
+          <span
+            className="inline-block align-bottom relative"
+            style={{ clipPath: "inset(0 -200% 0 -200%)" }}
           >
-            <span className="relative inline-block w-full max-w-[22ch] min-h-[2.6em] sm:min-h-[3em] md:min-h-[3.2em] leading-[1.2] py-[0.3em] overflow-visible break-words">
-              {phrases.map((phrase) => (
-                <span
-                  key={phrase}
-                  data-hero-phrase
-                  className="absolute inset-0 flex items-center justify-center text-center opacity-0 blur-lg scale-95"
-                >
-                  {phrase}
-                </span>
-              ))}
+            {/* Invisible placeholder to prevent layout shift */}
+            <span className="invisible" aria-hidden="true">
+              {LONGEST_WORD}
             </span>
-          </h1>
-
-          <p
-            ref={subtitleRef}
-            className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12 max-w-3xl mx-auto"
-          >
-            Use social pressure and the fear of going broke to get off your a**.
-          </p>
-
-          <div ref={actionRef} className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <ShimmerButton
-              shimmerColor="#ffffff"
-              shimmerSize="0.08em"
-              shimmerDuration="2.5s"
-              background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
-              borderRadius="9999px"
-              className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold"
-              href="/signup"
-              data-cursor-hover="true"
+            {/* Actual animated word, absolutely positioned */}
+            <span
+              ref={wordContainerRef}
+              className="absolute left-0 top-0 inline-block text-[#7DD4E8] whitespace-nowrap"
             >
-              Join the waitlist
-              <span className="ml-2 inline-flex items-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1">
-                <ArrowRightIcon className="w-4 h-4" />
-              </span>
-            </ShimmerButton>
-          </div>
+              {ROTATING_WORDS[currentWordIndex]}
+            </span>
+          </span>
+          .
+        </h1>
+
+        {/* Subtitle */}
+        <p
+          ref={subtitleRef}
+          className="text-lg md:text-xl text-white/60 mb-10 md:mb-12 max-w-2xl mx-auto"
+        >
+          Use social pressure and the fear of going broke to get off your a**.
+        </p>
+
+        {/* Plain solid CTA button — no shimmer */}
+        <div ref={actionRef} className="flex justify-center">
+          <Link
+            href="/signup"
+            data-cursor-hover="true"
+            className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white text-base sm:text-lg font-semibold transition-colors duration-200"
+          >
+            Join the waitlist
+            <ArrowRightIcon className="w-4 h-4" />
+          </Link>
         </div>
       </div>
     </section>

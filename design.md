@@ -101,15 +101,22 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-10 — Professional Redesign
+- **Global**: Removed all blur+scale animations sitewide. Each section now has one unique animation.
+- **CSS Cleanup**: Removed `.glass-panel`, `.font-stretch-hover`, `.text-gradient`, `.btn-gradient` utilities.
+- **Noise overlay**: Reduced opacity from `0.18` to `0.10`.
+- **lib/gsap.ts**: Added `REVEAL_Y` and `REVEAL_STAGGER` constants for consistent scroll-triggered entrances.
+- **Deleted 12 unused UI components**: `bento-grid`, `blur-fade`, `magic-card`, `border-beam`, `aurora-text`, `animated-gradient-text`, `particles`, `globe`, `lightRays`, `ColorBends`, `TextType` (tsx + css).
+- **Navbar**: Replaced Framer Motion pill variants with CSS-only scroll transition (`bg-transparent` → `bg-[#002530]/90 backdrop-blur-md`). Full-width layout. Underline-on-hover links via CSS `::after`. Plain `Link` CTA instead of `ShimmerButton`.
+- **Hero**: Removed glass panel and full-phrase rotation. Content floats on teal background. Fixed "Stop [word]." headline with single rotating word (`procrastinating`/`scrolling`/`avoiding`) using GSAP slide animation. Reduced Beams to 6 beams, speed 0.4, muted colors. Plain solid CTA button.
+- **HowItWorks**: Borderless numbered timeline (large `01`–`05` numbers, connector lines). Removed teal `bg-[#E5F1F4]` card backgrounds and `data-scroll-fade` system. Preserved GSAP ScrollTrigger pin/scrub. Active step number transitions from 15% to 80% opacity. Section uses `bg-[#FAFBFC]`. Uses `useSyncExternalStore` for mobile detection.
+- **Features**: Complete rewrite to horizontal scroll carousel with CSS `scroll-snap`. Cards are borderless (image + text stacked). Section header fades in with `REVEAL_Y`. No GSAP on individual cards.
+- **CallToAction**: Character-split GSAP entrance (each letter staggers in from `y: 60`). Radial glow background. Kept `MagneticButton` + `ShimmerButton` combo.
+- **Footer**: Added `border-t border-white/5`, copyright line, Privacy/Terms links. Removed `backdrop-blur-xl` from social buttons.
+
 #### 2026-02-05
 - **Beams Component Optimization**:
-  - **Fixed WebGL Error**: Removed unused `varying vec3 vPosition` from `vertexShader` in `components/ui/Beams.tsx` to fix the "Fragment shader is not compiled" error caused by mismatched varyings.
-  - **Logic Fix**: Updated `fragmentShader` to correctly utilize the `uNoiseIntensity` uniform for alpha modulation.
-  - **Performance**: Added `dpr={[1, 1.5]}` to the default `Canvas` configuration to cap pixel density on high-DPI screens, reducing GPU load.
-  - **Movement & Performance Tuning**:
-    - Lowered default `beamNumber` and `speed` to reduce visual motion and draw calls.
-    - Throttled `uTime` updates to ~30fps for lighter CPU/GPU usage.
-    - Tightened DPR cap and disabled antialiasing for improved fragment performance.
+  - Fixed WebGL error, optimized performance, reduced motion.
 - `components/` – Shared UI components and page sections.
 - `lib/` – Utilities (e.g., `utils.ts`).
 - `public/` – Static assets (SVGs, images).
@@ -222,33 +229,26 @@ These are composed in `app/page.tsx`.
 
 - `Button.tsx` – shared button component.
 - `Card.tsx` – card layout component.
-- `magic-card.tsx` – fancier card with hover/3D-like effects.
-- `border-beam.tsx` – animated border visual.
-- `Beams.tsx` – animated light beams background using deterministically seeded randoms.
-- `bento-grid.tsx` – bento-style grid layout.
-- `blur-fade.tsx` – blur/fade animation wrapper.
-- `particles.tsx` – particle effect component.
-- `globe.tsx` – 3D/visual globe (likely uses `three`, `@react-three/fiber`, `cobe`).
-- `shimmer-button.tsx` – gradient/shimmer button used in CTA.
+- `Beams.tsx` – animated light beams background (Three.js + React Three Fiber).
+- `shimmer-button.tsx` – gradient/shimmer button (used in CTA only).
 - `MagneticButton.tsx` – magnetic hover wrapper for CTA buttons.
 - `CustomCursor.tsx` – GSAP-driven cursor with color swapping per section.
 - `LenisProvider.tsx` – smooth scrolling provider using Lenis.
 - `icons.tsx` – inline SVG icons for buttons and footer links.
-- `aurora-text.tsx` – animated gradient/aurora text component.
-- `animated-gradient-text.tsx` – generalized gradient text animation.
 
 **Usage conventions:**
-- Prefer these primitives when building new sections:
-  - For CTAs → `Button` / `shimmer-button`.
-  - For highlighted content blocks → `Card`, `magic-card`, `bento-grid`.
-  - For animated headers → `aurora-text`, `animated-gradient-text`.
-  - For backgrounds → `ColorBendBackground`, `particles`, `globe`, `border-beam`.
+- For CTAs → `Button` / `shimmer-button` (shimmer reserved for final CTA only).
+- For backgrounds → `Beams` (hero only).
+- For interactive buttons → `MagneticButton` wrapping `ShimmerButton`.
 
-**Recent adjustments:**
-- `HowItWorks` scroll lock starts slightly earlier to account for the fixed navbar and ends exactly with the final card.
-- `Features` grid uses fixed 20vw square tiles with 27.5vw outer padding and 5vw gutters.
-- `data-scroll-fade` elements fade in/out as they enter and leave the viewport.
-- `TextType` typing effect was removed in favor of static headline copy.
+**Animation architecture (2026-02-10 redesign):**
+- **0 animations use blur. 0 animations use scale. 8 unique animation types.**
+- Navbar: CSS-only `transition-all duration-300` on scroll.
+- Hero: GSAP staggered `y + opacity` entrance; GSAP rotating word slide.
+- HowItWorks: GSAP ScrollTrigger pin/scrub with opacity transitions.
+- Features: GSAP `REVEAL_Y` on header; CSS `scroll-snap` horizontal scroll.
+- CTA: GSAP character-split stagger (`y: 60`, `stagger: 0.02`).
+- Footer: No animation.
 
 ### 3.3 `lib/`
 
@@ -314,7 +314,7 @@ From `app/layout.tsx`:
 - Noise overlay:
   - `fixed inset-0 pointer-events-none`
   - Inline SVG noise pattern via `backgroundImage`.
-  - `opacity: 0.18`
+  - `opacity: 0.10`
   - `mixBlendMode: 'overlay'`
 
 ### 5.2 Typography & Branding
@@ -460,11 +460,10 @@ From `app/layout.tsx`:
 
 - **Key UI primitives**:
   - `components/ui/shimmer-button.tsx`
-  - `components/ui/aurora-text.tsx`
+  - `components/ui/MagneticButton.tsx`
   - `components/ui/Button.tsx`
   - `components/ui/Card.tsx`
-  - `components/ui/magic-card.tsx`
-  - `components/ui/bento-grid.tsx`
+  - `components/ui/Beams.tsx`
 
 ---
 

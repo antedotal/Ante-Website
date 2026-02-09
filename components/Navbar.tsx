@@ -1,7 +1,7 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { ShimmerButton } from "./ui/shimmer-button";
+import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
 // Smooth-scroll to an anchor with fixed-navbar offset.
@@ -15,13 +15,14 @@ function scrollToSection(id: string) {
   }
 }
 
+// Navbar that starts as a full-width bar and morphs into a floating pill on scroll.
 export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
-      const scrolled = window.scrollY > 100;
+      const scrolled = window.scrollY > 50;
       if (scrolled !== isScrolled) {
         setIsScrolled(scrolled);
       }
@@ -34,7 +35,9 @@ export function Navbar() {
   // Close mobile menu on resize to desktop.
   useEffect(() => {
     const mql = window.matchMedia("(min-width: 768px)");
-    const handler = () => { if (mql.matches) setIsMobileMenuOpen(false); };
+    const handler = () => {
+      if (mql.matches) setIsMobileMenuOpen(false);
+    };
     mql.addEventListener("change", handler);
     return () => mql.removeEventListener("change", handler);
   }, []);
@@ -50,66 +53,72 @@ export function Navbar() {
   );
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex flex-col items-center pt-4 px-4 md:px-0">
+    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4">
+      {/* Container that morphs from full-width bar to floating pill */}
       <motion.div
-        className="flex items-center gap-4 md:gap-8 backdrop-blur-xl border border-transparent w-full md:w-auto"
-        animate={isScrolled ? "detached" : "attached"}
-        initial="attached"
+        className="flex items-center justify-between w-full backdrop-blur-md"
+        initial={false}
+        animate={isScrolled ? "pill" : "bar"}
         variants={{
-          attached: {
-            borderRadius: 9999,
-            backgroundColor: "rgba(0, 46, 57, 0.8)",
-            padding: "12px 24px",
-            y: 0,
-            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.2)",
-            borderColor: "rgba(255, 255, 255, 0)",
+          bar: {
+            maxWidth: 1152, // 72rem = max-w-6xl
+            borderRadius: 0,
+            backgroundColor: "rgba(0, 37, 48, 0)",
+            paddingTop: 16,
+            paddingBottom: 16,
+            paddingLeft: 24,
+            paddingRight: 24,
+            marginTop: 0,
+            boxShadow: "0 0 0 0 rgba(0,0,0,0)",
+            borderColor: "rgba(255,255,255,0)",
           },
-          detached: {
+          pill: {
+            maxWidth: 580,
             borderRadius: 9999,
-            backgroundColor: "rgba(0, 46, 57, 0.95)",
-            padding: "10px 20px",
-            y: 4,
-            boxShadow: "0 8px 32px -8px rgba(0,0,0,0.3)",
-            borderColor: "rgba(255, 255, 255, 0)",
+            backgroundColor: "rgba(0, 37, 48, 0.92)",
+            paddingTop: 10,
+            paddingBottom: 10,
+            paddingLeft: 24,
+            paddingRight: 24,
+            marginTop: 12,
+            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.25)",
+            borderColor: "rgba(255,255,255,0.05)",
           },
         }}
-        transition={{
-          duration: 0.25,
-          ease: [0.25, 0.1, 0.25, 1],
-        }}
+        transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+        style={{ borderWidth: 1, borderStyle: "solid" }}
       >
-        <div className="text-xl tracking-tighter text-white font-immersive">Ante</div>
+        {/* Brand */}
+        <div className="text-xl tracking-tighter text-white font-immersive">
+          Ante
+        </div>
 
-        {/* Desktop nav links */}
-        <div className="hidden md:flex gap-6 text-sm font-medium text-white/80">
+        {/* Desktop nav links with underline-on-hover */}
+        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
           <a
             href="#how-it-works"
-            className="hover:text-white transition-colors font-stretch-hover"
+            className="relative py-1 hover:text-white transition-colors after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-white/60 after:transition-all after:duration-300 hover:after:w-full"
             onClick={(e) => handleNavClick(e, "how-it-works")}
           >
             How it Works
           </a>
           <a
             href="#features"
-            className="hover:text-white transition-colors font-stretch-hover"
+            className="relative py-1 hover:text-white transition-colors after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-white/60 after:transition-all after:duration-300 hover:after:w-full"
             onClick={(e) => handleNavClick(e, "features")}
           >
             Features
           </a>
         </div>
 
-        <div className="ml-auto md:ml-0 flex items-center gap-3">
-          <ShimmerButton
-            shimmerColor="#ffffff"
-            shimmerSize="0.05em"
-            shimmerDuration="2s"
-            background="linear-gradient(135deg, #005B70 0%, #004C5E 100%)"
-            borderRadius="9999px"
-            className="text-xs px-4 py-2"
+        <div className="flex items-center gap-3">
+          {/* CTA button */}
+          <Link
             href="/signup"
+            className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200"
           >
             Early Access
-          </ShimmerButton>
+          </Link>
 
           {/* Mobile hamburger button */}
           <button
@@ -118,12 +127,16 @@ export function Navbar() {
             aria-label={isMobileMenuOpen ? "Close menu" : "Open menu"}
             aria-expanded={isMobileMenuOpen}
           >
-            <span className="sr-only">{isMobileMenuOpen ? "Close" : "Menu"}</span>
+            <span className="sr-only">
+              {isMobileMenuOpen ? "Close" : "Menu"}
+            </span>
             {/* Animated hamburger lines */}
             <span
               className="absolute block h-[2px] w-5 bg-white transition-all duration-300"
               style={{
-                transform: isMobileMenuOpen ? "rotate(45deg)" : "translateY(-5px)",
+                transform: isMobileMenuOpen
+                  ? "rotate(45deg)"
+                  : "translateY(-5px)",
               }}
             />
             <span
@@ -135,14 +148,16 @@ export function Navbar() {
             <span
               className="absolute block h-[2px] w-5 bg-white transition-all duration-300"
               style={{
-                transform: isMobileMenuOpen ? "rotate(-45deg)" : "translateY(5px)",
+                transform: isMobileMenuOpen
+                  ? "rotate(-45deg)"
+                  : "translateY(5px)",
               }}
             />
           </button>
         </div>
       </motion.div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown menu — AnimatePresence for open/close */}
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
@@ -150,19 +165,19 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className="md:hidden mt-2 w-full rounded-2xl bg-[#002E39]/95 backdrop-blur-xl border border-white/10 shadow-lg overflow-hidden"
+            className="md:hidden absolute top-full left-4 right-4 mt-2 rounded-2xl bg-[#002530]/95 backdrop-blur-md border border-white/5 overflow-hidden"
           >
-            <div className="flex flex-col py-3">
+            <div className="flex flex-col py-3 px-6">
               <a
                 href="#how-it-works"
-                className="px-6 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                className="py-3 text-sm font-medium text-white/80 hover:text-white transition-colors"
                 onClick={(e) => handleNavClick(e, "how-it-works")}
               >
                 How it Works
               </a>
               <a
                 href="#features"
-                className="px-6 py-3 text-sm font-medium text-white/80 hover:text-white hover:bg-white/5 transition-colors"
+                className="py-3 text-sm font-medium text-white/80 hover:text-white transition-colors"
                 onClick={(e) => handleNavClick(e, "features")}
               >
                 Features

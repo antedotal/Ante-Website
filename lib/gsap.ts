@@ -6,6 +6,10 @@ let hasRegistered = false;
 
 export const NATURAL_EASE = "natural-ease";
 
+// Shared reveal animation defaults for scroll-triggered entrances.
+export const REVEAL_Y = { opacity: 0, y: 40, duration: 0.9, ease: NATURAL_EASE };
+export const REVEAL_STAGGER = 0.12;
+
 // Ensure the shared bezier ease is registered before animations run.
 export const ensureGsapEase = () => {
     if (hasRegistered) {
