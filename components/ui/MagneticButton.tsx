@@ -22,6 +22,11 @@ export function MagneticButton({ children, className, strength = 16 }: MagneticB
             return;
         }
 
+        // Skip magnetic effect on touch devices (no fine pointer).
+        if (!window.matchMedia("(pointer: fine)").matches) {
+            return;
+        }
+
         ensureGsapEase();
 
         // GSAP quick setters for the magnetic motion toward the pointer.

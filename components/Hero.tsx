@@ -74,7 +74,7 @@ export function Hero() {
     <section
       ref={sectionRef}
       data-cursor-color="#ffffff"
-      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-6 pt-24 pb-20"
+      className="relative min-h-screen flex flex-col items-center justify-center overflow-hidden px-4 sm:px-6 pt-16 sm:pt-20 md:pt-24 pb-12 sm:pb-16 md:pb-20"
     >
       <Beams
         className="absolute inset-0 -z-10 h-full w-full bg-[#003949]"
@@ -85,12 +85,12 @@ export function Hero() {
         speed={0.8}
       />
       <div className="container mx-auto max-w-5xl relative z-10 text-center">
-        <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-[48px] p-8 md:p-20 overflow-hidden shadow-2xl ring-1 ring-white/10">
+        <div className="relative bg-white/10 backdrop-blur-md border border-white/20 rounded-[32px] sm:rounded-[40px] md:rounded-[48px] p-5 sm:p-8 md:p-12 lg:p-20 overflow-hidden shadow-2xl ring-1 ring-white/10">
           <h1
             ref={headingRef}
-            className="text-5xl md:text-7xl lg:text-8xl tracking-tight mb-8 leading-tight text-white font-serif-custom font-semibold"
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl xl:text-8xl tracking-tight mb-6 sm:mb-8 leading-tight text-white font-serif-custom font-semibold"
           >
-            <span className="relative inline-block w-full max-w-[22ch] min-h-[3.2em] leading-[1.2] py-[0.3em] overflow-visible break-words">
+            <span className="relative inline-block w-full max-w-[22ch] min-h-[2.6em] sm:min-h-[3em] md:min-h-[3.2em] leading-[1.2] py-[0.3em] overflow-visible break-words">
               {phrases.map((phrase) => (
                 <span
                   key={phrase}
@@ -105,7 +105,7 @@ export function Hero() {
 
           <p
             ref={subtitleRef}
-            className="text-xl md:text-2xl text-white/80 mb-12 max-w-3xl mx-auto"
+            className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12 max-w-3xl mx-auto"
           >
             Use social pressure and the fear of going broke to get off your a**.
           </p>
@@ -117,7 +117,7 @@ export function Hero() {
               shimmerDuration="2.5s"
               background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
               borderRadius="9999px"
-              className="w-full sm:w-auto px-10 py-5 text-lg font-semibold"
+              className="w-full sm:w-auto px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-semibold"
               href="/signup"
               data-cursor-hover="true"
             >

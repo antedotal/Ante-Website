@@ -112,9 +112,9 @@ body {
   letter-spacing: 0.01em;
 }
 
-/* Smooth scrolling */
+/* Prevent horizontal overflow on mobile (iOS rubber-banding). Lenis handles smooth scroll. */
 html {
-  scroll-behavior: smooth;
+  overflow-x: hidden;
 }
 
 .custom-cursor {

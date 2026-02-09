@@ -13,11 +13,12 @@ export function Footer() {
         </div>
         <div className="flex-1">Made in Sydney</div>
 
-        <div className="flex items-center gap-4">
+        {/* Social links with 44px+ touch targets on mobile */}
+        <div className="flex items-center gap-3 sm:gap-4">
           <a
             href="https://www.instagram.com/antedotal/"
             aria-label="Follow Ante on Instagram"
-            className="group inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur-xl hover:bg-white/25 transition-all"
+            className="group inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-3 sm:py-2 text-sm font-medium backdrop-blur-xl hover:bg-white/25 transition-all"
           >
             <InstagramIcon className="w-4 h-4 transition-transform duration-300 group-hover:rotate-6" />
             Instagram
@@ -25,7 +26,7 @@ export function Footer() {
           <a
             href="mailto:hello@antedotal.com"
             aria-label="Email Ante"
-            className="group inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-2 text-sm font-medium backdrop-blur-xl hover:bg-white/25 transition-all"
+            className="group inline-flex items-center gap-2 rounded-full bg-white/15 px-4 py-3 sm:py-2 text-sm font-medium backdrop-blur-xl hover:bg-white/25 transition-all"
           >
             <MailIcon className="w-4 h-4 transition-transform duration-300 group-hover:-rotate-6" />
             Email

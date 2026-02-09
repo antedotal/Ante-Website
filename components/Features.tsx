@@ -104,25 +104,17 @@ export function Features() {
           </p>
         </div>
 
-        <div
-          className="grid justify-center"
-          style={{
-            gridTemplateColumns: "repeat(2, 30vw)",
-            columnGap: "5vw",
-            rowGap: "5vw",
-            paddingLeft: "17.5vw",
-            paddingRight: "17.5vw",
-          }}
-        >
+        {/* Responsive grid: single column on mobile, 2-col on md+ */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-8 lg:gap-10 max-w-4xl mx-auto">
           {features.map((feature) => (
             <article
               key={feature.title}
               data-feature-card
               data-scroll-fade
-              className="rounded-[28px] bg-[#E0F0F3] p-5 flex flex-col justify-between w-[30vw] h-[30vw]"
+              className="rounded-[28px] bg-[#E0F0F3] p-5 flex flex-col justify-between min-h-[280px] sm:min-h-[300px]"
             >
               <div>
-                <h3 className="text-2xl md:text-3xl font-serif-custom font-semibold mb-3">
+                <h3 className="text-xl sm:text-2xl md:text-3xl font-serif-custom font-semibold mb-3">
                   {feature.title}
                 </h3>
                 <p className="text-base md:text-lg text-[#003949]/70">

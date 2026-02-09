@@ -40,17 +40,17 @@ export function CallToAction() {
         <section
             ref={sectionRef}
             data-cursor-color="#ffffff"
-            className="py-32 px-6 text-center relative overflow-hidden bg-[#003949]"
+            className="py-16 sm:py-20 md:py-32 px-4 sm:px-6 text-center relative overflow-hidden bg-[#003949]"
         >
             <div className="absolute inset-0 bg-linear-to-b from-white/5 to-transparent pointer-events-none" />
             <div className="container mx-auto max-w-3xl relative z-10">
                 <h2
                     ref={headingRef}
-                    className="text-5xl md:text-7xl mb-8 tracking-tight text-white font-serif-custom font-semibold"
+                    className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl mb-6 sm:mb-8 tracking-tight text-white font-serif-custom font-semibold"
                 >
                     Ready to be a better person?
                 </h2>
-                <p ref={copyRef} className="text-xl md:text-2xl text-white/80 mb-12">
+                <p ref={copyRef} className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12">
                     Join the people who actually get things done.
                 </p>
                 <div ref={buttonRef} className="flex justify-center">
@@ -61,7 +61,7 @@ export function CallToAction() {
                             shimmerDuration="2.5s"
                             background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
                             borderRadius="9999px"
-                            className="px-10 py-5 text-lg font-bold"
+                            className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-bold"
                             href="/signup"
                         >
                             Join the waitlist

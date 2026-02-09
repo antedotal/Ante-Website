@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/ui/CustomCursor";
@@ -15,6 +15,13 @@ const dmSans = DM_Sans({
   subsets: ["latin"],
   display: "swap",
 });
+
+// Ensure mobile browsers render at device width instead of 980px desktop fallback.
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+};
 
 export const metadata: Metadata = {
   title: "Ante",
