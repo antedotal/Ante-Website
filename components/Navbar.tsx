@@ -1,7 +1,6 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
 // Smooth-scroll to an anchor with fixed-navbar offset.
@@ -120,13 +119,14 @@ export function Navbar() {
         </motion.div>
 
         <div className="flex items-center gap-3">
-          {/* CTA button */}
-          <Link
-            href="/signup"
+          {/* Download CTA — scrolls to hero download buttons */}
+          <a
+            href="#download"
+            onClick={(e) => handleNavClick(e, "download")}
             className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200"
           >
-            Early Access
-          </Link>
+            Download
+          </a>
 
           {/* Mobile hamburger button */}
           <button

@@ -4,8 +4,6 @@ import { useLayoutEffect, useRef } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import { ShimmerButton } from "@/components/ui/shimmer-button";
-import { MagneticButton } from "@/components/ui/MagneticButton";
 import { ArrowRightIcon } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -102,22 +100,22 @@ export function CallToAction() {
         </p>
 
         <div ref={buttonRef} className="flex justify-center">
-          <MagneticButton>
-            <ShimmerButton
-              shimmerColor="#ffffff"
-              shimmerSize="0.08em"
-              shimmerDuration="2.5s"
-              background="linear-gradient(135deg, #00A4C6 0%, #007893 100%)"
-              borderRadius="9999px"
-              className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 md:py-5 text-base sm:text-lg font-bold"
-              href="/signup"
-            >
-              Join the waitlist
-              <span className="ml-2 inline-flex items-center transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] group-hover:translate-x-1">
-                <ArrowRightIcon className="w-5 h-5" />
-              </span>
-            </ShimmerButton>
-          </MagneticButton>
+          <a
+            href="#download"
+            onClick={(e) => {
+              e.preventDefault();
+              const el = document.getElementById("download");
+              if (el) {
+                const offset = 100;
+                const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
+                window.scrollTo({ top: pos, behavior: "smooth" });
+              }
+            }}
+            className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
+          >
+            Download the app
+            <ArrowRightIcon className="w-5 h-5" />
+          </a>
         </div>
       </div>
     </section>

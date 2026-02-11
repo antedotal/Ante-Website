@@ -35,6 +35,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        {/* Material Symbols Rounded — used for the Android download icon */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=android"
+        />
+      </head>
       <body
         className={`${dmSans.variable} ${bricolageGrotesque.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
         style={{

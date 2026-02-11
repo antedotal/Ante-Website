@@ -582,3 +582,21 @@ When extending the codebase:
   - Added `<Grainient>` as an `absolute inset-0 z-0` background layer with teal palette: `color1="#236597"`, `color2="#003949"`, `color3="#00b0df"`.
   - Re-layered Beams component at `z-1` (was `-z-10`) so it renders on top of the Grainient but below content (`z-10`).
 - **Dependency**: `ogl` (already installed) — lightweight WebGL2 library used for the shader renderer.
+
+### 11.2 Download Buttons — Replace Waitlist/Early Access
+
+Replaced all waitlist/early access CTAs with platform-aware download buttons.
+
+- **Added** `lib/useDeviceType.ts` — Client-side hook detecting Android, iOS, or desktop via `navigator.userAgent`. Returns `{ isAndroid, isIOS, isMobile }` (all false during SSR).
+- **Added** `AppleIcon` and `AndroidIcon` SVG components to `components/ui/icons.tsx`.
+- **Modified** `components/Hero.tsx`:
+  - Added `id="download"` to the `<section>` for scroll targeting from Navbar/CTA.
+  - Replaced single "Join the waitlist" `<Link>` with two download buttons (iOS + Android).
+  - On mobile: only the device-appropriate button renders. On desktop: both shown.
+  - Placeholder store URLs (`#`) — replace with real App Store / Google Play links when published.
+- **Modified** `components/Navbar.tsx`:
+  - Replaced "Early Access" `<Link href="/signup">` with "Download" `<a>` that smooth-scrolls to `#download` hero section.
+  - Removed unused `next/link` import.
+- **Modified** `components/CallToAction.tsx`:
+  - Replaced `ShimmerButton` + `MagneticButton` "Join the waitlist" with a plain "Download the app" button that scrolls to `#download`.
+  - Removed `ShimmerButton` and `MagneticButton` imports (no longer used here).

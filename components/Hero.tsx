@@ -1,11 +1,15 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import { ArrowRightIcon } from "./ui/icons";
+import { AppleIcon } from "./ui/icons";
 import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
+import { useDeviceType } from "@/lib/useDeviceType";
 import Grainient from "./ui/Grainient";
+
+// Placeholder store URLs — replace with real links once published.
+const ANDROID_URL = "#";
+const IOS_URL = "#";
 
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
@@ -23,6 +27,9 @@ export function Hero() {
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+
+  // Detect client platform for conditional download button rendering.
+  const { isAndroid, isIOS, isMobile } = useDeviceType();
 
   // GSAP entrance: staggered y + opacity for text, separate entrance for mockup.
   useLayoutEffect(() => {
@@ -91,6 +98,7 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
+      id="download"
       data-cursor-color="#ffffff"
       className="relative min-h-screen flex items-center overflow-hidden px-4 sm:px-6"
     >
@@ -162,16 +170,30 @@ export function Hero() {
             Use social pressure and the fear of going broke to get off your a**.
           </p>
 
-          {/* Plain solid CTA button — no shimmer */}
-          <div ref={actionRef} className="flex justify-start">
-            <Link
-              href="/signup"
-              data-cursor-hover="true"
-              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
-            >
-              Join the waitlist
-              <ArrowRightIcon className="w-4 h-4" />
-            </Link>
+          {/* Download buttons — show platform-specific on mobile, both on desktop */}
+          <div ref={actionRef} className="flex flex-wrap justify-start gap-3">
+            {/* iOS button — shown on iOS mobile or on desktop */}
+            {(!isMobile || isIOS) && (
+              <a
+                href={IOS_URL}
+                data-cursor-hover="true"
+                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white hover:bg-white/90 text-[#003949] text-sm sm:text-base font-semibold transition-colors duration-200"
+              >
+                <AppleIcon className="w-5 h-5" />
+                Download for iOS
+              </a>
+            )}
+            {/* Android button — shown on Android mobile or on desktop */}
+            {(!isMobile || isAndroid) && (
+              <a
+                href={ANDROID_URL}
+                data-cursor-hover="true"
+                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white hover:bg-white/90 text-[#003949] text-sm sm:text-base font-semibold transition-colors duration-200"
+              >
+                <span className="material-symbols-rounded text-[20px] leading-none">android</span>
+                Download for Android
+              </a>
+            )}
           </div>
         </div>
 
