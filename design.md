@@ -101,10 +101,32 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-11 — Remove Hero Transition & Footer Spacing
+- **Hero-to-content transition**: Removed entirely (gradient div deleted from `app/page.tsx`). Hero now flows directly into `HowItWorks`.
+- **Footer**: Increased vertical gap between content and curved marquee (`mt-6` → `mt-20 md:mt-28`). Reduced marquee speed from 1.5 to 0.7.
+
+#### 2026-02-11 — Footer Layout & Hero Transition Gradient
+- **Footer**: Privacy/Terms links moved directly under the Instagram/Email buttons (right-aligned column). Removed the separate bordered section that previously held them.
+- **Hero-to-content transition**: Replaced 3-stop Tailwind gradient with a 7-stop inline `linear-gradient` for a much more gradual teal→white shift. Increased transition div height to `h-48 sm:h-60 md:h-72`. Reduced backdrop blur from `3xl` to `2xl`.
+
+#### 2026-02-11 — Footer Curved Marquee Polish
+- **Footer**: Curve now arches upward (`curveAmount={-200}`). Privacy/Terms links moved above the curve. Removed copyright line and "by Antedotal" branding.
+- **CurvedLoop**: Added SVG `linearGradient` + `<mask>` for edge fade. Text fades in from 0→100% opacity at 0–15% of width, and back out at 85–100%. Mask uses a unique ID per instance.
+
+#### 2026-02-11 — Media Fade-in, Features Auto-scroll & Footer Curved Marquee
+- **HowItWorks**: Right-side media now transitions with a `y: 20 → 0` + `scale: 0.97 → 1` fade-in (via `gsap.fromTo`) for a more obvious step change. Exiting media slides down + scales out.
+- **Features**: Increased auto-scroll speed from 0.35 to 0.6 px/frame. Removed CSS `scroll-snap` (conflicted with programmatic scrolling). Carousel now loops back to start when reaching end. Pauses on pointer enter / touch to allow manual browsing.
+- **Footer**: Replaced plain "Made in Sydney" text with a `CurvedLoop` SVG marquee component (`components/ui/CurvedLoop.tsx`). Adapted from react-bits; uses SVG `<textPath>` on a quadratic bezier. Renders "Made in Sydney ✦" looping at 20% opacity. Non-interactive in footer context.
+- **New component**: `components/ui/CurvedLoop.tsx` — reusable animated curved-path marquee. Props: `marqueeText`, `speed`, `curveAmount`, `direction`, `interactive`, `fontSize`, `fill`.
+
+#### 2026-02-11 — Easing Unification & HowItWorks Scroll Re-architecture
+- **Global easing**: All GSAP animations now use `NATURAL_EASE` (`"0.22, 1, 0.36, 1"` — ease-out-quint). Removed all `power2.out`, `power3.out` overrides. CSS transitions updated to `cubic-bezier(0.22, 1, 0.36, 1)` everywhere (nav links, shimmer button, `.font-immersive`). A `CSS_EASE_OUT_QUINT` constant exported from `lib/gsap.ts` for reference.
+- **HowItWorks**: Left column no longer scrolls/translates. All five steps are visible and stationary; only the active step highlights (opacity + number colour) as the user scrolls. Right media viewport crossfades in sync. Removed `cardsTrackRef` and `y: -scrollDistance` timeline tween. Added `data-how-desc` attribute to description `<p>` elements so they can be individually dimmed/highlighted by GSAP. First step is highlighted by default on enter.
+
 #### 2026-02-11 — Layout & Polish Pass
 - **Hero**: Converted from centred single-column to Jomo-style split layout (text left, app mockup right). Left column: eyebrow, rotating-word heading, subtitle, CTA. Right column: CSS phone mockup with fake task cards. Mockup slides in from right via GSAP. Heading split onto two lines: "Stop" on line 1, rotating word on line 2.
-- **Navbar**: Removed underline-on-hover CSS `::after` effect; replaced with `hover:font-semibold` font-weight change. Morph transition easing set to quint ease-out `[0.23, 1, 0.32, 1]`.
-- **Global easing**: `NATURAL_EASE` custom bezier set to quint ease-out `"0.23, 1, 0.32, 1"` in `lib/gsap.ts`. All GSAP animations and navbar morph use this curve.
+- **Navbar**: Removed underline-on-hover CSS `::after` effect; replaced with `hover:font-semibold` font-weight change. Morph transition easing set to quint ease-out `[0.22, 1, 0.36, 1]`.
+- **Global easing**: `NATURAL_EASE` custom bezier set to ease-out-quint `"0.22, 1, 0.36, 1"` in `lib/gsap.ts`. All GSAP animations and navbar morph use this curve.
 - **Hero-to-content transition**: Replaced CSS `filter: blur()` hack with layered approach: a `bg-gradient-to-b` from teal to light + a `backdrop-blur-3xl` overlay for a smooth soft edge.
 - **HowItWorks**: Tightened vertical spacing between step title and description (`mb-2` → `mb-0.5`, added `leading-snug`). Blue colour was already consistent (#00A4C6).
 - **Scrollbars**: Added global CSS to hide all scrollbars (`scrollbar-width: none`, `::-webkit-scrollbar { display: none }`) while preserving scroll functionality.

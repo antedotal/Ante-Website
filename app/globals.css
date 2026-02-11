@@ -52,7 +52,7 @@
     /* Interactive brand mark with subtle typography motion. */
     font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
     font-optical-sizing: auto;
-    transition: letter-spacing 0.35s ease, color 0.35s ease;
+    transition: letter-spacing 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
   .font-immersive:hover {

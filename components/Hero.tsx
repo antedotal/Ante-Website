@@ -66,7 +66,7 @@ export function Hero() {
       y: -30,
       opacity: 0,
       duration: 0.4,
-      ease: "power2.out",
+      ease: NATURAL_EASE,
       onComplete: () => {
         setCurrentWordIndex((prev) => (prev + 1) % ROTATING_WORDS.length);
         // Position new word below, then animate in

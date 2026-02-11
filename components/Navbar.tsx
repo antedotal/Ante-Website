@@ -97,14 +97,14 @@ export function Navbar() {
         <div className="hidden md:flex items-center gap-6 text-sm font-normal text-white/80">
           <a
             href="#how-it-works"
-            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-out"
+            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
             onClick={(e) => handleNavClick(e, "how-it-works")}
           >
             How it Works
           </a>
           <a
             href="#features"
-            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-out"
+            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
             onClick={(e) => handleNavClick(e, "features")}
           >
             Features
@@ -132,7 +132,7 @@ export function Navbar() {
             </span>
             {/* Animated hamburger lines */}
             <span
-              className="absolute block h-[2px] w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
               style={{
                 transform: isMobileMenuOpen
                   ? "rotate(45deg)"
@@ -140,13 +140,13 @@ export function Navbar() {
               }}
             />
             <span
-              className="absolute block h-[2px] w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
               style={{
                 opacity: isMobileMenuOpen ? 0 : 1,
               }}
             />
             <span
-              className="absolute block h-[2px] w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
               style={{
                 transform: isMobileMenuOpen
                   ? "rotate(-45deg)"
@@ -164,7 +164,7 @@ export function Navbar() {
             initial={{ opacity: 0, y: -8 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
             className="md:hidden absolute top-full left-4 right-4 mt-2 rounded-2xl bg-[#002530]/95 backdrop-blur-md border border-white/5 overflow-hidden"
           >
             <div className="flex flex-col py-3 px-6">

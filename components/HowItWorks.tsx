@@ -9,11 +9,11 @@ import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 gsap.registerPlugin(ScrollTrigger);
 
 // Scroll-pinned How It Works section with borderless numbered timeline.
-// On mobile (<lg), disables pin/scrub and uses simple fade-in with inline images.
+// Desktop: left column stays static, active step highlights on scroll. Right media crossfades in sync.
+// Mobile (<lg): disables pin/scrub and uses simple fade-in with inline images.
 export function HowItWorks() {
   const sectionRef = useRef<HTMLElement>(null);
   const pinRef = useRef<HTMLDivElement>(null);
-  const cardsTrackRef = useRef<HTMLDivElement>(null);
   const mediaTrackRef = useRef<HTMLDivElement>(null);
   const steps = useMemo(
     () => [
@@ -59,11 +59,10 @@ export function HowItWorks() {
 
   useLayoutEffect(() => {
     ensureGsapEase();
-    const cardsTrack = cardsTrackRef.current;
     const mediaTrack = mediaTrackRef.current;
     const pinSection = pinRef.current;
 
-    if (!sectionRef.current || !cardsTrack || !pinSection) {
+    if (!sectionRef.current || !pinSection) {
       return;
     }
 
@@ -76,7 +75,7 @@ export function HowItWorks() {
             opacity: 0,
             y: 24,
             duration: 0.8,
-            ease: "power3.out",
+            ease: NATURAL_EASE,
             scrollTrigger: {
               trigger: card,
               start: "top 85%",
@@ -84,24 +83,34 @@ export function HowItWorks() {
           });
         });
       } else {
-        // Desktop: pinned scroll with synced steps and media.
+        // Desktop: pinned scroll — left column stays fixed in place,
+        // only the active step highlights as the user scrolls.
+        // Right media viewport crossfades in sync.
         if (!mediaTrack) return;
 
         const cards = gsap.utils.toArray<HTMLDivElement>("[data-how-card]");
         const media = gsap.utils.toArray<HTMLDivElement>("[data-how-media]");
         const numbers = gsap.utils.toArray<HTMLSpanElement>("[data-how-number]");
-        const cardHeight = cards[0]?.offsetHeight || 0;
-        const cardGap = 24;
+        const descriptions = gsap.utils.toArray<HTMLParagraphElement>("[data-how-desc]");
         let activeIndex = -1;
 
-        // Initialize: all steps dimmed, numbers muted.
-        gsap.set(cards, { opacity: 0.35 });
+        // Enough scroll distance to move through all steps comfortably.
+        const scrollDistance = cards.length * 200;
+
+        // Initialize: first step active, rest dimmed.
+        gsap.set(cards, { opacity: 0.25 });
+        gsap.set(cards[0], { opacity: 1 });
         gsap.set(numbers, { color: "rgba(0, 164, 198, 0.15)" });
+        gsap.set(numbers[0], { color: "rgba(0, 164, 198, 0.80)" });
+        gsap.set(descriptions, { opacity: 0.5 });
+        gsap.set(descriptions[0], { opacity: 1 });
         gsap.set(media, { autoAlpha: 0 });
+        gsap.set(media[0], { autoAlpha: 1 });
+        activeIndex = 0;
 
-        const scrollDistance = (cardHeight + cardGap) * (cards.length - 1);
-
-        const timeline = gsap.timeline({
+        // Empty timeline — we only use the ScrollTrigger callbacks,
+        // not timeline-driven transforms, since the left side is static.
+        gsap.timeline({
           scrollTrigger: {
             trigger: pinSection,
             start: "top-=100 top",
@@ -110,60 +119,78 @@ export function HowItWorks() {
             pin: pinSection,
             anticipatePin: 1,
             onUpdate: (self) => {
-              const index = Math.round(self.progress * (cards.length - 1));
-              if (index !== activeIndex) {
-                activeIndex = index;
+              const index = Math.min(
+                Math.floor(self.progress * cards.length),
+                cards.length - 1
+              );
+              if (index === activeIndex) return;
+              activeIndex = index;
 
-                // Dim all steps, then highlight active one.
-                gsap.to(cards, {
-                  opacity: 0.35,
-                  duration: 0.3,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                });
-                gsap.to(cards[index], {
-                  opacity: 1,
-                  duration: 0.35,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                });
+              // Dim all step cards, then highlight the active one.
+              gsap.to(cards, {
+                opacity: 0.25,
+                duration: 0.35,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
+              gsap.to(cards[index], {
+                opacity: 1,
+                duration: 0.4,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
 
-                // Mute all numbers, then highlight active one.
-                gsap.to(numbers, {
-                  color: "rgba(0, 164, 198, 0.15)",
-                  duration: 0.3,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                });
-                gsap.to(numbers[index], {
-                  color: "rgba(0, 164, 198, 0.80)",
-                  duration: 0.35,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                });
+              // Dim all descriptions, highlight active.
+              gsap.to(descriptions, {
+                opacity: 0.5,
+                duration: 0.35,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
+              gsap.to(descriptions[index], {
+                opacity: 1,
+                duration: 0.4,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
 
-                // Swap media images.
-                gsap.to(media, {
-                  autoAlpha: 0,
-                  duration: 0.3,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                });
-                gsap.to(media[index], {
+              // Mute all numbers, highlight active.
+              gsap.to(numbers, {
+                color: "rgba(0, 164, 198, 0.15)",
+                duration: 0.35,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
+              gsap.to(numbers[index], {
+                color: "rgba(0, 164, 198, 0.80)",
+                duration: 0.4,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
+
+              // Crossfade media images with a subtle upward shift for emphasis.
+              gsap.to(media, {
+                autoAlpha: 0,
+                y: 12,
+                scale: 0.98,
+                duration: 0.35,
+                ease: NATURAL_EASE,
+                overwrite: true,
+              });
+              gsap.fromTo(
+                media[index],
+                { autoAlpha: 0, y: 20, scale: 0.97 },
+                {
                   autoAlpha: 1,
-                  duration: 0.35,
+                  y: 0,
+                  scale: 1,
+                  duration: 0.5,
                   ease: NATURAL_EASE,
                   overwrite: true,
-                });
-              }
+                }
+              );
             },
           },
-        });
-
-        // Translate the cards track upward as the user scrolls.
-        timeline.to(cardsTrack, {
-          y: -scrollDistance,
-          ease: "none",
         });
       }
 
@@ -196,9 +223,9 @@ export function HowItWorks() {
 
         {/* Pinned grid: left numbered timeline + right media viewport. */}
         <div ref={pinRef} className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10 items-start pt-6 lg:pt-12">
-          {/* Left column: steps with large numbers and connector lines */}
+          {/* Left column: all steps visible, highlight shifts on scroll */}
           <div className="relative">
-            <div ref={cardsTrackRef} className="flex flex-col gap-6">
+            <div className="flex flex-col gap-6">
               {steps.map((step, index) => (
                 <article
                   key={step.title}
@@ -216,13 +243,13 @@ export function HowItWorks() {
                   <h3 className="text-xl sm:text-2xl font-serif-custom font-semibold mb-0.5">
                     {step.title}
                   </h3>
-                  <p className="text-base text-[#1a1a1a]/60 leading-snug">
+                  <p data-how-desc className="text-base text-[#1a1a1a]/60 leading-snug">
                     {step.description}
                   </p>
 
                   {/* Connector line between steps (not on last step) */}
                   {index < steps.length - 1 && (
-                    <div className="absolute left-8 sm:left-10 top-[calc(100%+0px)] w-[1px] h-6 bg-[#1a1a1a]/10" />
+                    <div className="absolute left-8 sm:left-10 top-[calc(100%+0px)] w-px h-6 bg-[#1a1a1a]/10" />
                   )}
 
                   {/* Inline step image visible only on mobile (below lg) */}

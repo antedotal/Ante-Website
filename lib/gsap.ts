@@ -16,8 +16,11 @@ export const ensureGsapEase = () => {
         return;
     }
 
-    // Register a custom bezier ease — quint ease-out for pronounced deceleration.
+    // Register ease-out-quint bezier — aggressive deceleration used site-wide.
     gsap.registerPlugin(CustomEase);
-    CustomEase.create(NATURAL_EASE, "0.23, 1, 0.32, 1");
+    CustomEase.create(NATURAL_EASE, "0.22, 1, 0.36, 1");
     hasRegistered = true;
 };
+
+// CSS equivalent for Tailwind classes: cubic-bezier(0.22, 1, 0.36, 1)
+export const CSS_EASE_OUT_QUINT = "cubic-bezier(0.22, 1, 0.36, 1)";

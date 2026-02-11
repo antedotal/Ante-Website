@@ -74,11 +74,13 @@ export function Features() {
     return () => context.revert();
   }, []);
 
-  // Continuous slow auto-scroll when section is visible on screen.
+  // Continuous auto-scroll when section is visible. Pauses on hover/touch.
   useEffect(() => {
     const container = scrollContainerRef.current;
     const section = sectionRef.current;
     if (!container || !section) return;
+
+    let isPaused = false;
 
     // IntersectionObserver to start/stop auto-scroll based on visibility.
     const observer = new IntersectionObserver(
@@ -87,12 +89,26 @@ export function Features() {
     );
     observer.observe(section);
 
-    const speed = 0.35; // px per frame (~21px/sec at 60fps)
+    // Pause auto-scroll while the user is interacting with the carousel.
+    const pause = () => { isPaused = true; };
+    const resume = () => { isPaused = false; };
+    container.addEventListener("pointerenter", pause);
+    container.addEventListener("pointerleave", resume);
+    container.addEventListener("touchstart", pause, { passive: true });
+    container.addEventListener("touchend", resume);
+
+    const speed = 0.6; // px per frame (~36px/sec at 60fps)
     let rafId: number;
 
     const tick = () => {
-      if (isVisibleRef.current && container.scrollLeft < container.scrollWidth - container.clientWidth) {
-        container.scrollLeft += speed;
+      if (isVisibleRef.current && !isPaused) {
+        const maxScroll = container.scrollWidth - container.clientWidth;
+        if (container.scrollLeft >= maxScroll - 1) {
+          // Seamlessly loop back to the start.
+          container.scrollLeft = 0;
+        } else {
+          container.scrollLeft += speed;
+        }
       }
       rafId = requestAnimationFrame(tick);
     };
@@ -101,6 +117,10 @@ export function Features() {
     return () => {
       cancelAnimationFrame(rafId);
       observer.disconnect();
+      container.removeEventListener("pointerenter", pause);
+      container.removeEventListener("pointerleave", resume);
+      container.removeEventListener("touchstart", pause);
+      container.removeEventListener("touchend", resume);
     };
   }, []);
 
@@ -121,12 +141,11 @@ export function Features() {
         </p>
       </div>
 
-      {/* Horizontal scroll container with CSS scroll-snap — scrollbar hidden globally */}
+      {/* Horizontal auto-scroll container — pauses on hover, loops at end */}
       <div
         ref={scrollContainerRef}
         className="overflow-x-auto pb-8"
         style={{
-          scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",
         }}
       >
@@ -134,11 +153,10 @@ export function Features() {
           {features.map((feature) => (
             <article
               key={feature.title}
-              className="min-w-[280px] md:min-w-[420px] flex-shrink-0"
-              style={{ scrollSnapAlign: "start" }}
+              className="min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
-              <div className="rounded-xl bg-[#F0F0F0] aspect-[4/3] overflow-hidden mb-6">
+              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
@@ -166,7 +184,7 @@ export function Features() {
           ))}
 
           {/* Spacer to prevent last card from edge-clipping */}
-          <div className="min-w-[1px] flex-shrink-0" aria-hidden="true" />
+          <div className="min-w-px shrink-0" aria-hidden="true" />
         </div>
       </div>
     </section>
