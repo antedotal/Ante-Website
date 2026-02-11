@@ -61,7 +61,7 @@ export function Navbar() {
         variants={{
           bar: {
             maxWidth: 1152, // 72rem = max-w-6xl
-            borderRadius: 0,
+            borderRadius: 9999,
             backgroundColor: "rgba(0, 37, 48, 0)",
             paddingTop: 16,
             paddingBottom: 16,

@@ -74,11 +74,17 @@ export function Features() {
     return () => context.revert();
   }, []);
 
+  // Reference to the inner track so we can measure one full set of cards.
+  const trackRef = useRef<HTMLDivElement>(null);
+
   // Continuous auto-scroll when section is visible. Pauses on hover/touch.
+  // Cards are duplicated in the DOM so the second set fills the gap while
+  // we silently reset scrollLeft, creating a seamless infinite loop.
   useEffect(() => {
     const container = scrollContainerRef.current;
     const section = sectionRef.current;
-    if (!container || !section) return;
+    const track = trackRef.current;
+    if (!container || !section || !track) return;
 
     let isPaused = false;
 
@@ -100,12 +106,17 @@ export function Features() {
     const speed = 0.6; // px per frame (~36px/sec at 60fps)
     let rafId: number;
 
+    // Start partway through the first set so the carousel doesn't begin empty.
+    const halfWidth = track.scrollWidth / 2;
+    container.scrollLeft = halfWidth * 0.35;
+
     const tick = () => {
       if (isVisibleRef.current && !isPaused) {
-        const maxScroll = container.scrollWidth - container.clientWidth;
-        if (container.scrollLeft >= maxScroll - 1) {
-          // Seamlessly loop back to the start.
-          container.scrollLeft = 0;
+        // Width of one full set of cards (half the track, since cards are duplicated).
+        const halfWidth = track.scrollWidth / 2;
+        if (container.scrollLeft >= halfWidth) {
+          // Silently jump back — the duplicate set makes this invisible.
+          container.scrollLeft -= halfWidth;
         } else {
           container.scrollLeft += speed;
         }
@@ -141,7 +152,9 @@ export function Features() {
         </p>
       </div>
 
-      {/* Horizontal auto-scroll container — pauses on hover, loops at end */}
+      {/* Horizontal auto-scroll container — pauses on hover, loops seamlessly.
+          Cards are rendered twice so the second set fills the viewport while
+          scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
         className="overflow-x-auto pb-8"
@@ -149,10 +162,14 @@ export function Features() {
           WebkitOverflowScrolling: "touch",
         }}
       >
-        <div className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]">
-          {features.map((feature) => (
+        <div
+          ref={trackRef}
+          className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
+        >
+          {/* Render cards twice for seamless infinite loop */}
+          {[...features, ...features].map((feature, i) => (
             <article
-              key={feature.title}
+              key={`${feature.title}-${i}`}
               className="min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
@@ -182,9 +199,6 @@ export function Features() {
               </p>
             </article>
           ))}
-
-          {/* Spacer to prevent last card from edge-clipping */}
-          <div className="min-w-px shrink-0" aria-hidden="true" />
         </div>
       </div>
     </section>
