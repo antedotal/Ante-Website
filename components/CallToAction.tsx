@@ -10,8 +10,8 @@ import { ArrowRightIcon } from "@/components/ui/icons";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// CTA heading text — split into individual characters for staggered entrance.
-const CTA_HEADING = "Ready to be a better person?";
+// CTA heading text — "better person?" kept together to prevent orphan line break.
+const CTA_WORDS = ["Ready", "to", "be", "a", "better\u00A0person?"];
 
 // Final CTA section with character-split GSAP entrance and radial glow.
 export function CallToAction() {
@@ -73,22 +73,26 @@ export function CallToAction() {
     <section
       ref={sectionRef}
       data-cursor-color="#ffffff"
-      className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden"
+      className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden bg-[#003949]"
     >
-      {/* Radial glow background */}
+      {/* Subtle radial glow on matching footer background */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse at center, rgba(0,164,198,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(0,164,198,0.08) 0%, transparent 70%)",
         }}
       />
 
       <div className="container mx-auto max-w-3xl relative z-10">
-        {/* Character-split heading */}
+        {/* Word-split heading — "better person?" treated as one unit to prevent orphan break */}
         <h2 className="text-3xl sm:text-4xl md:text-5xl lg:text-7xl mb-6 sm:mb-8 tracking-tight text-white font-serif-custom font-semibold leading-tight">
-          {CTA_HEADING.split("").map((char, i) => (
-            <span key={i} data-cta-char className="inline-block">
-              {char === " " ? "\u00A0" : char}
+          {CTA_WORDS.map((word, wi) => (
+            <span key={wi} className="inline-block mr-[0.3em] last:mr-0">
+              {word.split("").map((char, ci) => (
+                <span key={`${wi}-${ci}`} data-cta-char className="inline-block">
+                  {char === "\u00A0" ? "\u00A0" : char}
+                </span>
+              ))}
             </span>
           ))}
         </h2>

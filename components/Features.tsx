@@ -1,6 +1,6 @@
 "use client";
 
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useLayoutEffect, useMemo, useRef, useEffect } from "react";
 import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
@@ -8,11 +8,13 @@ import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// Horizontal scroll feature showcase with CSS scroll-snap.
-// Section header fades in with REVEAL_Y on scroll enter; cards scroll natively.
+// Horizontal scroll feature showcase with automatic slow-scroll animation.
+// Section header fades in on scroll enter; cards auto-scroll when visible.
 export function Features() {
   const sectionRef = useRef<HTMLElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const isVisibleRef = useRef(false);
 
   const features = useMemo(
     () => [
@@ -72,6 +74,36 @@ export function Features() {
     return () => context.revert();
   }, []);
 
+  // Continuous slow auto-scroll when section is visible on screen.
+  useEffect(() => {
+    const container = scrollContainerRef.current;
+    const section = sectionRef.current;
+    if (!container || !section) return;
+
+    // IntersectionObserver to start/stop auto-scroll based on visibility.
+    const observer = new IntersectionObserver(
+      ([entry]) => { isVisibleRef.current = entry.isIntersecting; },
+      { threshold: 0.15 }
+    );
+    observer.observe(section);
+
+    const speed = 0.35; // px per frame (~21px/sec at 60fps)
+    let rafId: number;
+
+    const tick = () => {
+      if (isVisibleRef.current && container.scrollLeft < container.scrollWidth - container.clientWidth) {
+        container.scrollLeft += speed;
+      }
+      rafId = requestAnimationFrame(tick);
+    };
+    rafId = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    };
+  }, []);
+
   return (
     <section
       id="features"
@@ -89,9 +121,10 @@ export function Features() {
         </p>
       </div>
 
-      {/* Horizontal scroll container with CSS scroll-snap */}
+      {/* Horizontal scroll container with CSS scroll-snap — scrollbar hidden globally */}
       <div
-        className="overflow-x-auto pb-8 scrollbar-thin scrollbar-track-transparent scrollbar-thumb-[#00A4C6]/30 hover:scrollbar-thumb-[#00A4C6]/50"
+        ref={scrollContainerRef}
+        className="overflow-x-auto pb-8"
         style={{
           scrollSnapType: "x mandatory",
           WebkitOverflowScrolling: "touch",

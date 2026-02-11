@@ -101,6 +101,16 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-11 — Layout & Polish Pass
+- **Hero**: Converted from centred single-column to Jomo-style split layout (text left, app mockup right). Left column: eyebrow, rotating-word heading, subtitle, CTA. Right column: CSS phone mockup with fake task cards. Mockup slides in from right via GSAP. Heading split onto two lines: "Stop" on line 1, rotating word on line 2.
+- **Navbar**: Removed underline-on-hover CSS `::after` effect; replaced with `hover:font-semibold` font-weight change. Morph transition easing set to quint ease-out `[0.23, 1, 0.32, 1]`.
+- **Global easing**: `NATURAL_EASE` custom bezier set to quint ease-out `"0.23, 1, 0.32, 1"` in `lib/gsap.ts`. All GSAP animations and navbar morph use this curve.
+- **Hero-to-content transition**: Replaced CSS `filter: blur()` hack with layered approach: a `bg-gradient-to-b` from teal to light + a `backdrop-blur-3xl` overlay for a smooth soft edge.
+- **HowItWorks**: Tightened vertical spacing between step title and description (`mb-2` → `mb-0.5`, added `leading-snug`). Blue colour was already consistent (#00A4C6).
+- **Scrollbars**: Added global CSS to hide all scrollbars (`scrollbar-width: none`, `::-webkit-scrollbar { display: none }`) while preserving scroll functionality.
+- **Features (auto-scroll)**: Replaced broken GSAP ScrollTrigger scrub with `requestAnimationFrame` loop + `IntersectionObserver`. Scrolls at ~0.35px/frame when section is visible.
+- **CTA**: Fixed "person" orphan line break via word-split with non-breaking space. Background changed to `bg-[#003949]` to match the footer.
+
 #### 2026-02-10 — Professional Redesign
 - **Global**: Removed all blur+scale animations sitewide. Each section now has one unique animation.
 - **CSS Cleanup**: Removed `.glass-panel`, `.font-stretch-hover`, `.text-gradient`, `.btn-gradient` utilities.

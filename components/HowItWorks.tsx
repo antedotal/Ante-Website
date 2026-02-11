@@ -213,10 +213,10 @@ export function HowItWorks() {
                     {formatNumber(index)}
                   </span>
 
-                  <h3 className="text-xl sm:text-2xl font-serif-custom font-semibold mb-2">
+                  <h3 className="text-xl sm:text-2xl font-serif-custom font-semibold mb-0.5">
                     {step.title}
                   </h3>
-                  <p className="text-base text-[#1a1a1a]/60">
+                  <p className="text-base text-[#1a1a1a]/60 leading-snug">
                     {step.description}
                   </p>
 

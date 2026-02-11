@@ -85,7 +85,7 @@ export function Navbar() {
             borderColor: "rgba(255,255,255,0.05)",
           },
         }}
-        transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+        transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
         style={{ borderWidth: 1, borderStyle: "solid" }}
       >
         {/* Brand */}
@@ -93,18 +93,18 @@ export function Navbar() {
           <a href="#">Ante</a>
         </div>
 
-        {/* Desktop nav links with underline-on-hover */}
-        <div className="hidden md:flex items-center gap-6 text-sm font-medium text-white/80">
+        {/* Desktop nav links — font-weight change on hover instead of underline */}
+        <div className="hidden md:flex items-center gap-6 text-sm font-normal text-white/80">
           <a
             href="#how-it-works"
-            className="relative py-1 hover:text-white transition-colors after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-white/60 after:transition-all after:duration-300 hover:after:w-full"
+            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-out"
             onClick={(e) => handleNavClick(e, "how-it-works")}
           >
             How it Works
           </a>
           <a
             href="#features"
-            className="relative py-1 hover:text-white transition-colors after:absolute after:left-0 after:bottom-0 after:h-[1px] after:w-0 after:bg-white/60 after:transition-all after:duration-300 hover:after:w-full"
+            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-out"
             onClick={(e) => handleNavClick(e, "features")}
           >
             Features

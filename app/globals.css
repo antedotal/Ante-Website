@@ -4,6 +4,17 @@
 :root {
   --font-bricolage-grotesque: "Bricolage Grotesque";
   --font-dm-sans: "DM Sans";
+  /* For Internet Explorer and Edge */
+  -ms-overflow-style: none;
+  /* For Firefox */
+  scrollbar-width: none;
+
+}
+
+
+:root:-webkit-scrollbar {
+  /* For Chrome, Safari, Opera, and other WebKit-based browsers */
+  display: none;
 }
 
 @custom-variant dark (&:is(.dark *));
@@ -84,6 +95,19 @@ body {
   overflow-x: hidden;
   font-family: var(--font-dm-sans), var(--font-sans), system-ui, sans-serif;
   letter-spacing: 0.01em;
+}
+
+/* Hide all scrollbars site-wide while preserving scroll functionality. */
+* {
+  scrollbar-width: none;
+  /* Firefox */
+  -ms-overflow-style: none;
+  /* IE/Edge */
+}
+
+*::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari, Opera */
 }
 
 /* Prevent horizontal overflow on mobile (iOS rubber-banding). Lenis handles smooth scroll. */

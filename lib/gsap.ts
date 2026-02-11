@@ -16,8 +16,8 @@ export const ensureGsapEase = () => {
         return;
     }
 
-    // Register a custom bezier ease for smoother, more organic motion.
+    // Register a custom bezier ease — quint ease-out for pronounced deceleration.
     gsap.registerPlugin(CustomEase);
-    CustomEase.create(NATURAL_EASE, "0.22, 1, 0.36, 1");
+    CustomEase.create(NATURAL_EASE, "0.23, 1, 0.32, 1");
     hasRegistered = true;
 };
