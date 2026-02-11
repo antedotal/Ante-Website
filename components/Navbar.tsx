@@ -90,7 +90,7 @@ export function Navbar() {
       >
         {/* Brand */}
         <div className="text-xl tracking-tighter text-white font-immersive">
-          Ante
+          <a href="#">Ante</a>
         </div>
 
         {/* Desktop nav links with underline-on-hover */}

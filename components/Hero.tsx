@@ -9,7 +9,6 @@ import Beams from "./ui/Beams";
 
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
-const LONGEST_WORD = ROTATING_WORDS.reduce((a, b) => (a.length > b.length ? a : b));
 const WORD_HOLD_DURATION = 2500; // ms each word stays visible
 
 // Hero section with staggered y-translate entrance and rotating single word.
@@ -103,29 +102,23 @@ export function Hero() {
           The Social Task Manager
         </p>
 
-        {/* Heading with rotating word — invisible placeholder reserves width for longest word */}
+        {/* Heading with rotating word — single line, no wrap */}
         <h1
           ref={headingRef}
-          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 sm:mb-8 leading-[1.1] text-white font-serif-custom font-semibold"
+          className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl tracking-tight mb-6 sm:mb-8 leading-[1.1] text-white font-serif-custom font-semibold whitespace-nowrap"
         >
           Stop{" "}
           <span
             className="inline-block align-bottom relative"
             style={{ clipPath: "inset(0 -200% 0 -200%)" }}
           >
-            {/* Invisible placeholder to prevent layout shift */}
-            <span className="invisible" aria-hidden="true">
-              {LONGEST_WORD}
-            </span>
-            {/* Actual animated word, absolutely positioned */}
             <span
               ref={wordContainerRef}
-              className="absolute left-0 top-0 inline-block text-[#7DD4E8] whitespace-nowrap"
+              className="inline-block text-[#7DD4E8] whitespace-nowrap"
             >
               {ROTATING_WORDS[currentWordIndex]}
             </span>
           </span>
-          .
         </h1>
 
         {/* Subtitle */}
