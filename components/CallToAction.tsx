@@ -75,7 +75,7 @@ export function CallToAction() {
       data-cursor-color="#ffffff"
       className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden bg-[#003949]"
     >
-      {/* Subtle radial glow on matching footer background */}
+      {/* Subtle radial glow on matching background */}
       <div
         className="absolute inset-0 pointer-events-none"
         style={{

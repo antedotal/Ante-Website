@@ -101,6 +101,16 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-11 — Navbar Color Adaptation & Panel Spacing
+- **Navbar**: Text/brand/hamburger colors now adapt to scroll state. Bar (top, no scroll): dark text (`#1a1a1a`) for visibility against white body. Pill (scrolled): white text against dark backdrop. Uses `motion.div` animate for smooth color transitions.
+- **Page**: Inset panel padding tightened — left/right reduced (`px-2 sm:px-2.5 md:px-3`), top increased +5px to `pt-[77px]`, bottom increased +10px to `pb-[13px] sm:pb-[14px] md:pb-[15px]`.
+- **Hero**: Grid gap between text and mockup columns reduced from `gap-12 lg:gap-16` to `gap-8 lg:gap-10`.
+
+#### 2026-02-11 — Jomo-style Inset Hero Panel
+- **Layout**: Body background changed from teal diagonal gradient to `#FAFBFC` (white). The teal gradient moved to the Hero section itself.
+- **Page (`app/page.tsx`)**: Hero wrapped in an inset rounded panel (`px-3 sm:px-4 md:px-5` padding, `rounded-2xl md:rounded-3xl`, `overflow-hidden`). `pt-[72px]` pushes the panel top below the fixed navbar's initial bar height. Creates a visible white border/frame around the hero, making the transition to white content sections seamless.
+- **Hero**: Now carries its own `linear-gradient(135deg, ...)` background inline, since the body is white. Beams still render on top. The rounded container in `page.tsx` clips the hero edges into a card shape.
+
 #### 2026-02-11 — Remove Hero Transition & Footer Spacing
 - **Hero-to-content transition**: Removed entirely (gradient div deleted from `app/page.tsx`). Hero now flows directly into `HowItWorks`.
 - **Footer**: Increased vertical gap between content and curved marquee (`mt-6` → `mt-20 md:mt-28`). Reduced marquee speed from 1.5 to 0.7.
@@ -559,3 +569,16 @@ When extending the codebase:
 - Use TypeScript types for all function parameters and returns
 - Log security events (bot detection, suspicious activity) for monitoring
 - Configure appropriate RLS policies for each table
+
+---
+
+## 11. Change Log
+
+### 11.1 Grainient Animated Hero Background
+
+- **Added** `components/ui/Grainient.tsx` — WebGL animated gradient component ported from react-bits. Uses `ogl` (already a project dependency) to render a full-screen GLSL fragment shader that blends three colors through noise-warped UV space with configurable warp, grain, contrast, and saturation post-processing.
+- **Modified** `components/Hero.tsx`:
+  - Removed inline `linear-gradient(135deg, …)` CSS background from the `<section>` element.
+  - Added `<Grainient>` as an `absolute inset-0 z-0` background layer with teal palette: `color1="#236597"`, `color2="#003949"`, `color3="#00b0df"`.
+  - Re-layered Beams component at `z-1` (was `-z-10`) so it renders on top of the Grainient but below content (`z-10`).
+- **Dependency**: `ogl` (already installed) — lightweight WebGL2 library used for the shader renderer.

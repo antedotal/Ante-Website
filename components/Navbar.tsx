@@ -88,28 +88,36 @@ export function Navbar() {
         transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
         style={{ borderWidth: 1, borderStyle: "solid" }}
       >
-        {/* Brand */}
-        <div className="text-xl tracking-tighter text-white font-immersive">
+        {/* Brand — color transitions between dark (bar) and white (pill) */}
+        <motion.div
+          className="text-xl tracking-tighter font-immersive"
+          animate={{ color: isScrolled ? "#ffffff" : "#1a1a1a" }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
           <a href="#">Ante</a>
-        </div>
+        </motion.div>
 
-        {/* Desktop nav links — font-weight change on hover instead of underline */}
-        <div className="hidden md:flex items-center gap-6 text-sm font-normal text-white/80">
+        {/* Desktop nav links — color adapts to scroll state */}
+        <motion.div
+          className="hidden md:flex items-center gap-6 text-sm font-normal"
+          animate={{ color: isScrolled ? "rgba(255,255,255,0.8)" : "rgba(26,26,26,0.6)" }}
+          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+        >
           <a
             href="#how-it-works"
-            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="py-1 hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
             onClick={(e) => handleNavClick(e, "how-it-works")}
           >
             How it Works
           </a>
           <a
             href="#features"
-            className="py-1 hover:text-white hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
+            className="py-1 hover:font-semibold transition-all duration-200 ease-[cubic-bezier(0.22,1,0.36,1)]"
             onClick={(e) => handleNavClick(e, "features")}
           >
             Features
           </a>
-        </div>
+        </motion.div>
 
         <div className="flex items-center gap-3">
           {/* CTA button */}
@@ -130,24 +138,27 @@ export function Navbar() {
             <span className="sr-only">
               {isMobileMenuOpen ? "Close" : "Menu"}
             </span>
-            {/* Animated hamburger lines */}
+            {/* Animated hamburger lines — color adapts to scroll state */}
             <span
-              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 transition-all duration-300"
               style={{
+                backgroundColor: isScrolled ? "#ffffff" : "#1a1a1a",
                 transform: isMobileMenuOpen
                   ? "rotate(45deg)"
                   : "translateY(-5px)",
               }}
             />
             <span
-              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 transition-all duration-300"
               style={{
+                backgroundColor: isScrolled ? "#ffffff" : "#1a1a1a",
                 opacity: isMobileMenuOpen ? 0 : 1,
               }}
             />
             <span
-              className="absolute block h-0.5 w-5 bg-white transition-all duration-300"
+              className="absolute block h-0.5 w-5 transition-all duration-300"
               style={{
+                backgroundColor: isScrolled ? "#ffffff" : "#1a1a1a",
                 transform: isMobileMenuOpen
                   ? "rotate(-45deg)"
                   : "translateY(5px)",

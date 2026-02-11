@@ -38,7 +38,7 @@ export default function RootLayout({
       <body
         className={`${dmSans.variable} ${bricolageGrotesque.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
         style={{
-          background: 'linear-gradient(135deg, #003A4A 0%, #003040 33%, #002530 66%, #001A20 100%)',
+          background: '#FAFBFC',
           minHeight: '100vh'
         }}
       >

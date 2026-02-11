@@ -5,7 +5,7 @@ import Link from "next/link";
 import { ArrowRightIcon } from "./ui/icons";
 import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import Beams from "./ui/Beams";
+import Grainient from "./ui/Grainient";
 
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
@@ -94,18 +94,36 @@ export function Hero() {
       data-cursor-color="#ffffff"
       className="relative min-h-screen flex items-center overflow-hidden px-4 sm:px-6"
     >
-      {/* Reduced beams: 6 beams, speed 0.4, muted colors */}
-      <Beams
-        className="absolute inset-0 -z-10 h-full w-full bg-[#003949]"
-        colors={["#004d5e", "#006880", "#007d99", "#D4F1F9"]}
-        beamWidth={8}
-        beamHeight={20}
-        beamNumber={6}
-        speed={0.4}
-      />
+      {/* Animated WebGL gradient background — fills the entire hero via absolute wrapper */}
+      <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
+        <Grainient
+          color1="#236597"
+          color2="#003949"
+          color3="#00b0df"
+          timeSpeed={0.25}
+          colorBalance={0}
+          warpStrength={1}
+          warpFrequency={5}
+          warpSpeed={2}
+          warpAmplitude={50}
+          blendAngle={0}
+          blendSoftness={0.05}
+          rotationAmount={500}
+          noiseScale={2}
+          grainAmount={0.1}
+          grainScale={2}
+          grainAnimated={false}
+          contrast={1.5}
+          gamma={1}
+          saturation={1}
+          centerX={0}
+          centerY={0}
+          zoom={0.9}
+        />
+      </div>
 
       {/* Split layout: text left, mockup right */}
-      <div className="container mx-auto max-w-6xl relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-12 lg:gap-16 py-24 md:py-0">
+      <div className="container mx-auto max-w-6xl relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-10 py-24 md:py-0">
         {/* Left column — text content, left-aligned */}
         <div className="text-left">
           {/* Eyebrow */}
@@ -129,7 +147,7 @@ export function Hero() {
             >
               <span
                 ref={wordContainerRef}
-                className="inline-block text-[#7DD4E8] whitespace-nowrap"
+                className="inline-block text-[#A8E8F8] whitespace-nowrap"
               >
                 {ROTATING_WORDS[currentWordIndex]}
               </span>
@@ -149,7 +167,7 @@ export function Hero() {
             <Link
               href="/signup"
               data-cursor-hover="true"
-              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white text-base sm:text-lg font-semibold transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
             >
               Join the waitlist
               <ArrowRightIcon className="w-4 h-4" />
@@ -177,9 +195,9 @@ export function Hero() {
               <p className="text-white/40 text-[10px] mb-5">3 tasks due today</p>
               {/* Mock task cards */}
               {[
-                { title: "Finish assignment", ante: "$20", color: "#00A4C6", progress: 0.7 },
-                { title: "Hit the gym", ante: "$15", color: "#7DD4E8", progress: 0.3 },
-                { title: "Read 30 pages", ante: "$10", color: "#00A4C6", progress: 0 },
+                { title: "Finish assignment", ante: "$20", color: "#006F87", progress: 0.7 },
+                { title: "Hit the gym", ante: "$15", color: "#A8E8F8", progress: 0.3 },
+                { title: "Read 30 pages", ante: "$10", color: "#006F87", progress: 0 },
               ].map((task, i) => (
                 <div
                   key={i}
@@ -202,8 +220,8 @@ export function Hero() {
               ))}
               {/* Footer hint */}
               <div className="mt-auto flex justify-center">
-                <div className="w-8 h-8 rounded-full bg-[#00A4C6]/20 flex items-center justify-center">
-                  <span className="text-[#00A4C6] text-lg leading-none">+</span>
+                <div className="w-8 h-8 rounded-full bg-[#006F87]/20 flex items-center justify-center">
+                  <span className="text-[#006F87] text-lg leading-none">+</span>
                 </div>
               </div>
             </div>

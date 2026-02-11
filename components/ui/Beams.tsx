@@ -233,7 +233,7 @@ export default function Beams({
   rotation = 0,
 }: BeamsProps) {
   return (
-    <div className={cn("relative w-full h-full overflow-hidden bg-black", className)}>
+    <div className={cn("relative w-full h-full overflow-hidden", className)}>
       <Canvas 
         // Cap DPR and disable AA to reduce overdraw and fragment workload.
         dpr={[1, 1.25]}
