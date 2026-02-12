@@ -4,17 +4,6 @@
 :root {
   --font-bricolage-grotesque: "Bricolage Grotesque";
   --font-dm-sans: "DM Sans";
-  /* For Internet Explorer and Edge */
-  -ms-overflow-style: none;
-  /* For Firefox */
-  scrollbar-width: none;
-
-}
-
-
-:root:-webkit-scrollbar {
-  /* For Chrome, Safari, Opera, and other WebKit-based browsers */
-  display: none;
 }
 
 @custom-variant dark (&:is(.dark *));

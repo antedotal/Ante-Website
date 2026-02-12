@@ -7,7 +7,7 @@ import { CallToAction } from "@/components/CallToAction";
 
 export default function Home() {
   return (
-    <main className="min-h-screen relative bg-[#FAFBFC]">
+    <main className="min-h-screen relative">
       <Navbar />
 
       {/* Jomo-style inset hero panel — teal card with rounded corners inside a white frame.

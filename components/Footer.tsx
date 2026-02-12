@@ -1,3 +1,5 @@
+"use client";
+
 import Link from "next/link";
 import { InstagramIcon, MailIcon } from "./ui/icons";
 import CurvedLoop from "./ui/CurvedLoop";
