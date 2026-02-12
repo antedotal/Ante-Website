@@ -7,10 +7,6 @@ import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 import { useDeviceType } from "@/lib/useDeviceType";
 import Grainient from "./ui/Grainient";
 
-// Placeholder store URLs — replace with real links once published.
-const ANDROID_URL = "#";
-const IOS_URL = "#";
-
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
 const WORD_HOLD_DURATION = 2500; // ms each word stays visible
@@ -26,7 +22,7 @@ export function Hero() {
   const wordContainerRef = useRef<HTMLSpanElement>(null);
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
+  const isAnimatingRef = useRef(false);
 
   // Detect client platform for conditional download button rendering.
   const { isAndroid, isIOS, isMobile } = useDeviceType();
@@ -62,10 +58,12 @@ export function Hero() {
   }, []);
 
   // Rotating word animation: slide up/out → slide in from below.
+  // Uses a ref for the animating flag so the callback identity stays stable,
+  // preventing the setInterval from being torn down and recreated each cycle.
   const animateWord = useCallback(() => {
-    if (!wordContainerRef.current || isAnimating) return;
+    if (!wordContainerRef.current || isAnimatingRef.current) return;
 
-    setIsAnimating(true);
+    isAnimatingRef.current = true;
     const container = wordContainerRef.current;
 
     // Slide current word up and fade out
@@ -83,11 +81,11 @@ export function Hero() {
           opacity: 1,
           duration: 0.5,
           ease: NATURAL_EASE,
-          onComplete: () => setIsAnimating(false),
+          onComplete: () => { isAnimatingRef.current = false; },
         });
       },
     });
-  }, [isAnimating]);
+  }, []);
 
   // Timer loop to cycle words every WORD_HOLD_DURATION.
   useEffect(() => {
@@ -170,29 +168,27 @@ export function Hero() {
             Use social pressure and the fear of going broke to get off your a**.
           </p>
 
-          {/* Download buttons — show platform-specific on mobile, both on desktop */}
+          {/* Download buttons — disabled "Coming Soon" state until app is published */}
           <div ref={actionRef} className="flex flex-wrap justify-start gap-3">
             {/* iOS button — shown on iOS mobile or on desktop */}
             {(!isMobile || isIOS) && (
-              <a
-                href={IOS_URL}
-                data-cursor-hover="true"
-                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white hover:bg-white/90 text-[#003949] text-sm sm:text-base font-semibold transition-colors duration-200"
+              <button
+                disabled
+                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white/80 text-[#003949]/70 text-sm sm:text-base font-semibold cursor-default"
               >
                 <AppleIcon className="w-5 h-5" />
-                Download for iOS
-              </a>
+                iOS — Coming Soon
+              </button>
             )}
             {/* Android button — shown on Android mobile or on desktop */}
             {(!isMobile || isAndroid) && (
-              <a
-                href={ANDROID_URL}
-                data-cursor-hover="true"
-                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white hover:bg-white/90 text-[#003949] text-sm sm:text-base font-semibold transition-colors duration-200"
+              <button
+                disabled
+                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white/80 text-[#003949]/70 text-sm sm:text-base font-semibold cursor-default"
               >
                 <span className="material-symbols-rounded text-[20px] leading-none">android</span>
-                Download for Android
-              </a>
+                Android — Coming Soon
+              </button>
             )}
           </div>
         </div>

@@ -113,7 +113,7 @@ export function CallToAction() {
             }}
             className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
           >
-            Download the app
+            Coming Soon
             <ArrowRightIcon className="w-5 h-5" />
           </a>
         </div>

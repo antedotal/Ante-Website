@@ -125,7 +125,7 @@ export function Navbar() {
             onClick={(e) => handleNavClick(e, "download")}
             className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200"
           >
-            Download
+            Coming Soon
           </a>
 
           {/* Mobile hamburger button */}
