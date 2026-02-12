@@ -47,7 +47,7 @@ export default function CurvedLoop({
   const textPathRef = useRef<SVGTextPathElement>(null);
   const pathRef = useRef<SVGPathElement>(null);
   const [spacing, setSpacing] = useState(0);
-  const [offset, setOffset] = useState(0);
+  const offsetRef = useRef(0);
   const uid = useId();
   const pathId = `curve-${uid}`;
 
@@ -79,7 +79,7 @@ export default function CurvedLoop({
     if (textPathRef.current) {
       const initial = -spacing;
       textPathRef.current.setAttribute("startOffset", initial + "px");
-      setOffset(initial);
+      offsetRef.current = initial;
     }
   }, [spacing]);
 
@@ -99,7 +99,7 @@ export default function CurvedLoop({
         if (newOffset > 0) newOffset -= wrapPoint;
 
         textPathRef.current.setAttribute("startOffset", newOffset + "px");
-        setOffset(newOffset);
+        offsetRef.current = newOffset;
       }
       frame = requestAnimationFrame(step);
     };
@@ -130,7 +130,7 @@ export default function CurvedLoop({
     if (newOffset > 0) newOffset -= wrapPoint;
 
     textPathRef.current.setAttribute("startOffset", newOffset + "px");
-    setOffset(newOffset);
+    offsetRef.current = newOffset;
   };
 
   const endDrag = () => {
@@ -185,7 +185,7 @@ export default function CurvedLoop({
               <textPath
                 ref={textPathRef}
                 href={`#${pathId}`}
-                startOffset={offset + "px"}
+                startOffset="0px"
                 xmlSpace="preserve"
               >
                 {totalText}
