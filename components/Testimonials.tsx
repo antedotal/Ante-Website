@@ -130,11 +130,15 @@ export function Testimonials() {
   const [marqueeDistance, setMarqueeDistance] = useState(2100);
 
   // Calculate marquee scroll distance from the actual rendered width of half the track.
+  // Recalculates on resize so the marquee adapts without gaps.
   useEffect(() => {
     const track = trackRef.current;
-    if (track) {
-      setMarqueeDistance(track.scrollWidth / 2);
-    }
+    if (!track) return;
+    const measure = () => setMarqueeDistance(track.scrollWidth / 2);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    return () => ro.disconnect();
   }, []);
 
   return (

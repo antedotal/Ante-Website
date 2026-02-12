@@ -305,20 +305,48 @@ export default function Grainient({
     ro.observe(container);
     setSize();
 
-    /* Animation loop — updates iTime and renders each frame */
+    /* Animation loop — updates iTime and renders each frame.
+       Pauses when scrolled off-screen via IntersectionObserver.
+       Respects prefers-reduced-motion by rendering a single static frame. */
     let raf = 0;
     const t0 = performance.now();
-    const loop = (t: number) => {
-      program.uniforms.iTime.value = (t - t0) * 0.001;
-      renderer.render({ scene: mesh });
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    let isVisible = true;
 
-    /* Cleanup: stop loop, disconnect observer, remove canvas */
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReducedMotion) {
+      // Render a single static frame and skip the animation loop
+      program.uniforms.iTime.value = 0;
+      renderer.render({ scene: mesh });
+    } else {
+      const loop = (t: number) => {
+        if (!isVisible) return;
+        program.uniforms.iTime.value = (t - t0) * 0.001;
+        renderer.render({ scene: mesh });
+        raf = requestAnimationFrame(loop);
+      };
+      raf = requestAnimationFrame(loop);
+    }
+
+    // Pause/resume the rAF loop based on viewport visibility
+    const io = new IntersectionObserver(([entry]) => {
+      isVisible = entry.isIntersecting;
+      if (isVisible && !prefersReducedMotion) {
+        raf = requestAnimationFrame(function loop(t: number) {
+          if (!isVisible) return;
+          program.uniforms.iTime.value = (t - t0) * 0.001;
+          renderer.render({ scene: mesh });
+          raf = requestAnimationFrame(loop);
+        });
+      }
+    });
+    io.observe(container);
+
+    /* Cleanup: stop loop, disconnect observers, remove canvas */
     return () => {
       cancelAnimationFrame(raf);
       ro.disconnect();
+      io.disconnect();
       try {
         container.removeChild(canvas);
       } catch {
