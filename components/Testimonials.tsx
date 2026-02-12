@@ -1,17 +1,19 @@
 "use client";
 
+import { useRef, useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Quote } from "lucide-react";
 
 /**
  * Testimonials Component
- * 
+ *
  * Purpose: Display social proof through animated testimonial carousel
- * Functionality: 
+ * Functionality:
  * - Infinite horizontal marquee scrolling effect
  * - Staggered entrance animation with wave-like timing
  * - Cards replay animation when scrolling back into view
- * 
+ * - Dynamic marquee distance calculated from container scrollWidth
+ *
  * Implementation:
  * - Uses continuous x-axis animation for marquee effect
  * - Static initial values to prevent hydration mismatch
@@ -124,8 +126,23 @@ function TestimonialCard({ testimonial, index }: { testimonial: Testimonial; ind
 }
 
 export function Testimonials() {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [marqueeDistance, setMarqueeDistance] = useState(2100);
+
+  // Calculate marquee scroll distance from the actual rendered width of half the track.
+  // Recalculates on resize so the marquee adapts without gaps.
+  useEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => setMarqueeDistance(track.scrollWidth / 2);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    return () => ro.disconnect();
+  }, []);
+
   return (
-    <section className="relative px-4 py-24 md:py-32 overflow-hidden">
+    <section className="relative px-4 py-16 sm:py-24 md:py-32 overflow-hidden">
       <div className="container mx-auto max-w-6xl relative z-10">
         {/* Heading */}
         <motion.div
@@ -135,10 +152,10 @@ export function Testimonials() {
           viewport={{ once: false, amount: 0.3 }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-4xl md:text-5xl mb-4 text-white font-serif-custom">
+          <h2 className="text-3xl sm:text-4xl md:text-5xl mb-4 text-white font-serif-custom">
             What People Are Saying
           </h2>
-          <p className="text-xl text-white/80">
+          <p className="text-base sm:text-xl text-white/80">
             Real testimonials from people who refuse to fail
           </p>
         </motion.div>
@@ -146,14 +163,15 @@ export function Testimonials() {
         {/* Marquee Container */}
         <div className="relative">
           {/* Gradient Fade on Edges */}
-          <div className="absolute left-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-r from-[#003A4A] to-transparent z-10 pointer-events-none" />
-          <div className="absolute right-0 top-0 bottom-0 w-16 md:w-24 bg-gradient-to-l from-[#003A4A] to-transparent z-10 pointer-events-none" />
+          <div className="absolute left-0 top-0 bottom-0 w-12 sm:w-16 md:w-24 bg-gradient-to-r from-[#003A4A] to-transparent z-10 pointer-events-none" />
+          <div className="absolute right-0 top-0 bottom-0 w-12 sm:w-16 md:w-24 bg-gradient-to-l from-[#003A4A] to-transparent z-10 pointer-events-none" />
 
-          {/* Scrolling Testimonials */}
+          {/* Scrolling Testimonials - distance calculated dynamically */}
           <motion.div
+            ref={trackRef}
             className="flex py-4"
             animate={{
-              x: [0, -2100],
+              x: [0, -marqueeDistance],
             }}
             transition={{
               duration: 35,

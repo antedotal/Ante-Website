@@ -126,7 +126,7 @@ export default function SignUpPage() {
           {/* Main card - off-white/cream with soft shadow */}
           <motion.div
             variants={itemVariants}
-            className="w-full rounded-3xl bg-[#faf9f6] px-8 py-12 shadow-[0_24px_80px_rgba(0,0,0,0.25)] md:px-12 md:py-16"
+            className="w-full rounded-3xl bg-[#faf9f6] px-5 py-8 sm:px-8 sm:py-12 md:px-12 md:py-16 shadow-[0_24px_80px_rgba(0,0,0,0.25)]"
           >
             {/* Back to home link */}
             {/* 
@@ -166,7 +166,7 @@ export default function SignUpPage() {
             {/* Brand name - large serif, centered */}
             <motion.h1
               variants={itemVariants}
-              className="mb-8 text-center text-4xl font-serif-custom tracking-tight text-slate-900 md:text-5xl"
+              className="mb-6 sm:mb-8 text-center text-3xl sm:text-4xl font-serif-custom tracking-tight text-slate-900 md:text-5xl"
             >
               {BRAND_CONFIG.BRAND_NAME}
             </motion.h1>
@@ -176,7 +176,7 @@ export default function SignUpPage() {
               variants={itemVariants}
               className="mb-6 text-center"
             >
-              <h2 className="text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
+              <h2 className="text-xl sm:text-2xl font-serif-custom text-slate-900 md:text-3xl lg:text-4xl">
                 {BRAND_CONFIG.COPY_HEADLINE}
               </h2>
             </motion.div>

@@ -101,15 +101,64 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-11 — Navbar Color Adaptation & Panel Spacing
+- **Navbar**: Text/brand/hamburger colors now adapt to scroll state. Bar (top, no scroll): dark text (`#1a1a1a`) for visibility against white body. Pill (scrolled): white text against dark backdrop. Uses `motion.div` animate for smooth color transitions.
+- **Page**: Inset panel padding tightened — left/right reduced (`px-2 sm:px-2.5 md:px-3`), top increased +5px to `pt-[77px]`, bottom increased +10px to `pb-[13px] sm:pb-[14px] md:pb-[15px]`.
+- **Hero**: Grid gap between text and mockup columns reduced from `gap-12 lg:gap-16` to `gap-8 lg:gap-10`.
+
+#### 2026-02-11 — Jomo-style Inset Hero Panel
+- **Layout**: Body background changed from teal diagonal gradient to `#FAFBFC` (white). The teal gradient moved to the Hero section itself.
+- **Page (`app/page.tsx`)**: Hero wrapped in an inset rounded panel (`px-3 sm:px-4 md:px-5` padding, `rounded-2xl md:rounded-3xl`, `overflow-hidden`). `pt-[72px]` pushes the panel top below the fixed navbar's initial bar height. Creates a visible white border/frame around the hero, making the transition to white content sections seamless.
+- **Hero**: Now carries its own `linear-gradient(135deg, ...)` background inline, since the body is white. Beams still render on top. The rounded container in `page.tsx` clips the hero edges into a card shape.
+
+#### 2026-02-11 — Remove Hero Transition & Footer Spacing
+- **Hero-to-content transition**: Removed entirely (gradient div deleted from `app/page.tsx`). Hero now flows directly into `HowItWorks`.
+- **Footer**: Increased vertical gap between content and curved marquee (`mt-6` → `mt-20 md:mt-28`). Reduced marquee speed from 1.5 to 0.7.
+
+#### 2026-02-11 — Footer Layout & Hero Transition Gradient
+- **Footer**: Privacy/Terms links moved directly under the Instagram/Email buttons (right-aligned column). Removed the separate bordered section that previously held them.
+- **Hero-to-content transition**: Replaced 3-stop Tailwind gradient with a 7-stop inline `linear-gradient` for a much more gradual teal→white shift. Increased transition div height to `h-48 sm:h-60 md:h-72`. Reduced backdrop blur from `3xl` to `2xl`.
+
+#### 2026-02-11 — Footer Curved Marquee Polish
+- **Footer**: Curve now arches upward (`curveAmount={-200}`). Privacy/Terms links moved above the curve. Removed copyright line and "by Antedotal" branding.
+- **CurvedLoop**: Added SVG `linearGradient` + `<mask>` for edge fade. Text fades in from 0→100% opacity at 0–15% of width, and back out at 85–100%. Mask uses a unique ID per instance.
+
+#### 2026-02-11 — Media Fade-in, Features Auto-scroll & Footer Curved Marquee
+- **HowItWorks**: Right-side media now transitions with a `y: 20 → 0` + `scale: 0.97 → 1` fade-in (via `gsap.fromTo`) for a more obvious step change. Exiting media slides down + scales out.
+- **Features**: Increased auto-scroll speed from 0.35 to 0.6 px/frame. Removed CSS `scroll-snap` (conflicted with programmatic scrolling). Carousel now loops back to start when reaching end. Pauses on pointer enter / touch to allow manual browsing.
+- **Footer**: Replaced plain "Made in Sydney" text with a `CurvedLoop` SVG marquee component (`components/ui/CurvedLoop.tsx`). Adapted from react-bits; uses SVG `<textPath>` on a quadratic bezier. Renders "Made in Sydney ✦" looping at 20% opacity. Non-interactive in footer context.
+- **New component**: `components/ui/CurvedLoop.tsx` — reusable animated curved-path marquee. Props: `marqueeText`, `speed`, `curveAmount`, `direction`, `interactive`, `fontSize`, `fill`.
+
+#### 2026-02-11 — Easing Unification & HowItWorks Scroll Re-architecture
+- **Global easing**: All GSAP animations now use `NATURAL_EASE` (`"0.22, 1, 0.36, 1"` — ease-out-quint). Removed all `power2.out`, `power3.out` overrides. CSS transitions updated to `cubic-bezier(0.22, 1, 0.36, 1)` everywhere (nav links, shimmer button, `.font-immersive`). A `CSS_EASE_OUT_QUINT` constant exported from `lib/gsap.ts` for reference.
+- **HowItWorks**: Left column no longer scrolls/translates. All five steps are visible and stationary; only the active step highlights (opacity + number colour) as the user scrolls. Right media viewport crossfades in sync. Removed `cardsTrackRef` and `y: -scrollDistance` timeline tween. Added `data-how-desc` attribute to description `<p>` elements so they can be individually dimmed/highlighted by GSAP. First step is highlighted by default on enter.
+
+#### 2026-02-11 — Layout & Polish Pass
+- **Hero**: Converted from centred single-column to Jomo-style split layout (text left, app mockup right). Left column: eyebrow, rotating-word heading, subtitle, CTA. Right column: CSS phone mockup with fake task cards. Mockup slides in from right via GSAP. Heading split onto two lines: "Stop" on line 1, rotating word on line 2.
+- **Navbar**: Removed underline-on-hover CSS `::after` effect; replaced with `hover:font-semibold` font-weight change. Morph transition easing set to quint ease-out `[0.22, 1, 0.36, 1]`.
+- **Global easing**: `NATURAL_EASE` custom bezier set to ease-out-quint `"0.22, 1, 0.36, 1"` in `lib/gsap.ts`. All GSAP animations and navbar morph use this curve.
+- **Hero-to-content transition**: Replaced CSS `filter: blur()` hack with layered approach: a `bg-gradient-to-b` from teal to light + a `backdrop-blur-3xl` overlay for a smooth soft edge.
+- **HowItWorks**: Tightened vertical spacing between step title and description (`mb-2` → `mb-0.5`, added `leading-snug`). Blue colour was already consistent (#00A4C6).
+- **Scrollbars**: Added global CSS to hide all scrollbars (`scrollbar-width: none`, `::-webkit-scrollbar { display: none }`) while preserving scroll functionality.
+- **Features (auto-scroll)**: Replaced broken GSAP ScrollTrigger scrub with `requestAnimationFrame` loop + `IntersectionObserver`. Scrolls at ~0.35px/frame when section is visible.
+- **CTA**: Fixed "person" orphan line break via word-split with non-breaking space. Background changed to `bg-[#003949]` to match the footer.
+
+#### 2026-02-10 — Professional Redesign
+- **Global**: Removed all blur+scale animations sitewide. Each section now has one unique animation.
+- **CSS Cleanup**: Removed `.glass-panel`, `.font-stretch-hover`, `.text-gradient`, `.btn-gradient` utilities.
+- **Noise overlay**: Reduced opacity from `0.18` to `0.10`.
+- **lib/gsap.ts**: Added `REVEAL_Y` and `REVEAL_STAGGER` constants for consistent scroll-triggered entrances.
+- **Deleted 12 unused UI components**: `bento-grid`, `blur-fade`, `magic-card`, `border-beam`, `aurora-text`, `animated-gradient-text`, `particles`, `globe`, `lightRays`, `ColorBends`, `TextType` (tsx + css).
+- **Navbar**: Replaced Framer Motion pill variants with CSS-only scroll transition (`bg-transparent` → `bg-[#002530]/90 backdrop-blur-md`). Full-width layout. Underline-on-hover links via CSS `::after`. Plain `Link` CTA instead of `ShimmerButton`.
+- **Hero**: Removed glass panel and full-phrase rotation. Content floats on teal background. Fixed "Stop [word]." headline with single rotating word (`procrastinating`/`scrolling`/`avoiding`) using GSAP slide animation. Reduced Beams to 6 beams, speed 0.4, muted colors. Plain solid CTA button.
+- **HowItWorks**: Borderless numbered timeline (large `01`–`05` numbers, connector lines). Removed teal `bg-[#E5F1F4]` card backgrounds and `data-scroll-fade` system. Preserved GSAP ScrollTrigger pin/scrub. Active step number transitions from 15% to 80% opacity. Section uses `bg-[#FAFBFC]`. Uses `useSyncExternalStore` for mobile detection.
+- **Features**: Complete rewrite to horizontal scroll carousel with CSS `scroll-snap`. Cards are borderless (image + text stacked). Section header fades in with `REVEAL_Y`. No GSAP on individual cards.
+- **CallToAction**: Character-split GSAP entrance (each letter staggers in from `y: 60`). Radial glow background. Kept `MagneticButton` + `ShimmerButton` combo.
+- **Footer**: Added `border-t border-white/5`, copyright line, Privacy/Terms links. Removed `backdrop-blur-xl` from social buttons.
+
 #### 2026-02-05
 - **Beams Component Optimization**:
-  - **Fixed WebGL Error**: Removed unused `varying vec3 vPosition` from `vertexShader` in `components/ui/Beams.tsx` to fix the "Fragment shader is not compiled" error caused by mismatched varyings.
-  - **Logic Fix**: Updated `fragmentShader` to correctly utilize the `uNoiseIntensity` uniform for alpha modulation.
-  - **Performance**: Added `dpr={[1, 1.5]}` to the default `Canvas` configuration to cap pixel density on high-DPI screens, reducing GPU load.
-  - **Movement & Performance Tuning**:
-    - Lowered default `beamNumber` and `speed` to reduce visual motion and draw calls.
-    - Throttled `uTime` updates to ~30fps for lighter CPU/GPU usage.
-    - Tightened DPR cap and disabled antialiasing for improved fragment performance.
+  - Fixed WebGL error, optimized performance, reduced motion.
 - `components/` – Shared UI components and page sections.
 - `lib/` – Utilities (e.g., `utils.ts`).
 - `public/` – Static assets (SVGs, images).
@@ -222,33 +271,26 @@ These are composed in `app/page.tsx`.
 
 - `Button.tsx` – shared button component.
 - `Card.tsx` – card layout component.
-- `magic-card.tsx` – fancier card with hover/3D-like effects.
-- `border-beam.tsx` – animated border visual.
-- `Beams.tsx` – animated light beams background using deterministically seeded randoms.
-- `bento-grid.tsx` – bento-style grid layout.
-- `blur-fade.tsx` – blur/fade animation wrapper.
-- `particles.tsx` – particle effect component.
-- `globe.tsx` – 3D/visual globe (likely uses `three`, `@react-three/fiber`, `cobe`).
-- `shimmer-button.tsx` – gradient/shimmer button used in CTA.
+- `Beams.tsx` – animated light beams background (Three.js + React Three Fiber).
+- `shimmer-button.tsx` – gradient/shimmer button (used in CTA only).
 - `MagneticButton.tsx` – magnetic hover wrapper for CTA buttons.
 - `CustomCursor.tsx` – GSAP-driven cursor with color swapping per section.
 - `LenisProvider.tsx` – smooth scrolling provider using Lenis.
 - `icons.tsx` – inline SVG icons for buttons and footer links.
-- `aurora-text.tsx` – animated gradient/aurora text component.
-- `animated-gradient-text.tsx` – generalized gradient text animation.
 
 **Usage conventions:**
-- Prefer these primitives when building new sections:
-  - For CTAs → `Button` / `shimmer-button`.
-  - For highlighted content blocks → `Card`, `magic-card`, `bento-grid`.
-  - For animated headers → `aurora-text`, `animated-gradient-text`.
-  - For backgrounds → `ColorBendBackground`, `particles`, `globe`, `border-beam`.
+- For CTAs → `Button` / `shimmer-button` (shimmer reserved for final CTA only).
+- For backgrounds → `Beams` (hero only).
+- For interactive buttons → `MagneticButton` wrapping `ShimmerButton`.
 
-**Recent adjustments:**
-- `HowItWorks` scroll lock starts slightly earlier to account for the fixed navbar and ends exactly with the final card.
-- `Features` grid uses fixed 20vw square tiles with 27.5vw outer padding and 5vw gutters.
-- `data-scroll-fade` elements fade in/out as they enter and leave the viewport.
-- `TextType` typing effect was removed in favor of static headline copy.
+**Animation architecture (2026-02-10 redesign):**
+- **0 animations use blur. 0 animations use scale. 8 unique animation types.**
+- Navbar: CSS-only `transition-all duration-300` on scroll.
+- Hero: GSAP staggered `y + opacity` entrance; GSAP rotating word slide.
+- HowItWorks: GSAP ScrollTrigger pin/scrub with opacity transitions.
+- Features: GSAP `REVEAL_Y` on header; CSS `scroll-snap` horizontal scroll.
+- CTA: GSAP character-split stagger (`y: 60`, `stagger: 0.02`).
+- Footer: No animation.
 
 ### 3.3 `lib/`
 
@@ -314,7 +356,7 @@ From `app/layout.tsx`:
 - Noise overlay:
   - `fixed inset-0 pointer-events-none`
   - Inline SVG noise pattern via `backgroundImage`.
-  - `opacity: 0.18`
+  - `opacity: 0.10`
   - `mixBlendMode: 'overlay'`
 
 ### 5.2 Typography & Branding
@@ -460,11 +502,10 @@ From `app/layout.tsx`:
 
 - **Key UI primitives**:
   - `components/ui/shimmer-button.tsx`
-  - `components/ui/aurora-text.tsx`
+  - `components/ui/MagneticButton.tsx`
   - `components/ui/Button.tsx`
   - `components/ui/Card.tsx`
-  - `components/ui/magic-card.tsx`
-  - `components/ui/bento-grid.tsx`
+  - `components/ui/Beams.tsx`
 
 ---
 
@@ -528,3 +569,34 @@ When extending the codebase:
 - Use TypeScript types for all function parameters and returns
 - Log security events (bot detection, suspicious activity) for monitoring
 - Configure appropriate RLS policies for each table
+
+---
+
+## 11. Change Log
+
+### 11.1 Grainient Animated Hero Background
+
+- **Added** `components/ui/Grainient.tsx` — WebGL animated gradient component ported from react-bits. Uses `ogl` (already a project dependency) to render a full-screen GLSL fragment shader that blends three colors through noise-warped UV space with configurable warp, grain, contrast, and saturation post-processing.
+- **Modified** `components/Hero.tsx`:
+  - Removed inline `linear-gradient(135deg, …)` CSS background from the `<section>` element.
+  - Added `<Grainient>` as an `absolute inset-0 z-0` background layer with teal palette: `color1="#236597"`, `color2="#003949"`, `color3="#00b0df"`.
+  - Re-layered Beams component at `z-1` (was `-z-10`) so it renders on top of the Grainient but below content (`z-10`).
+- **Dependency**: `ogl` (already installed) — lightweight WebGL2 library used for the shader renderer.
+
+### 11.2 Download Buttons — Replace Waitlist/Early Access
+
+Replaced all waitlist/early access CTAs with platform-aware download buttons.
+
+- **Added** `lib/useDeviceType.ts` — Client-side hook detecting Android, iOS, or desktop via `navigator.userAgent`. Returns `{ isAndroid, isIOS, isMobile }` (all false during SSR).
+- **Added** `AppleIcon` and `AndroidIcon` SVG components to `components/ui/icons.tsx`.
+- **Modified** `components/Hero.tsx`:
+  - Added `id="download"` to the `<section>` for scroll targeting from Navbar/CTA.
+  - Replaced single "Join the waitlist" `<Link>` with two download buttons (iOS + Android).
+  - On mobile: only the device-appropriate button renders. On desktop: both shown.
+  - Placeholder store URLs (`#`) — replace with real App Store / Google Play links when published.
+- **Modified** `components/Navbar.tsx`:
+  - Replaced "Early Access" `<Link href="/signup">` with "Download" `<a>` that smooth-scrolls to `#download` hero section.
+  - Removed unused `next/link` import.
+- **Modified** `components/CallToAction.tsx`:
+  - Replaced `ShimmerButton` + `MagneticButton` "Join the waitlist" with a plain "Download the app" button that scrolls to `#download`.
+  - Removed `ShimmerButton` and `MagneticButton` imports (no longer used here).
