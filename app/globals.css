@@ -148,8 +148,8 @@ html {
 
 @media (pointer: fine) {
 
-  /* Hide the native cursor when the custom cursor is active. */
-  body {
+  /* Hide the native cursor only when the custom cursor component is enabled. */
+  body[data-custom-cursor="true"] {
     cursor: none;
   }
 }

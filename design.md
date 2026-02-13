@@ -278,7 +278,7 @@ These are composed in `app/page.tsx`.
 - `Beams.tsx` – animated light beams background (Three.js + React Three Fiber).
 - `shimmer-button.tsx` – gradient/shimmer button (used in CTA only).
 - `MagneticButton.tsx` – magnetic hover wrapper for CTA buttons.
-- `CustomCursor.tsx` – GSAP-driven cursor with color swapping per section.
+- `CustomCursor.tsx` – GSAP-driven cursor with color swapping per section. Accepts an `enabled` prop (default `true`); set to `false` to disable and restore the native browser cursor. Currently disabled in `layout.tsx`.
 - `LenisProvider.tsx` – smooth scrolling provider using Lenis.
 - `icons.tsx` – inline SVG icons for buttons and footer links.
 

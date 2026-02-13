@@ -5,20 +5,42 @@ import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 
 interface CursorOptions {
+    /** Whether the custom cursor is active. Set to false to restore the native cursor. */
+    enabled?: boolean;
     defaultColor?: string;
     hoverScale?: number;
 }
 
 const DEFAULT_CURSOR_COLOR = "#ffffff";
 
+/**
+ * Custom animated cursor with GSAP-driven dot + ring.
+ * Pass `enabled={false}` to disable and restore the browser's native cursor.
+ */
 export function CustomCursor({
+    enabled = true,
     defaultColor = DEFAULT_CURSOR_COLOR,
     hoverScale = 1.6,
 }: CursorOptions) {
     const cursorRef = useRef<HTMLDivElement>(null);
     const ringRef = useRef<HTMLDivElement>(null);
 
+    // Toggle `data-custom-cursor` on <body> so CSS can hide/show the native cursor.
     useEffect(() => {
+        if (enabled) {
+            document.body.setAttribute("data-custom-cursor", "true");
+        } else {
+            document.body.removeAttribute("data-custom-cursor");
+        }
+        return () => {
+            document.body.removeAttribute("data-custom-cursor");
+        };
+    }, [enabled]);
+
+    useEffect(() => {
+        // Skip all event listeners when the cursor is disabled.
+        if (!enabled) return;
+
         const cursor = cursorRef.current;
         const ring = ringRef.current;
 
@@ -89,7 +111,10 @@ export function CustomCursor({
             document.removeEventListener("pointerover", handlePointerOver);
             document.removeEventListener("pointerout", handlePointerOut);
         };
-    }, [defaultColor, hoverScale]);
+    }, [enabled, defaultColor, hoverScale]);
+
+    // Don't render any cursor elements when disabled.
+    if (!enabled) return null;
 
     return (
         <div className="custom-cursor" aria-hidden="true">
