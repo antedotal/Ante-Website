@@ -137,7 +137,7 @@ export function Hero() {
             ref={eyebrowRef}
             className="uppercase tracking-[0.2em] text-white/50 text-xs sm:text-sm mb-6"
           >
-            The Social Task Manager
+            The Punishing Social Task Manager
           </p>
 
           {/* Heading with rotating word — "Stop" on line 1, rotating word on line 2 */}
@@ -165,7 +165,7 @@ export function Hero() {
             ref={subtitleRef}
             className="text-lg md:text-xl text-white/60 mb-10 md:mb-12 max-w-lg"
           >
-            Use social pressure and the fear of going broke to get off your a**.
+            Use social pressure and monetary deterrence to get off your a**.
           </p>
 
           {/* Download buttons — disabled "Coming Soon" state until app is published */}

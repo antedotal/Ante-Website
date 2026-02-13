@@ -51,8 +51,9 @@ export default function RootLayout({
       >
         {/* Smooth scrolling manager using Lenis. */}
         <LenisProvider />
-        {/* Custom cursor follows the pointer and adapts to section colors. */}
-        <CustomCursor />
+        {/* Custom cursor follows the pointer and adapts to section colors.
+            Set enabled={true} to re-enable the animated dot + ring cursor. */}
+        <CustomCursor enabled={false} />
         {/* Noise overlay */}
         <div
           className="fixed inset-0 pointer-events-none"

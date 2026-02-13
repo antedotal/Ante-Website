@@ -52,10 +52,12 @@ export function Navbar() {
   );
 
   return (
-    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4">
-      {/* Container that morphs from full-width bar to floating pill */}
+    <nav className="fixed top-0 left-0 right-0 z-50 flex justify-center px-4 pointer-events-none">
+      {/* Container that morphs from full-width bar to floating pill.
+          pointer-events-auto re-enables clicks only on the visible bar/pill,
+          so the transparent area around the pill doesn't block page content. */}
       <motion.div
-        className="flex items-center justify-between w-full backdrop-blur-md"
+        className="flex items-center justify-between w-full backdrop-blur-md pointer-events-auto"
         initial={false}
         animate={isScrolled ? "pill" : "bar"}
         variants={{
@@ -87,18 +89,23 @@ export function Navbar() {
         transition={{ duration: 0.45, ease: [0.23, 1, 0.32, 1] }}
         style={{ borderWidth: 1, borderStyle: "solid" }}
       >
-        {/* Brand — color transitions between dark (bar) and white (pill) */}
-        <motion.div
-          className="text-xl tracking-tighter font-immersive"
-          animate={{ color: isScrolled ? "#ffffff" : "#1a1a1a" }}
-          transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-        >
-          <a href="#">Ante</a>
-        </motion.div>
+        {/* Left section — flex-1 mirrors the right section width for true centering.
+            min-w-0 allows proper shrinking if the container narrows. */}
+        <div className="flex-1 min-w-0">
+          {/* Brand — color transitions between dark (bar) and white (pill) */}
+          <motion.div
+            className="text-xl tracking-tighter font-immersive"
+            animate={{ color: isScrolled ? "#ffffff" : "#1a1a1a" }}
+            transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <a href="#">Ante</a>
+          </motion.div>
+        </div>
 
-        {/* Desktop nav links — color adapts to scroll state */}
+        {/* Desktop nav links — centered between the two flex-1 sections.
+            shrink-0 prevents compression in pill state; whitespace-nowrap avoids wrapping. */}
         <motion.div
-          className="hidden md:flex items-center gap-6 text-sm font-normal"
+          className="hidden md:flex items-center gap-6 text-sm font-normal shrink-0 whitespace-nowrap"
           animate={{ color: isScrolled ? "rgba(255,255,255,0.8)" : "rgba(26,26,26,0.6)" }}
           transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
         >
@@ -118,12 +125,14 @@ export function Navbar() {
           </a>
         </motion.div>
 
-        <div className="flex items-center gap-3">
+        {/* Right section — flex-1 mirrors the left section width.
+            justify-end pushes CTA/hamburger to the trailing edge. min-w-0 for overflow. */}
+        <div className="flex-1 min-w-0 flex items-center justify-end gap-3">
           {/* Download CTA — scrolls to hero download buttons */}
           <a
             href="#download"
             onClick={(e) => handleNavClick(e, "download")}
-            className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200"
+            className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200 whitespace-nowrap shrink-0"
           >
             Coming Soon
           </a>
@@ -176,7 +185,7 @@ export function Navbar() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -8 }}
             transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
-            className="md:hidden absolute top-full left-4 right-4 mt-2 rounded-2xl bg-[#002530]/95 backdrop-blur-md border border-white/5 overflow-hidden"
+            className="md:hidden absolute top-full left-4 right-4 mt-2 rounded-2xl bg-[#002530]/95 backdrop-blur-md border border-white/5 overflow-hidden pointer-events-auto"
           >
             <div className="flex flex-col py-3 px-6">
               <a
