@@ -80,7 +80,7 @@ export function Navbar() {
             paddingLeft: 24,
             paddingRight: 24,
             marginTop: 12,
-            boxShadow: "0 4px 24px -4px rgba(0,0,0,0.25)",
+            boxShadow: "0 0 0 0 rgba(0,0,0,0)",
             borderColor: "rgba(255,255,255,0.05)",
           },
         }}
