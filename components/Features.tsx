@@ -5,6 +5,9 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
+import remindersMockup from "@/components/images/Mockup - Ante - Reminders.png";
+import setAnteMockup from "@/components/images/Mockup - Ante- SetAnte.png";
+import emojisMockup from "@/components/images/Mockup - Ante - Emojis.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,13 +31,13 @@ export function Features() {
         label: "Reminders",
         title: "Set reminders",
         description: "So you don't forget you should be off your phone.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Reminders",
+        image: remindersMockup,
       },
       {
         label: "Stakes",
         title: "Set an Ante",
         description: "Pay for your laziness, literally.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Set+an+Ante",
+        image: setAnteMockup,
       },
       {
         label: "Organisation",
@@ -46,7 +49,7 @@ export function Features() {
         label: "Personalisation",
         title: "Add custom emojis",
         description: "Make every task unique.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Custom+Emojis",
+        image: emojisMockup,
       },
     ],
     []
@@ -177,8 +180,10 @@ export function Features() {
                 <Image
                   src={feature.image}
                   alt={feature.title}
-                  width={560}
-                  height={420}
+                  width={1120}
+                  height={840}
+                  quality={90}
+                  sizes="(max-width: 768px) 280px, 420px"
                   className="w-full h-full object-cover"
                 />
               </div>
