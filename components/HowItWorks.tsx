@@ -66,6 +66,9 @@ export function HowItWorks() {
       return;
     }
 
+    // Cleanup for wheel event listener (assigned inside the desktop branch).
+    let wheelCleanup: (() => void) | null = null;
+
     const context = gsap.context(() => {
       if (isMobile) {
         // Mobile: simple fade-in per step, no pin/scrub.
@@ -95,7 +98,7 @@ export function HowItWorks() {
         let activeIndex = -1;
 
         // Enough scroll distance to move through all steps comfortably.
-        const scrollDistance = cards.length * 200;
+        const scrollDistance = cards.length * 250;
 
         // Initialize: first step active, rest dimmed.
         gsap.set(cards, { opacity: 0.25 });
@@ -110,7 +113,7 @@ export function HowItWorks() {
 
         // Empty timeline — we only use the ScrollTrigger callbacks,
         // not timeline-driven transforms, since the left side is static.
-        gsap.timeline({
+        const tl = gsap.timeline({
           scrollTrigger: {
             trigger: pinSection,
             start: "top-=100 top",
@@ -192,12 +195,64 @@ export function HowItWorks() {
             },
           },
         });
+
+        // --- Inertia removal ---
+        // Intercept wheel events while the pinned section is active to prevent
+        // trackpad/mouse momentum from accidentally skipping steps.
+        // Batches all wheel deltas per animation frame, caps the applied amount,
+        // and discards excess — killing momentum buildup entirely.
+        // 10% transition zones at entry and exit preserve seamless native scrolling.
+        const st = tl.scrollTrigger!;
+
+        // Exit transition zone boundary (last 10% of final card's progress).
+        const exitStart = 1 - (1 / cards.length) * 0.1;
+
+        // Max pixels to scroll per animation frame — caps speed to prevent skipping.
+        const MAX_FRAME_DELTA = 35;
+        let pendingDelta = 0;
+        let rafScheduled = false;
+
+        const onWheel = (e: WheelEvent) => {
+          if (!st.isActive) return;
+
+          const progress = st.progress;
+
+          // Exit transition zone: allow native scroll for seamless departure.
+          // No entry zone — momentum from above is killed as soon as the pin engages.
+          if (progress > exitStart) return;
+
+          // Active zone — take over scroll to remove inertia.
+          e.preventDefault();
+          pendingDelta += e.deltaY;
+
+          if (!rafScheduled) {
+            rafScheduled = true;
+            requestAnimationFrame(() => {
+              // Clamp the batched delta to cap scroll speed.
+              const clamped =
+                Math.sign(pendingDelta) *
+                Math.min(Math.abs(pendingDelta), MAX_FRAME_DELTA);
+              window.scrollBy(0, clamped);
+              // Discard excess delta — this kills momentum/inertia buildup.
+              pendingDelta = 0;
+              rafScheduled = false;
+            });
+          }
+        };
+
+        window.addEventListener("wheel", onWheel, { passive: false });
+        wheelCleanup = () => {
+          window.removeEventListener("wheel", onWheel);
+        };
       }
 
       ScrollTrigger.refresh();
     }, sectionRef);
 
-    return () => context.revert();
+    return () => {
+      context.revert();
+      wheelCleanup?.();
+    };
   }, [steps.length, isMobile]);
 
   // Format step number as two digits (01, 02, etc.).
