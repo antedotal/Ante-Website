@@ -6,8 +6,10 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 import remindersMockup from "@/components/images/Mockup - Ante - Reminders.png";
-import setAnteMockup from "@/components/images/Mockup - Ante- SetAnte.png";
+import paymentHoldMockup from "@/components/images/payment_hold_mockup.png";
 import emojisMockup from "@/components/images/Mockup - Ante - Emojis.png";
+import inListMockup from "@/components/images/inlist_mockup.png";
+import taskVerificationMockup from "@/components/images/task_verification_mockup.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,7 +27,7 @@ export function Features() {
         label: "Accountability",
         title: "Verify Friends",
         description: "Make sure they also aren't being lazy.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Verify+Friends",
+        image: taskVerificationMockup,
       },
       {
         label: "Reminders",
@@ -37,13 +39,13 @@ export function Features() {
         label: "Stakes",
         title: "Set an Ante",
         description: "Pay for your laziness, literally.",
-        image: setAnteMockup,
+        image: paymentHoldMockup,
       },
       {
         label: "Organisation",
         title: "Set lists",
         description: "Organise everything in one clean view.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Lists",
+        image: inListMockup,
       },
       {
         label: "Personalisation",
@@ -176,7 +178,7 @@ export function Features() {
               className="min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
-              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-6">
+              <div className="rounded-xl aspect-4/3 overflow-hidden mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}

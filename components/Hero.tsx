@@ -7,7 +7,7 @@ import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
 import { useDeviceType } from "@/lib/useDeviceType";
 import Grainient from "./ui/Grainient";
-import heroMockup from "@/components/images/Mockup - Ante - Hero.png";
+import heroMockup from "@/components/images/task_mainscreen_mockup.png";
 
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding", "being lazy", "wasting time", "idling", "wasting your future", "putting it off"];
@@ -200,7 +200,7 @@ export function Hero() {
           <Image
             src={heroMockup}
             alt="Ante app mockup showing task list"
-            className="w-[65vw] sm:w-[55vw] lg:w-[42vw] max-w-none h-auto drop-shadow-2xl"
+            className="w-[70vw] sm:w-[60vw] lg:w-[47vw] max-w-none h-auto drop-shadow-2xl"
             quality={95}
             priority
           />

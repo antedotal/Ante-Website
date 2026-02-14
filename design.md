@@ -101,6 +101,9 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-14 — Features Image Fit Adjustment
+- **Features**: Updated feature card images from `object-cover` to `object-contain` in `components/Features.tsx` so full mockups remain visible inside the fixed `aspect-4/3` frame (no edge cropping).
+
 #### 2026-02-11 — Navbar Color Adaptation & Panel Spacing
 - **Navbar**: Text/brand/hamburger colors now adapt to scroll state. Bar (top, no scroll): dark text (`#1a1a1a`) for visibility against white body. Pill (scrolled): white text against dark backdrop. Uses `motion.div` animate for smooth color transitions.
 - **Page**: Inset panel padding tightened — left/right reduced (`px-2 sm:px-2.5 md:px-3`), top increased +5px to `pt-[77px]`, bottom increased +10px to `pb-[13px] sm:pb-[14px] md:pb-[15px]`.

@@ -5,7 +5,8 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import setAnteMockup from "@/components/images/Mockup - Ante- SetAnte.png";
+import paymentHoldMockup from "@/components/images/payment_hold_mockup.png";
+import getVerifiedOrPay from "@/components/images/task_verification_mockup.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -26,7 +27,7 @@ export function HowItWorks() {
       {
         title: "Set the Ante",
         description: "Put real money on the line so your goals feel urgent.",
-        image: setAnteMockup,
+        image: paymentHoldMockup,
       },
       {
         title: "Do the damn task",
@@ -41,7 +42,7 @@ export function HowItWorks() {
       {
         title: "Get verified (or pay)",
         description: "If they approve, you keep your cash. If not, you pay up.",
-        image: "https://placehold.co/520x640/png?text=Verified+or+Pay",
+        image: getVerifiedOrPay,
       },
     ],
     []
@@ -309,7 +310,7 @@ export function HowItWorks() {
                   )}
 
                   {/* Inline step image visible only on mobile (below lg) */}
-                  <div className="mt-6 rounded-xl overflow-hidden bg-[#F0F0F0] lg:hidden">
+                  <div className="mt-6 bg-[#F0F0F0] lg:hidden">
                     <Image
                       src={step.image}
                       alt={step.title}
@@ -326,19 +327,19 @@ export function HowItWorks() {
           </div>
 
           {/* Right column: synced media viewport (desktop only) */}
-          <div className="relative min-h-130 overflow-hidden hidden lg:block" ref={mediaTrackRef}>
+          <div className="relative min-h-130 hidden lg:block" ref={mediaTrackRef}>
             {steps.map((step) => (
               <div
                 key={step.title}
                 data-how-media
-                className="absolute inset-0 rounded-xl overflow-hidden bg-[#F0F0F0]"
+                className="absolute inset-0"
               >
                 <Image
                   src={step.image}
                   alt={step.title}
                   width={1040}
                   height={1280}
-                  quality={90}
+                  quality={100}
                   sizes="520px"
                   className="h-full w-full object-cover"
                 />
