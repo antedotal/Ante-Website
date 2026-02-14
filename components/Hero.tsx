@@ -10,7 +10,7 @@ import Grainient from "./ui/Grainient";
 import heroMockup from "@/components/images/Mockup - Ante - Hero.png";
 
 // Words that cycle in the "Stop ___." headline.
-const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding"];
+const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding", "being lazy", "wasting time", "idling", "wasting your future", "putting it off"];
 const WORD_HOLD_DURATION = 2500; // ms each word stays visible
 
 // Hero section — Jomo-style split layout: text left, app mockup right.
