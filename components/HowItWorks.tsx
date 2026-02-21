@@ -5,6 +5,8 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
+import paymentHoldMockup from "@/components/images/payment_hold_mockup.png";
+import getVerifiedOrPay from "@/components/images/task_verification_mockup.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -25,7 +27,7 @@ export function HowItWorks() {
       {
         title: "Set the Ante",
         description: "Put real money on the line so your goals feel urgent.",
-        image: "https://placehold.co/520x640/png?text=Set+the+Ante",
+        image: paymentHoldMockup,
       },
       {
         title: "Do the damn task",
@@ -40,7 +42,7 @@ export function HowItWorks() {
       {
         title: "Get verified (or pay)",
         description: "If they approve, you keep your cash. If not, you pay up.",
-        image: "https://placehold.co/520x640/png?text=Verified+or+Pay",
+        image: getVerifiedOrPay,
       },
     ],
     []
@@ -116,7 +118,7 @@ export function HowItWorks() {
         const tl = gsap.timeline({
           scrollTrigger: {
             trigger: pinSection,
-            start: "top-=100 top",
+            start: "top top",
             end: `+=${scrollDistance}`,
             scrub: true,
             pin: pinSection,
@@ -266,18 +268,18 @@ export function HowItWorks() {
       className="relative px-4 sm:px-6 py-16 sm:py-24 md:py-36 bg-[#FAFBFC] text-[#1a1a1a]"
     >
       <div className="container mx-auto max-w-6xl">
-        {/* Section header */}
-        <div className="text-center mb-10 lg:mb-16">
-          <h2 className="text-3xl sm:text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
-            How Ante works
-          </h2>
-          <p className="text-base sm:text-lg md:text-xl text-[#1a1a1a]/60 max-w-3xl mx-auto">
-            The screen locks, the cards move, and your accountability stays in focus.
-          </p>
-        </div>
+        {/* Pinned container: title + grid both pin together so the heading stays visible during scroll-lock.
+            Top padding ensures the title clears the fixed navbar when pinned to viewport top. */}
+        <div ref={pinRef} className="pt-24 sm:pt-28">
+          {/* Section header — inside pinRef so it stays visible when pinned */}
+          <div className="text-center mb-4 lg:mb-8">
+            <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif-custom font-semibold">
+              How Ante works
+            </h2>
+          </div>
 
-        {/* Pinned grid: left numbered timeline + right media viewport. */}
-        <div ref={pinRef} className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10 items-start pt-6 lg:pt-12">
+          {/* Pinned grid: left numbered timeline + right media viewport. */}
+          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10 items-start pt-2 lg:pt-6">
           {/* Left column: all steps visible, highlight shifts on scroll */}
           <div className="relative">
             <div className="flex flex-col gap-6">
@@ -308,12 +310,14 @@ export function HowItWorks() {
                   )}
 
                   {/* Inline step image visible only on mobile (below lg) */}
-                  <div className="mt-6 rounded-xl overflow-hidden bg-[#F0F0F0] lg:hidden">
+                  <div className="mt-6 bg-[#F0F0F0] lg:hidden">
                     <Image
                       src={step.image}
                       alt={step.title}
-                      width={520}
-                      height={640}
+                      width={1040}
+                      height={1280}
+                      quality={90}
+                      sizes="(max-width: 640px) 90vw, 520px"
                       className="w-full h-auto object-cover"
                     />
                   </div>
@@ -323,23 +327,26 @@ export function HowItWorks() {
           </div>
 
           {/* Right column: synced media viewport (desktop only) */}
-          <div className="relative min-h-130 overflow-hidden hidden lg:block" ref={mediaTrackRef}>
+          <div className="relative min-h-130 hidden lg:block" ref={mediaTrackRef}>
             {steps.map((step) => (
               <div
-                key={step.image}
+                key={step.title}
                 data-how-media
-                className="absolute inset-0 rounded-xl overflow-hidden bg-[#F0F0F0]"
+                className="absolute inset-0"
               >
                 <Image
                   src={step.image}
                   alt={step.title}
-                  width={520}
-                  height={640}
+                  width={1040}
+                  height={1280}
+                  quality={100}
+                  sizes="520px"
                   className="h-full w-full object-cover"
                 />
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </section>

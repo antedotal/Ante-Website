@@ -101,10 +101,19 @@ High-level layout under the repo root:
 
 ### Recent Changes
 
+#### 2026-02-14 — Features Image Fit Adjustment
+- **Features**: Updated feature card images from `object-cover` to `object-contain` in `components/Features.tsx` so full mockups remain visible inside the fixed `aspect-4/3` frame (no edge cropping).
+
 #### 2026-02-11 — Navbar Color Adaptation & Panel Spacing
 - **Navbar**: Text/brand/hamburger colors now adapt to scroll state. Bar (top, no scroll): dark text (`#1a1a1a`) for visibility against white body. Pill (scrolled): white text against dark backdrop. Uses `motion.div` animate for smooth color transitions.
 - **Page**: Inset panel padding tightened — left/right reduced (`px-2 sm:px-2.5 md:px-3`), top increased +5px to `pt-[77px]`, bottom increased +10px to `pb-[13px] sm:pb-[14px] md:pb-[15px]`.
 - **Hero**: Grid gap between text and mockup columns reduced from `gap-12 lg:gap-16` to `gap-8 lg:gap-10`.
+
+#### 2026-02-13 — Mobile Hero Fix, HowItWorks Pin, Footer Cleanup & Component Pruning
+- **Hero (mobile)**: Removed `min-h-screen` on mobile (now `lg:min-h-screen` only). Reduced mobile vertical padding (`py-12 sm:py-16 md:py-0`). Phone mockup now visible on all breakpoints with responsive sizing (`w-52 h-[26rem]` on mobile, scaling up via `sm:` and `lg:` breakpoints). Inset panel wrapper in `page.tsx` has reduced mobile padding (`px-2 sm:px-3 md:px-6`, `pt-[68px] sm:pt-[77px]`, `pb-2 sm:pb-3 md:pb-6`) to shrink the gradient borders on small screens.
+- **HowItWorks**: Section header (`<h2>`) moved inside the `pinRef` container so it pins with the grid and stays visible during scroll-lock. Pinned container has `pt-24 sm:pt-28` to clear the fixed navbar. Subtitle ("The screen locks, the cards move...") removed entirely. ScrollTrigger `start` changed from `"top-=100 top"` to `"top top"` for flush pin.
+- **Footer/CTA continuity**: Removed `border-t border-white/5` from footer so CTA and footer appear as one seamless element. Added horizontal CSS `mask-image` gradient to the "Made in Sydney" `CurvedLoop` marquee container for smooth fade on left/right edges. Enhanced `CurvedLoop.tsx` SVG mask with `<feGaussianBlur>` filter (stdDeviation 6) and tighter fade stops (8%/92%) for a softer blur+fade effect at the horizontal edges.
+- **Deleted unused components**: Removed `ColorBendBackground.tsx`, `Testimonials.tsx`, and `Stats.tsx` — all had zero imports anywhere in the codebase.
 
 #### 2026-02-11 — Jomo-style Inset Hero Panel
 - **Layout**: Body background changed from teal diagonal gradient to `#FAFBFC` (white). The teal gradient moved to the Hero section itself.
@@ -255,15 +264,13 @@ Top-level components:
 - `Features.tsx`
 - `CallToAction.tsx`
 - `Footer.tsx`
-- `ColorBendBackground.tsx`
 
 High-level intended roles:
 - **`Navbar`**: Top navigation for the marketing site (links, logo, CTA).
-- **`Hero`**: Above-the-fold content describing Ante’s core value prop.
-- **`HowItWorks`**: Explains the core flow/experience.
+- **`Hero`**: Above-the-fold content describing Ante's core value prop. Split layout: text left, responsive phone mockup right (visible on all breakpoints).
+- **`HowItWorks`**: Explains the core flow/experience. Title pins with the step grid during scroll-lock.
 - **`Features`**: Lists feature highlights/benefits.
-- **`Footer`**: Footer with links, probably including legal routes (`/privacy`, `/terms`) and signup.
-- **`ColorBendBackground`**: Likely visual effect background for sections or hero.
+- **`Footer`**: Footer with links, curved "Made in Sydney" marquee, legal routes (`/privacy`, `/terms`). Seamless with CTA section (no border divider).
 
 These are composed in `app/page.tsx`.
 

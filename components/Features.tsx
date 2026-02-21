@@ -5,6 +5,11 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
+import remindersMockup from "@/components/images/Mockup - Ante - Reminders.png";
+import paymentHoldMockup from "@/components/images/payment_hold_mockup.png";
+import emojisMockup from "@/components/images/Mockup - Ante - Emojis.png";
+import inListMockup from "@/components/images/inlist_mockup.png";
+import taskVerificationMockup from "@/components/images/task_verification_mockup.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -22,31 +27,31 @@ export function Features() {
         label: "Accountability",
         title: "Verify Friends",
         description: "Make sure they also aren't being lazy.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Verify+Friends",
+        image: taskVerificationMockup,
       },
       {
         label: "Reminders",
         title: "Set reminders",
         description: "So you don't forget you should be off your phone.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Reminders",
+        image: remindersMockup,
       },
       {
         label: "Stakes",
         title: "Set an Ante",
         description: "Pay for your laziness, literally.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Set+an+Ante",
+        image: paymentHoldMockup,
       },
       {
         label: "Organisation",
         title: "Set lists",
         description: "Organise everything in one clean view.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Lists",
+        image: inListMockup,
       },
       {
         label: "Personalisation",
         title: "Add custom emojis",
         description: "Make every task unique.",
-        image: "https://placehold.co/560x420/F0F0F0/666?text=Custom+Emojis",
+        image: emojisMockup,
       },
     ],
     []
@@ -173,12 +178,14 @@ export function Features() {
               className="min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
-              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-6">
+              <div className="rounded-xl aspect-4/3 overflow-hidden mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
-                  width={560}
-                  height={420}
+                  width={1120}
+                  height={840}
+                  quality={90}
+                  sizes="(max-width: 768px) 280px, 420px"
                   className="w-full h-full object-cover"
                 />
               </div>

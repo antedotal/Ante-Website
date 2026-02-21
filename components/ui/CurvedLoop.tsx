@@ -54,6 +54,14 @@ export default function CurvedLoop({
   // Quadratic bezier path spanning the SVG viewBox with configurable vertical curve.
   const pathD = `M-100,40 Q500,${40 + curveAmount} 1540,40`;
 
+  // Compute viewBox dimensions to encompass the full curve (handles upward arcs with negative curveAmount).
+  const curveY = 40 + curveAmount;
+  const viewMinY = Math.min(0, curveY - 40); // extra padding above the curve peak
+  const viewMaxY = Math.max(120, curveY + 80);
+  const viewHeight = viewMaxY - viewMinY;
+  const dynamicViewBox = `0 ${viewMinY} 1440 ${viewHeight}`;
+  const dynamicAspectRatio = `${1440} / ${viewHeight}`;
+
   const dragRef = useRef(false);
   const lastXRef = useRef(0);
   const dirRef = useRef(direction);
@@ -154,8 +162,8 @@ export default function CurvedLoop({
     >
       <svg
         className="select-none w-full overflow-visible block font-bold uppercase leading-none"
-        viewBox="0 0 1440 120"
-        style={{ fontSize, fill, aspectRatio: "100 / 12" }}
+        viewBox={dynamicViewBox}
+        style={{ fontSize, fill, aspectRatio: dynamicAspectRatio }}
       >
         {/* Hidden text for measuring single-repeat width */}
         <text
@@ -167,15 +175,18 @@ export default function CurvedLoop({
         </text>
         <defs>
           <path ref={pathRef} id={pathId} d={pathD} fill="none" stroke="transparent" />
-          {/* Horizontal fade mask: transparent at edges, opaque in the middle */}
+          {/* Horizontal fade+blur mask: transparent at edges with soft blur, opaque in the middle */}
           <linearGradient id={maskId} x1="0" y1="0" x2="1" y2="0">
             <stop offset="0%" stopColor="white" stopOpacity="0" />
-            <stop offset="15%" stopColor="white" stopOpacity="1" />
-            <stop offset="85%" stopColor="white" stopOpacity="1" />
+            <stop offset="8%" stopColor="white" stopOpacity="1" />
+            <stop offset="92%" stopColor="white" stopOpacity="1" />
             <stop offset="100%" stopColor="white" stopOpacity="0" />
           </linearGradient>
+          <filter id={`${maskId}-blur`}>
+            <feGaussianBlur stdDeviation="6" />
+          </filter>
           <mask id={`${maskId}-m`}>
-            <rect x="-200" y="-200" width="1840" height="520" fill={`url(#${maskId})`} />
+            <rect x="-200" y="-200" width="1840" height="520" fill={`url(#${maskId})`} filter={`url(#${maskId}-blur)`} />
           </mask>
         </defs>
 

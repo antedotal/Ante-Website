@@ -9,7 +9,7 @@ export function Footer() {
   return (
     <footer
       data-cursor-color="#ffffff"
-      className="bg-[#003949] text-white px-6 py-16 md:py-20 border-t border-white/5"
+      className="bg-[#003949] text-white px-6 py-16 md:py-20"
     >
       <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div className="text-3xl md:text-4xl font-serif-custom">
@@ -47,8 +47,15 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Curved marquee — "Made in Sydney" arching upward, fading at edges */}
-      <div className="container mx-auto max-w-6xl mt-20 md:mt-28 opacity-20">
+      {/* Curved marquee — "Made in Sydney" arching upward.
+          Horizontal CSS mask + blur creates smooth fade on left/right edges so text doesn't clip sharply. */}
+      <div
+        className="container mx-auto max-w-6xl mt-20 md:mt-28 opacity-20 overflow-visible"
+        style={{
+          maskImage: "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+          WebkitMaskImage: "linear-gradient(to right, transparent 0%, black 10%, black 90%, transparent 100%)",
+        }}
+      >
         <CurvedLoop
           marqueeText="Made in Sydney ✦ "
           speed={0.7}
