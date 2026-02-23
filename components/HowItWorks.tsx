@@ -12,6 +12,7 @@ import stepBg3 from "@/components/images/bg3.png";
 import stepBg2 from "@/components/images/bg2.png";
 import stepBg1 from "@/components/images/bg1.png";
 import inTaskMenu from "@/components/images/in_task_menu_mockup.png";
+import taskFailed from "@/components/images/task_failed.png"
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -51,7 +52,7 @@ export function HowItWorks() {
       {
         title: "Get verified (or pay)",
         description: "If they approve, you keep your cash. If not, you pay up.",
-        image: getVerifiedOrPay,
+        image: taskFailed,
         bg: stepBg2,
       },
     ],

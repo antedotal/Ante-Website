@@ -21,6 +21,7 @@ Strive for fixes that actually solve the root of the problem, rather than bandai
 
 Icons use `@expo/vector-icons` MaterialIcons via the `<Icon>` component (`components/common/Icon.tsx`), which handles cross-platform centering automatically. No manual `translateY` workarounds needed.
 
+Run a lint check after each code implementation
 
 ### Security Instructions
 Ensure industry level security

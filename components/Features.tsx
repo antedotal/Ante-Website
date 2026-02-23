@@ -139,8 +139,12 @@ export function Features() {
     // Native scroll fires when the user drags manually — clamp immediately.
     container.addEventListener("scroll", clamp, { passive: true });
 
+    // Check if the user is on a touch device (mobile)
+    const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
+
     const tick = () => {
-      if (isVisibleRef.current && !isPaused) {
+      // Only auto-scroll on desktop. On mobile, we rely on native scroll-snap and swiping.
+      if (isVisibleRef.current && !isPaused && !isTouchDevice) {
         container.scrollLeft += speed;
         clamp();
       }
@@ -181,7 +185,7 @@ export function Features() {
           scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-8 snap-x snap-mandatory"
+        className="overflow-x-auto pb-8 snap-x snap-mandatory md:snap-none"
         style={{
           WebkitOverflowScrolling: "touch",
         }}
@@ -194,7 +198,7 @@ export function Features() {
           {[...features, ...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="min-w-[80vw] sm:min-w-70 md:min-w-105 shrink-0 snap-center"
+              className="min-w-[80vw] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
             >
               {/* Feature image */}
               <div className="relative rounded-xl aspect-4/3 overflow-hidden mb-6">
