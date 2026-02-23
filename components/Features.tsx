@@ -168,14 +168,14 @@ export function Features() {
       id="features"
       ref={sectionRef}
       data-cursor-color="#1a1a1a"
-      className="relative py-16 md:py-24 bg-[#FAFBFC] text-[#1a1a1a]"
+      className="relative py-12 md:py-16 bg-[#FAFBFC] text-[#1a1a1a]"
     >
       {/* Section header */}
-      <div ref={headerRef} className="container mx-auto max-w-6xl px-6 text-center mb-12 md:mb-16">
-        <h2 className="text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
+      <div ref={headerRef} className="container mx-auto max-w-6xl px-6 text-center mb-8 md:mb-10">
+        <h2 className="text-3xl md:text-5xl mb-3 font-serif-custom font-semibold">
           Wait - what else can we do for you?
         </h2>
-        <p className="text-lg md:text-xl text-[#1a1a1a]/60">
+        <p className="text-base md:text-lg text-[#1a1a1a]/60">
           Everything you need to keep yourself striving for your goals.
         </p>
       </div>
@@ -185,23 +185,23 @@ export function Features() {
           scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-8 snap-x snap-mandatory md:snap-none"
+        className="overflow-x-auto pb-6 snap-x snap-mandatory md:snap-none"
         style={{
           WebkitOverflowScrolling: "touch",
         }}
       >
         <div
           ref={trackRef}
-          className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
+          className="flex gap-4 md:gap-6 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
           {/* Render cards twice for seamless infinite loop */}
           {[...features, ...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="min-w-[80vw] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
+              className="min-w-[70vw] sm:min-w-60 md:min-w-80 shrink-0 snap-center md:snap-align-none"
             >
               {/* Feature image */}
-              <div className="relative rounded-xl aspect-4/3 overflow-hidden mb-6">
+              <div className="relative rounded-xl aspect-4/3 overflow-hidden mb-4">
                 {feature.bg && (
                   <Image
                     src={feature.bg}
@@ -218,23 +218,23 @@ export function Features() {
                   width={1120}
                   height={840}
                   quality={90}
-                  sizes="(max-width: 640px) 80vw, (max-width: 768px) 560px, 840px"
+                  sizes="(max-width: 640px) 70vw, (max-width: 768px) 480px, 640px"
                   className="relative w-full h-full object-cover"
                 />
               </div>
 
               {/* Feature label */}
-              <span className="text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
+              <span className="text-xs md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
                 {feature.label}
               </span>
 
               {/* Feature title */}
-              <h3 className="text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-2">
+              <h3 className="text-xl md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
                 {feature.title}
               </h3>
 
               {/* Feature description */}
-              <p className="text-base text-[#1a1a1a]/60 mt-2">
+              <p className="text-sm md:text-base text-[#1a1a1a]/60 mt-1">
                 {feature.description}
               </p>
             </article>
