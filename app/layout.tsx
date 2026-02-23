@@ -26,6 +26,13 @@ export const viewport: Viewport = {
 export const metadata: Metadata = {
   title: "Ante",
   description: "Stop procrastinating. Start doing.",
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "256x256" },
+      { url: "/icon.png", type: "image/png", sizes: "512x512" },
+    ],
+    apple: "/apple-icon.png",
+  },
 };
 
 export default function RootLayout({
@@ -37,9 +44,10 @@ export default function RootLayout({
     <html lang="en">
       <head>
         {/* Material Symbols Rounded — used for the Android download icon */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
           rel="stylesheet"
-          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=android"
+          href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=android&display=optional"
         />
       </head>
       <body

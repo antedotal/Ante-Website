@@ -40,6 +40,7 @@ export function useDeviceType(): DeviceType {
       /iphone|ipad|ipod/i.test(ua) ||
       (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setDevice({
       isAndroid,
       isIOS,

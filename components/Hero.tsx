@@ -10,7 +10,7 @@ import { ArrowRightIcon } from "./ui/icons";
 import heroMockup from "@/components/images/task_mainscreen_mockup.png";
 
 // Words that cycle in the "Stop ___." headline.
-const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding", "being lazy", "wasting time", "idling", "wasting your future", "putting it off"];
+const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding", "being lazy", "wasting time", "idling", "breaking promises", "putting it off"];
 const WORD_HOLD_DURATION = 2500; // ms each word stays visible
 
 // Hero section — Jomo-style split layout: text left, app mockup right.

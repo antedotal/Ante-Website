@@ -91,7 +91,7 @@ export function CopySection() {
                     data-text-section-item
                     className="text-lg md:text-xl text-[#1a1a1a]/70 font-medium leading-relaxed mb-8"
                 >
-                    Your friends aren't forgiving. Neither is your wallet.
+                    Your friends aren&apos;t forgiving. Neither is your wallet.
                 </p>
 
                 {/* Build-up */}
@@ -99,7 +99,7 @@ export function CopySection() {
                     data-text-section-item
                     className="text-base md:text-lg text-[#1a1a1a]/50 leading-relaxed mb-3"
                 >
-                    Look, we get it. You've got goals. You've told people about them. You've hyped yourself up.
+                    Look, we get it. You&apos;ve got goals. You&apos;ve told people about them. You&apos;ve hyped yourself up.
                 </p>
 
                 {/* Gut-punch — snaps in hard */}
@@ -130,7 +130,7 @@ export function CopySection() {
                     data-text-section-item
                     className="text-base md:text-lg text-[#00A4C6] font-medium leading-relaxed mb-3"
                 >
-                    But here's the truth: you <em>are</em> capable. It's just your systems that suck.
+                    But here&apos;s the truth: you <em>are</em> capable. It&apos;s just your systems that suck.
                 </p>
 
                 {/* Closer — also punches in */}

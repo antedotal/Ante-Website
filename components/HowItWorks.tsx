@@ -284,7 +284,7 @@ export function HowItWorks() {
           {/* Section header — inside pinRef so it stays visible when pinned */}
           <div className="text-center mb-4 lg:mb-8">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif-custom font-semibold">
-              Let's fix that.
+              Let&apos;s fix that.
             </h2>
           </div>
 

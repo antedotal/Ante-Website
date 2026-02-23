@@ -26,7 +26,7 @@ import Image from 'next/image';
 import { motion, Variants } from 'framer-motion';
 import { ArrowLeft, Mail, Send, CheckCircle2, AlertCircle } from 'lucide-react';
 import Link from 'next/link';
-import { addToWaitlist } from '@/lib/waitlist';
+import { addToWaitlist } from '@/lib/waitlist_email_sanitisation';
 import Grainient from '@/components/ui/Grainient';
 
 /**
@@ -60,7 +60,7 @@ export default function SignUpPage() {
 
     // Basic client-side validation
     if (!email.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      setError('Please enter a valid email address');
+      setError('Please enter a valid email address.');
       return;
     }
 
@@ -144,7 +144,7 @@ export default function SignUpPage() {
       </div>
 
       {/* Centered card container */}
-      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 py-12">
+      <div className="relative z-10 flex min-h-screen items-center justify-center px-4 sm:px-6 py-8 sm:py-12">
         <motion.div
           variants={containerVariants}
           initial="hidden"
@@ -154,13 +154,13 @@ export default function SignUpPage() {
           {/* Main card — dark glassmorphism with frosted glass effect */}
           <motion.div
             variants={itemVariants}
-            className="w-full rounded-3xl bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] px-5 py-8 sm:px-8 sm:py-12 md:px-12 md:py-16 shadow-[0_24px_80px_rgba(0,0,0,0.3)]"
+            className="w-full rounded-2xl sm:rounded-3xl bg-white/[0.06] backdrop-blur-xl border border-white/[0.1] px-5 py-8 sm:px-8 sm:py-12 md:px-12 md:py-16 shadow-[0_24px_80px_rgba(0,0,0,0.3)]"
           >
             {/* Back to home link */}
             <div className="mb-4">
               <Link
                 href="/"
-                className="inline-flex items-center opacity-40 hover:opacity-80 transition-opacity h-8 w-8 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A4C6]"
+                className="inline-flex items-center opacity-40 hover:opacity-80 transition-opacity h-10 w-10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A4C6]"
                 aria-label="Back to home"
               >
                 <ArrowLeft className="h-5 w-5 text-white mx-auto" />
@@ -177,14 +177,14 @@ export default function SignUpPage() {
                 alt={`${BRAND_CONFIG.BRAND_NAME} logo`}
                 width={64}
                 height={64}
-                className="h-16 w-16 rounded-2xl object-contain"
+                className="h-12 w-12 sm:h-16 sm:w-16 rounded-xl sm:rounded-2xl object-contain"
               />
             </motion.div>
 
             {/* Brand name — large serif heading, centered */}
             <motion.h1
               variants={itemVariants}
-              className="mb-6 sm:mb-8 text-center text-3xl sm:text-4xl font-serif-custom tracking-tight text-white md:text-5xl"
+              className="mb-4 sm:mb-8 text-center text-2xl sm:text-3xl font-serif-custom tracking-tight text-white md:text-5xl"
             >
               {BRAND_CONFIG.BRAND_NAME}
             </motion.h1>
@@ -202,7 +202,7 @@ export default function SignUpPage() {
             {/* Sub-headline — lighter, muted text */}
             <motion.p
               variants={itemVariants}
-              className="mb-10 text-center text-base leading-relaxed text-white/50 md:text-lg"
+              className="mb-8 sm:mb-10 text-center text-sm sm:text-base leading-relaxed text-white/50 md:text-lg"
             >
               {BRAND_CONFIG.COPY_SUBTEXT}
             </motion.p>
@@ -229,7 +229,7 @@ export default function SignUpPage() {
                     autoCapitalize="off"
                     spellCheck="false"
                     data-1p-ignore
-                    className="w-full rounded-2xl border border-white/[0.12] bg-white/[0.06] px-12 py-3.5 text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-[#00A4C6]/60 focus:ring-2 focus:ring-[#00A4C6]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-xl sm:rounded-2xl border border-white/[0.12] bg-white/[0.06] px-12 py-4 text-base sm:text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-[#00A4C6]/60 focus:ring-2 focus:ring-[#00A4C6]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 {/* Honeypot field for bot detection — hidden from real users */}
@@ -292,7 +292,7 @@ export default function SignUpPage() {
                   disabled={isLoading || success}
                   whileHover={!isLoading && !success ? { scale: 1.02 } : {}}
                   whileTap={!isLoading && !success ? { scale: 0.98 } : {}}
-                  className="flex w-full items-center justify-center gap-2 rounded-2xl px-6 py-3.5 text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#00A4C6] hover:bg-[#008da8]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl sm:rounded-2xl px-6 py-4 text-base sm:text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#00A4C6] hover:bg-[#008da8]"
                 >
                   {isLoading ? (
                     <>
@@ -317,7 +317,7 @@ export default function SignUpPage() {
             {/* Footer — Terms | Privacy Policy */}
             <motion.div
               variants={itemVariants}
-              className="flex justify-center gap-4 text-xs text-white/30"
+              className="flex justify-center gap-4 text-sm sm:text-xs text-white/30"
             >
               <Link
                 href="/terms"
