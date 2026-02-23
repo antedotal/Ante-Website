@@ -25,7 +25,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: "Ante",
-  description: "You know you won't complete your tasks, but your friends don't. (Until now)",
+  description: "Stop procrastinating. Start doing.",
 };
 
 export default function RootLayout({

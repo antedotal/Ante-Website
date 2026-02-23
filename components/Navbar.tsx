@@ -2,6 +2,7 @@
 
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 
 // Smooth-scroll to an anchor with fixed-navbar offset.
 function scrollToSection(id: string) {
@@ -128,14 +129,13 @@ export function Navbar() {
         {/* Right section — flex-1 mirrors the left section width.
             justify-end pushes CTA/hamburger to the trailing edge. min-w-0 for overflow. */}
         <div className="flex-1 min-w-0 flex items-center justify-end gap-3">
-          {/* Download CTA — scrolls to hero download buttons */}
-          <a
-            href="#download"
-            onClick={(e) => handleNavClick(e, "download")}
-            className="text-xs px-5 py-2.5 rounded-full bg-[#00A4C6] hover:bg-[#008da8] text-white font-semibold transition-colors duration-200 whitespace-nowrap shrink-0"
+          {/* Waitlist CTA — navigates to the signup/waitlist page */}
+          <Link
+            href="/signup"
+            className="text-xs px-5 py-2.5 rounded-full bg-white hover:bg-white/90 text-[#002530] font-semibold transition-colors duration-200 whitespace-nowrap shrink-0"
           >
-            Coming Soon
-          </a>
+            Join Waitlist
+          </Link>
 
           {/* Mobile hamburger button */}
           <button
@@ -202,6 +202,14 @@ export function Navbar() {
               >
                 Features
               </a>
+              {/* Waitlist CTA in mobile menu */}
+              <Link
+                href="/signup"
+                className="mt-2 mb-1 text-center py-3 text-sm font-semibold text-[#002530] bg-white hover:bg-white/90 rounded-xl transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Join Waitlist
+              </Link>
             </div>
           </motion.div>
         )}

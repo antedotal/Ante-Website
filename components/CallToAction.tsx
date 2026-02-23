@@ -1,6 +1,7 @@
 "use client";
 
 import { useLayoutEffect, useRef } from "react";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
@@ -96,26 +97,18 @@ export function CallToAction() {
         </h2>
 
         <p ref={copyRef} className="text-base sm:text-xl md:text-2xl text-white/80 mb-8 sm:mb-10 md:mb-12">
-          Join the people who actually get things done.
+          Invite your friends, set those promises, and achieve your goals.
         </p>
 
+        {/* CTA — navigates to the waitlist signup page */}
         <div ref={buttonRef} className="flex justify-center">
-          <a
-            href="#download"
-            onClick={(e) => {
-              e.preventDefault();
-              const el = document.getElementById("download");
-              if (el) {
-                const offset = 100;
-                const pos = el.getBoundingClientRect().top + window.pageYOffset - offset;
-                window.scrollTo({ top: pos, behavior: "smooth" });
-              }
-            }}
+          <Link
+            href="/signup"
             className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
           >
-            Coming Soon
+            Join Waitlist
             <ArrowRightIcon className="w-5 h-5" />
-          </a>
+          </Link>
         </div>
       </div>
     </section>

@@ -83,6 +83,79 @@ const ALLOWED_EMAIL_PROVIDERS: Set<string> = new Set([
   // Other reputable providers
   'hey.com', 'tutanota.com', 'tutanota.de', 'tuta.io',
   'mailbox.org', 'posteo.de', 'posteo.net',
+  // Australian Universities
+  // UNSW Sydney
+  'ad.unsw.edu.au', 'unsw.edu.au',
+  // University of Sydney
+  'uni.sydney.edu.au', 'sydney.edu.au',
+  // University of Melbourne
+  'student.unimelb.edu.au', 'unimelb.edu.au',
+  // Australian National University (ANU)
+  'anu.edu.au',
+  // Monash University
+  'student.monash.edu', 'monash.edu',
+  // University of Queensland (UQ)
+  'uq.net.au', 'uq.edu.au', 'student.uq.edu.au',
+  // University of Western Australia (UWA)
+  'student.uwa.edu.au', 'uwa.edu.au',
+  // University of Adelaide
+  'student.adelaide.edu.au', 'adelaide.edu.au',
+  // RMIT University
+  'student.rmit.edu.au', 'rmit.edu.au',
+  // University of Technology Sydney (UTS)
+  'student.uts.edu.au', 'uts.edu.au',
+  // Macquarie University
+  'students.mq.edu.au', 'mq.edu.au',
+  // Queensland University of Technology (QUT)
+  'connect.qut.edu.au', 'qut.edu.au',
+  // Curtin University
+  'student.curtin.edu.au', 'curtin.edu.au',
+  // Deakin University
+  'deakin.edu.au',
+  // Griffith University
+  'griffithuni.edu.au', 'griffith.edu.au',
+  // University of Newcastle
+  'uon.edu.au', 'newcastle.edu.au',
+  // University of Wollongong
+  'uowmail.edu.au', 'uow.edu.au',
+  // La Trobe University
+  'students.latrobe.edu.au', 'latrobe.edu.au',
+  // Swinburne University
+  'student.swinburne.edu.au', 'swinburne.edu.au',
+  // Bond University
+  'bond.edu.au',
+  // Charles Darwin University
+  'students.cdu.edu.au', 'cdu.edu.au',
+  // University of the Sunshine Coast (USC)
+  'students.usc.edu.au', 'usc.edu.au',
+  // Western Sydney University
+  'westernsydney.edu.au',
+  // Australian Catholic University (ACU)
+  'myacu.edu.au', 'acu.edu.au',
+  // Federation University
+  'federation.edu.au',
+  // Charles Sturt University
+  'csu.edu.au',
+  // Victoria University
+  'live.vu.edu.au', 'vu.edu.au',
+  // Southern Cross University
+  'scu.edu.au',
+  // CQUniversity
+  'cqu.edu.au', 'cqumail.com',
+  // University of Southern Queensland
+  'usq.edu.au',
+  // James Cook University
+  'my.jcu.edu.au', 'jcu.edu.au',
+  // Murdoch University
+  'student.murdoch.edu.au', 'murdoch.edu.au',
+  // Edith Cowan University (ECU)
+  'our.ecu.edu.au', 'ecu.edu.au',
+  // Flinders University
+  'flinders.edu.au',
+  // University of South Australia (UniSA)
+  'mymail.unisa.edu.au', 'unisa.edu.au',
+  // Australian TAFEs / VET sector (common student portals)
+  'tafe.nsw.edu.au', 'tafensw.edu.au',
 ]);
 
 /**
@@ -193,21 +266,21 @@ function containsControlCharacters(input: string): boolean {
  */
 function normalizeGmailAddress(email: string): string {
   const [localPart, domain] = email.split('@');
-  
+
   // Only normalize Gmail and Googlemail addresses
   if (domain !== 'gmail.com' && domain !== 'googlemail.com') {
     return email;
   }
-  
+
   // Remove dots from local part
   let normalizedLocal = localPart.replace(/\./g, '');
-  
+
   // Remove plus addressing (everything after +)
   const plusIndex = normalizedLocal.indexOf('+');
   if (plusIndex !== -1) {
     normalizedLocal = normalizedLocal.substring(0, plusIndex);
   }
-  
+
   // Always use gmail.com as the canonical domain
   return `${normalizedLocal}@gmail.com`;
 }
@@ -222,17 +295,17 @@ function validateEmailLength(email: string): { valid: boolean; reason?: string }
   if (email.length > MAX_EMAIL_LENGTH) {
     return { valid: false, reason: 'Email too long' };
   }
-  
+
   const [localPart, domain] = email.split('@');
-  
+
   if (localPart && localPart.length > MAX_LOCAL_PART_LENGTH) {
     return { valid: false, reason: 'Local part too long' };
   }
-  
+
   if (domain && domain.length > MAX_DOMAIN_LENGTH) {
     return { valid: false, reason: 'Domain too long' };
   }
-  
+
   return { valid: true };
 }
 
@@ -246,10 +319,10 @@ function validateEmailLength(email: string): { valid: boolean; reason?: string }
 function sanitizeString(input: string): string {
   // Remove control characters and zero-width characters
   let sanitized = input.replace(CONTROL_CHARACTERS_PATTERN, '');
-  
+
   // Remove any HTML/script tags to prevent XSS when displaying
   sanitized = sanitized.replace(/<[^>]*>/g, '');
-  
+
   // Trim and limit length
   return sanitized.trim().slice(0, MAX_REFERRAL_SOURCE_LENGTH);
 }
@@ -290,7 +363,7 @@ export async function addToWaitlist(
   marketingConsent: boolean = true,
   honeypot?: string
 ): Promise<WaitlistResponse> {
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 1: Honeypot bot detection
   // A hidden field that real users won't fill out, but bots will
@@ -305,7 +378,7 @@ export async function addToWaitlist(
       error: null,
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 2: Input type validation
   // Ensure email is provided and is a string
@@ -313,13 +386,13 @@ export async function addToWaitlist(
   if (!email || typeof email !== 'string') {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'Hey - Enter your email to join the waitlist!',
         code: 'MISSING_EMAIL'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 3: Control character detection
   // Block emails containing null bytes, zero-width chars, etc.
@@ -327,13 +400,13 @@ export async function addToWaitlist(
   if (containsControlCharacters(email)) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'INVALID_CHARACTERS'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 4: Unicode/homograph attack prevention
   // Block emails with suspicious unicode that could impersonate legitimate addresses
@@ -341,19 +414,19 @@ export async function addToWaitlist(
   if (containsSuspiciousUnicode(email)) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'SUSPICIOUS_UNICODE'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SANITIZATION: Normalize email
   // Trim whitespace and convert to lowercase for consistent storage
   // ---------------------------------------------------------------------------
   const sanitizedEmail = email.trim().toLowerCase();
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 5: Email format validation
   // Validate against RFC 5322 compliant regex pattern
@@ -361,13 +434,13 @@ export async function addToWaitlist(
   if (!isValidEmailFormat(sanitizedEmail)) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'INVALID_FORMAT'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 6: Email length validation
   // RFC 5321 limits: 320 total, 64 local part, 255 domain
@@ -376,13 +449,13 @@ export async function addToWaitlist(
   if (!lengthValidation.valid) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'EMAIL_TOO_LONG'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // Extract domain for provider validation
   // ---------------------------------------------------------------------------
@@ -390,15 +463,15 @@ export async function addToWaitlist(
   if (emailParts.length !== 2) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'INVALID_FORMAT'
       },
     };
   }
-  
+
   const [, emailDomain] = emailParts;
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 7: Disposable email blocking
   // Block known temporary/throwaway email services
@@ -406,13 +479,13 @@ export async function addToWaitlist(
   if (isDisposableEmail(emailDomain)) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'Please use a permanent email address.',
         code: 'DISPOSABLE_EMAIL'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 8: Email provider whitelist
   // Only allow major, reputable email providers
@@ -420,19 +493,19 @@ export async function addToWaitlist(
   if (!isAllowedProvider(emailDomain)) {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'That email is invalid!',
         code: 'PROVIDER_NOT_ALLOWED'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // SECURITY CHECK 9: Gmail normalization for duplicate detection
   // Normalize Gmail addresses to prevent duplicate signups via variations
   // ---------------------------------------------------------------------------
   // const normalizedEmail = normalizeGmailAddress(sanitizedEmail);
-  
+
   // ---------------------------------------------------------------------------
   // NOTE: Duplicate detection
   // Pre-insert duplicate checks are skipped to avoid requiring SELECT permission
@@ -444,7 +517,7 @@ export async function addToWaitlist(
   // uncomment the checks in the code (see emailExistsInWaitlist and 
   // gmailVariationExists helper functions).
   // ---------------------------------------------------------------------------
-  
+
   // ---------------------------------------------------------------------------
   // SANITIZE: Referral source
   // Validate type, sanitize content, and limit length
@@ -454,18 +527,18 @@ export async function addToWaitlist(
     if (typeof referralSource !== 'string') {
       return {
         data: null,
-        error: { 
+        error: {
           message: 'Invalid referral source',
           code: 'INVALID_REFERRAL_SOURCE'
         },
       };
     }
-    
+
     // Sanitize the referral source
     const cleaned = sanitizeString(referralSource);
     sanitizedReferralSource = cleaned.length > 0 ? cleaned : null;
   }
-  
+
   // ---------------------------------------------------------------------------
   // VALIDATION: Marketing consent
   // Ensure boolean type for GDPR compliance
@@ -473,13 +546,13 @@ export async function addToWaitlist(
   if (typeof marketingConsent !== 'boolean') {
     return {
       data: null,
-      error: { 
+      error: {
         message: 'Invalid consent value',
         code: 'INVALID_CONSENT'
       },
     };
   }
-  
+
   // ---------------------------------------------------------------------------
   // DATABASE INSERT
   // Supabase automatically uses parameterized queries for SQL injection protection
@@ -498,50 +571,50 @@ export async function addToWaitlist(
           // status is handled by database default ('pending')
         }
       ]);
-    
+
     // Handle database errors
     if (error) {
       // Check for unique constraint violation (duplicate email)
       if (error.code === '23505') {
         return {
           data: null,
-          error: { 
+          error: {
             message: "You're already on the waitlist! We'll be in touch soon.",
             code: 'DUPLICATE_EMAIL'
           },
         };
       }
-      
+
       // Log the error for debugging (don't expose internal errors to users)
       console.error('[Waitlist] Database insert error:', error.message);
-      
+
       // Return generic error to user
       return {
         data: null,
-        error: { 
+        error: {
           message: 'Something went wrong. Please try again later.',
           code: 'DATABASE_ERROR'
         },
       };
     }
-    
+
     // Success - return sanitized email in response
     // We already have the email from input, no need to fetch it back from DB
     return {
-      data: { 
+      data: {
         email: sanitizedEmail,
         message: 'Successfully joined the waitlist!'
       },
       error: null,
     };
-    
+
   } catch (unexpectedError) {
     // Catch any unexpected errors (network issues, etc.)
     console.error('[Waitlist] Unexpected error:', unexpectedError);
-    
+
     return {
       data: null,
-      error: { 
+      error: {
         message: 'Something went wrong. Please try again later.',
         code: 'UNEXPECTED_ERROR'
       },

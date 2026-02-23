@@ -1,11 +1,13 @@
 "use client";
 
 import { useLayoutEffect, useRef, useState, useEffect, useCallback } from "react";
-import { AppleIcon } from "./ui/icons";
+import Image from "next/image";
+import Link from "next/link";
 import { gsap } from "gsap";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import { useDeviceType } from "@/lib/useDeviceType";
 import Grainient from "./ui/Grainient";
+import { ArrowRightIcon } from "./ui/icons";
+import heroMockup from "@/components/images/task_mainscreen_mockup.png";
 
 // Words that cycle in the "Stop ___." headline.
 const ROTATING_WORDS = ["procrastinating", "scrolling", "avoiding", "being lazy", "wasting time", "idling", "wasting your future", "putting it off"];
@@ -23,9 +25,6 @@ export function Hero() {
 
   const [currentWordIndex, setCurrentWordIndex] = useState(0);
   const isAnimatingRef = useRef(false);
-
-  // Detect client platform for conditional download button rendering.
-  const { isAndroid, isIOS, isMobile } = useDeviceType();
 
   // GSAP entrance: staggered y + opacity for text, separate entrance for mockup.
   useLayoutEffect(() => {
@@ -96,9 +95,9 @@ export function Hero() {
   return (
     <section
       ref={sectionRef}
-      id="download"
+      id="hero"
       data-cursor-color="#ffffff"
-      className="relative min-h-screen flex items-center overflow-hidden px-4 sm:px-6"
+      className="relative lg:min-h-screen flex items-center overflow-hidden px-4 sm:px-6"
     >
       {/* Animated WebGL gradient background — fills the entire hero via absolute wrapper */}
       <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
@@ -129,7 +128,7 @@ export function Hero() {
       </div>
 
       {/* Split layout: text left, mockup right */}
-      <div className="container mx-auto max-w-6xl relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-10 py-24 md:py-0">
+      <div className="container mx-auto max-w-6xl relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-10 py-12 sm:py-16 md:py-0">
         {/* Left column — text content, left-aligned */}
         <div className="text-left">
           {/* Eyebrow */}
@@ -137,7 +136,7 @@ export function Hero() {
             ref={eyebrowRef}
             className="uppercase tracking-[0.2em] text-white/50 text-xs sm:text-sm mb-6"
           >
-            The Punishing Social Task Manager
+            The punishing promise keeper.
           </p>
 
           {/* Heading with rotating word — "Stop" on line 1, rotating word on line 2 */}
@@ -165,85 +164,31 @@ export function Hero() {
             ref={subtitleRef}
             className="text-lg md:text-xl text-white/60 mb-10 md:mb-12 max-w-lg"
           >
-            Use social pressure and monetary deterrence to get off your a**.
+            Use social pressure and monetary deterrence to get off your butt.
           </p>
 
-          {/* Download buttons — disabled "Coming Soon" state until app is published */}
+          {/* CTA — navigates to the waitlist signup page */}
           <div ref={actionRef} className="flex flex-wrap justify-start gap-3">
-            {/* iOS button — shown on iOS mobile or on desktop */}
-            {(!isMobile || isIOS) && (
-              <button
-                disabled
-                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white/80 text-[#003949]/70 text-sm sm:text-base font-semibold cursor-default"
-              >
-                <AppleIcon className="w-5 h-5" />
-                iOS — Coming Soon
-              </button>
-            )}
-            {/* Android button — shown on Android mobile or on desktop */}
-            {(!isMobile || isAndroid) && (
-              <button
-                disabled
-                className="inline-flex items-center gap-2 px-6 py-3.5 md:px-8 md:py-4 rounded-full bg-white/80 text-[#003949]/70 text-sm sm:text-base font-semibold cursor-default"
-              >
-                <span className="material-symbols-rounded text-[20px] leading-none">android</span>
-                Android — Coming Soon
-              </button>
-            )}
+            <Link
+              href="/signup"
+              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
+            >
+              Join Waitlist
+              <ArrowRightIcon className="w-5 h-5" />
+            </Link>
           </div>
         </div>
 
-        {/* Right column — app mockup placeholder */}
-        <div ref={mockupRef} className="hidden lg:flex items-center justify-center">
-          <div className="relative w-70 h-140 rounded-[3rem] border-[6px] border-white/15 bg-[#001A20] shadow-2xl shadow-black/30 overflow-hidden">
-            {/* Phone notch */}
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-28 h-6 bg-[#001A20] rounded-b-2xl z-20" />
-            {/* Mock app screen content */}
-            <div className="absolute inset-0 flex flex-col p-5 pt-10">
-              {/* Status bar */}
-              <div className="flex justify-between items-center text-[10px] text-white/40 mb-6">
-                <span>9:41</span>
-                <div className="flex gap-1">
-                  <div className="w-3.5 h-2 rounded-sm bg-white/30" />
-                  <div className="w-1 h-2 rounded-sm bg-white/20" />
-                </div>
-              </div>
-              {/* App header */}
-              <p className="text-white/90 text-sm font-semibold font-serif-custom mb-1">My Tasks</p>
-              <p className="text-white/40 text-[10px] mb-5">3 tasks due today</p>
-              {/* Mock task cards */}
-              {[
-                { title: "Finish assignment", ante: "$20", color: "#006F87", progress: 0.7 },
-                { title: "Hit the gym", ante: "$15", color: "#A8E8F8", progress: 0.3 },
-                { title: "Read 30 pages", ante: "$10", color: "#006F87", progress: 0 },
-              ].map((task, i) => (
-                <div
-                  key={i}
-                  className="rounded-2xl bg-white/6 border border-white/8 p-3.5 mb-3 backdrop-blur-sm"
-                >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-white/90 text-xs font-medium">{task.title}</span>
-                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{ background: task.color + "25", color: task.color }}>
-                      {task.ante}
-                    </span>
-                  </div>
-                  {/* Progress bar */}
-                  <div className="w-full h-1 rounded-full bg-white/10">
-                    <div
-                      className="h-full rounded-full transition-all"
-                      style={{ width: `${task.progress * 100}%`, background: task.color }}
-                    />
-                  </div>
-                </div>
-              ))}
-              {/* Footer hint */}
-              <div className="mt-auto flex justify-center">
-                <div className="w-8 h-8 rounded-full bg-[#006F87]/20 flex items-center justify-center">
-                  <span className="text-[#006F87] text-lg leading-none">+</span>
-                </div>
-              </div>
-            </div>
-          </div>
+        {/* Right column — app mockup (visible on all breakpoints, overflows grid cell for dramatic size) */}
+        <div ref={mockupRef} className="flex items-center justify-center overflow-visible">
+          <Image
+            src={heroMockup}
+            alt="Ante app mockup showing task list"
+            className="w-[70vw] sm:w-[60vw] lg:w-[47vw] max-w-none h-auto drop-shadow-2xl"
+            sizes="(max-width: 640px) 140vw, (max-width: 1024px) 120vw, 94vw"
+            quality={95}
+            priority
+          />
         </div>
       </div>
     </section>
