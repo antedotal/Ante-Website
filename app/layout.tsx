@@ -1,11 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import { Inclusive_Sans, DM_Sans } from "next/font/google";
 import "./globals.css";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { LenisProvider } from "@/components/ui/LenisProvider";
 
-const bricolageGrotesque = Bricolage_Grotesque({
-  variable: "--font-bricolage-grotesque",
+const inclusiveSans = Inclusive_Sans({
+  weight: "400",
+  variable: "--font-inclusive-sans",
   subsets: ["latin"],
   display: "swap",
 });
@@ -51,7 +52,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${bricolageGrotesque.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
+        className={`${dmSans.variable} ${inclusiveSans.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
         style={{
           background: '#FAFBFC',
           minHeight: '100vh'

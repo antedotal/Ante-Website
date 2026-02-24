@@ -5,12 +5,11 @@ import Image from "next/image";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { ensureGsapEase, NATURAL_EASE } from "@/lib/gsap";
-import remindersMockup from "@/components/images/Mockup - Ante - Reminders.png";
-import paymentHoldMockup from "@/components/images/payment_hold_mockup.png";
-import emojisMockup from "@/components/images/Mockup - Ante - Emojis.png";
-import inListMockup from "@/components/images/inlist_mockup.png";
-import taskVerificationMockup from "@/components/images/task_verification_mockup.png";
-import featureBg from "@/components/images/bg3.png";
+import verifyFriendsImg from "@/components/images/task_verification_mockup.png";
+import remindersImg from "@/components/images/Mockup - Ante - Reminders.png";
+import setAnteImg from "@/components/images/payment_hold_mockup.png";
+import listsImg from "@/components/images/inlist_mockup.png";
+import customEmojisImg from "@/components/images/Mockup - Ante - Emojis.png";
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -28,32 +27,31 @@ export function Features() {
         label: "Accountability",
         title: "Verify Friends",
         description: "Make sure they also aren't being lazy.",
-        image: taskVerificationMockup,
-        bg: featureBg,
+        image: verifyFriendsImg,
       },
       {
         label: "Reminders",
         title: "Set reminders",
         description: "So you don't forget you should be off your phone.",
-        image: remindersMockup,
+        image: remindersImg,
       },
       {
         label: "Stakes",
         title: "Set an Ante",
         description: "Pay for your laziness, literally.",
-        image: paymentHoldMockup,
+        image: setAnteImg,
       },
       {
         label: "Organisation",
         title: "Set lists",
         description: "Organise everything in one clean view.",
-        image: inListMockup,
+        image: listsImg,
       },
       {
         label: "Personalisation",
         title: "Add custom emojis",
         description: "Make every task unique.",
-        image: emojisMockup,
+        image: customEmojisImg,
       },
     ],
     []
@@ -85,13 +83,8 @@ export function Features() {
   const trackRef = useRef<HTMLDivElement>(null);
 
   // Continuous auto-scroll when section is visible. Pauses on hover/touch.
-  //
-  // We render 4 copies of the card list. The track is therefore 4× one-set wide.
-  // We keep scrollLeft clamped between oneSet and 3×oneSet (the two middle copies).
-  // Whenever it drifts below or above that window — whether from auto-scroll or
-  // a manual drag — we instantly teleport by exactly oneSet, which is invisible
-  // because the adjacent copy is pixel-identical. This gives true infinite scroll
-  // in both directions with no visible seam.
+  // Cards are duplicated in the DOM so the second set fills the gap while
+  // we silently reset scrollLeft, creating a seamless infinite loop.
   useEffect(() => {
     const container = scrollContainerRef.current;
     const section = sectionRef.current;
@@ -118,35 +111,16 @@ export function Features() {
     const speed = 0.6; // px per frame (~36px/sec at 60fps)
     let rafId: number;
 
-    // One set = 1/4 of the total track width (we render 4 copies).
-    const oneSet = () => track.scrollWidth / 4;
-
-    // Start in the middle of the 2nd copy so there's plenty of room either way.
-    container.scrollLeft = oneSet() * 1.5;
-
-    // Clamp scrollLeft into [oneSet, 3×oneSet).
-    // This is called both from the native scroll handler (handles manual drags)
-    // and from the RAF tick (handles the auto-scroll boundary).
-    const clamp = () => {
-      const set = oneSet();
-      if (container.scrollLeft < set) {
-        container.scrollLeft += set;   // jumped too far left → move right by one set
-      } else if (container.scrollLeft >= set * 3) {
-        container.scrollLeft -= set;   // jumped too far right → move left by one set
-      }
-    };
-
-    // Native scroll fires when the user drags manually — clamp immediately.
-    container.addEventListener("scroll", clamp, { passive: true });
-
-    // Check if the user is on a touch device (mobile)
-    const isTouchDevice = window.matchMedia("(hover: none) and (pointer: coarse)").matches;
-
     const tick = () => {
-      // Only auto-scroll on desktop. On mobile, we rely on native scroll-snap and swiping.
-      if (isVisibleRef.current && !isPaused && !isTouchDevice) {
-        container.scrollLeft += speed;
-        clamp();
+      if (isVisibleRef.current && !isPaused) {
+        // Width of one full set of cards (half the track, since cards are duplicated).
+        const halfWidth = track.scrollWidth / 2;
+        if (container.scrollLeft >= halfWidth) {
+          // Silently jump back — the duplicate set makes this invisible.
+          container.scrollLeft -= halfWidth;
+        } else {
+          container.scrollLeft += speed;
+        }
       }
       rafId = requestAnimationFrame(tick);
     };
@@ -159,7 +133,6 @@ export function Features() {
       container.removeEventListener("pointerleave", resume);
       container.removeEventListener("touchstart", pause);
       container.removeEventListener("touchend", resume);
-      container.removeEventListener("scroll", clamp);
     };
   }, []);
 
@@ -168,15 +141,15 @@ export function Features() {
       id="features"
       ref={sectionRef}
       data-cursor-color="#1a1a1a"
-      className="relative py-12 md:py-16 bg-[#FAFBFC] text-[#1a1a1a]"
+      className="relative py-16 md:py-24 bg-[#FAFBFC] text-[#1a1a1a]"
     >
       {/* Section header */}
-      <div ref={headerRef} className="container mx-auto max-w-6xl px-6 text-center mb-8 md:mb-10">
-        <h2 className="text-3xl md:text-5xl mb-3 font-serif-custom font-semibold">
-          Wait - what else can we do for you?
+      <div ref={headerRef} className="container mx-auto max-w-6xl px-6 text-center mb-12 md:mb-16">
+        <h2 className="text-4xl md:text-6xl mb-4 font-serif-custom font-semibold">
+          What else can Ante do?
         </h2>
-        <p className="text-base md:text-lg text-[#1a1a1a]/60">
-          Everything you need to keep yourself striving for your goals.
+        <p className="text-lg md:text-xl text-[#1a1a1a]/60">
+          Everything you need to keep yourself (and your friends) honest.
         </p>
       </div>
 
@@ -185,56 +158,44 @@ export function Features() {
           scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-6 snap-x snap-mandatory md:snap-none"
+        className="overflow-x-auto pb-8"
         style={{
           WebkitOverflowScrolling: "touch",
         }}
       >
         <div
           ref={trackRef}
-          className="flex gap-4 md:gap-6 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
+          className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
           {/* Render cards twice for seamless infinite loop */}
-          {[...features, ...features, ...features, ...features].map((feature, i) => (
+          {[...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="min-w-[70vw] sm:min-w-60 md:min-w-80 shrink-0 snap-center md:snap-align-none"
+              className="min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
-              <div className="relative rounded-xl aspect-4/3 overflow-hidden mb-4">
-                {feature.bg && (
-                  <Image
-                    src={feature.bg}
-                    alt=""
-                    fill
-                    quality={60}
-                    className="object-cover"
-                    aria-hidden="true"
-                  />
-                )}
+              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
-                  width={1120}
-                  height={840}
-                  quality={90}
-                  sizes="(max-width: 640px) 70vw, (max-width: 768px) 480px, 640px"
-                  className="relative w-full h-full object-cover"
+                  width={560}
+                  height={420}
+                  className="w-full h-full object-cover"
                 />
               </div>
 
               {/* Feature label */}
-              <span className="text-xs md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
+              <span className="text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
                 {feature.label}
               </span>
 
               {/* Feature title */}
-              <h3 className="text-xl md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
+              <h3 className="text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-2">
                 {feature.title}
               </h3>
 
               {/* Feature description */}
-              <p className="text-sm md:text-base text-[#1a1a1a]/60 mt-1">
+              <p className="text-base text-[#1a1a1a]/60 mt-2">
                 {feature.description}
               </p>
             </article>

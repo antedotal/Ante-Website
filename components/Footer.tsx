@@ -53,7 +53,7 @@ export function Footer() {
         }}
       >
         <CurvedLoop
-          marqueeText=" Sydney ✦ "
+          marqueeText=" Made in Sydney ✦ "
           speed={0.7}
           curveAmount={-200}
           direction="left"

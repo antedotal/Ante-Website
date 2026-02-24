@@ -34,8 +34,8 @@ Key config files:
 - **Tailwind CSS v4** (`tailwindcss` and `@tailwindcss/postcss` in `devDependencies`).
 - Global stylesheet: `app/globals.css`.
 - **Fonts**:
-  - `DM_Sans` and `Bricolage_Grotesque` loaded via `next/font/google` in `app/layout.tsx`.
-  - Fonts are exposed as CSS variables (`--font-dm-sans`, `--font-bricolage-grotesque`) and applied via classes like `font-sans`, `font-serif-custom`.
+  - `DM_Sans` and `Inclusive_Sans` loaded via `next/font/google` in `app/layout.tsx`.
+  - Fonts are exposed as CSS variables (`--font-dm-sans`, `--font-inclusive-sans`) and applied via classes like `font-sans`, `font-serif-custom`.
 
 **Global theme (from `app/layout.tsx`):**
 - `body` has a teal/blue **diagonal gradient** background:
@@ -198,7 +198,7 @@ Key responsibilities:
 - Sets `<html lang="en">` and `<body>` wrapper.
 - Loads Google fonts via `next/font/google`:
   - `DM_Sans` → `dmSans.variable`
-  - `Bricolage_Grotesque` → `bricolageGrotesque.variable`
+  - `Inclusive_Sans` → `inclusiveSans.variable`
 - Applies:
   - Global typography classes on `<body>`: `antialiased text-white font-sans`.
   - Background gradient and min-height via inline `style`.
@@ -370,7 +370,7 @@ From `app/layout.tsx`:
 
 - Fonts:
   - `DM Sans` used for general copy and UI text.
-  - `Bricolage Grotesque` used for headings / display text.
+  - `Inclusive Sans` used for headings / display text.
 - Tailwind-style custom font utility classes:
   - `font-serif-custom` is used in headings and hero copy.
 

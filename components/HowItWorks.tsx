@@ -276,12 +276,12 @@ export function HowItWorks() {
       id="how-it-works"
       ref={sectionRef}
       data-cursor-color="#1a1a1a"
-      className="relative px-4 sm:px-6 py-16 sm:py-24 md:py-36 bg-[#FAFBFC] text-[#1a1a1a]"
+      className="relative px-4 sm:px-6 pt-10 sm:pt-14 md:pt-18 pb-16 sm:pb-24 md:pb-36 bg-[#FAFBFC] text-[#1a1a1a]"
     >
       <div className="container mx-auto max-w-6xl">
         {/* Pinned container: title + grid both pin together so the heading stays visible during scroll-lock.
             Top padding ensures the title clears the fixed navbar when pinned to viewport top. */}
-        <div ref={pinRef} className="pt-24 sm:pt-28">
+        <div ref={pinRef} className="pt-16 sm:pt-20">
           {/* Section header — inside pinRef so it stays visible when pinned */}
           <div className="text-center mb-4 lg:mb-8">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif-custom font-semibold">
@@ -290,34 +290,34 @@ export function HowItWorks() {
           </div>
 
           {/* Pinned grid: left numbered timeline + right media viewport. */}
-          <div className="grid grid-cols-1 lg:grid-cols-[1.05fr_0.95fr] gap-6 lg:gap-10 items-start pt-2 lg:pt-6">
+          <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_0.8fr] gap-6 lg:gap-10 items-start pt-2 lg:pt-6">
             {/* Left column: all steps visible, highlight shifts on scroll */}
             <div className="relative">
-              <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-3 sm:gap-4">
                 {steps.map((step, index) => (
                   <article
                     key={step.title}
                     data-how-card
-                    className="relative pl-16 sm:pl-20 py-4"
+                    className="relative pl-12 sm:pl-16 py-2"
                   >
                     {/* Large step number */}
                     <span
                       data-how-number
-                      className="absolute left-0 top-2 text-5xl sm:text-6xl font-serif-custom font-bold text-[#00A4C6]/15 leading-none select-none transition-colors duration-300"
+                      className="absolute left-0 top-2 text-4xl sm:text-5xl font-serif-custom font-bold text-[#00A4C6]/15 leading-none select-none transition-colors duration-300"
                     >
                       {formatNumber(index)}
                     </span>
 
-                    <h3 className="text-xl sm:text-2xl font-serif-custom font-semibold mb-0.5">
+                    <h3 className="text-lg sm:text-xl font-serif-custom font-semibold mb-0.5">
                       {step.title}
                     </h3>
-                    <p data-how-desc className="text-base text-[#1a1a1a]/60 leading-snug">
+                    <p data-how-desc className="text-sm sm:text-base text-[#1a1a1a]/60 leading-snug">
                       {step.description}
                     </p>
 
                     {/* Connector line between steps (not on last step) */}
                     {index < steps.length - 1 && (
-                      <div className="absolute left-8 sm:left-10 top-[calc(100%+0px)] w-px h-6 bg-[#1a1a1a]/10" />
+                      <div className="absolute left-6 sm:left-8 top-[calc(100%+0px)] w-px h-4 bg-[#1a1a1a]/10" />
                     )}
 
                     {/* Inline step image visible only on mobile (below lg) */}
@@ -347,7 +347,7 @@ export function HowItWorks() {
             </div>
 
             {/* Right column: synced media viewport (desktop only) */}
-            <div className="relative min-h-130 hidden lg:block overflow-hidden rounded-3xl" ref={mediaTrackRef}>
+            <div className="relative min-h-96 hidden lg:block overflow-hidden rounded-3xl" ref={mediaTrackRef}>
               {steps.map((step) => (
                 <div
                   key={step.title}

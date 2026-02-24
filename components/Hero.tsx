@@ -16,7 +16,6 @@ const WORD_HOLD_DURATION = 2500; // ms each word stays visible
 // Hero section — Jomo-style split layout: text left, app mockup right.
 export function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const eyebrowRef = useRef<HTMLParagraphElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const subtitleRef = useRef<HTMLParagraphElement>(null);
   const actionRef = useRef<HTMLDivElement>(null);
@@ -32,7 +31,7 @@ export function Hero() {
     const context = gsap.context(() => {
       // Text elements stagger in from left
       gsap.from(
-        [eyebrowRef.current, headingRef.current, subtitleRef.current, actionRef.current],
+        [headingRef.current, subtitleRef.current, actionRef.current],
         {
           opacity: 0,
           y: 40,
@@ -131,14 +130,6 @@ export function Hero() {
       <div className="container mx-auto max-w-6xl relative z-10 grid grid-cols-1 lg:grid-cols-2 items-center gap-8 lg:gap-10 py-12 sm:py-16 md:py-0">
         {/* Left column — text content, left-aligned */}
         <div className="text-left">
-          {/* Eyebrow */}
-          <p
-            ref={eyebrowRef}
-            className="uppercase tracking-[0.2em] text-white/50 text-xs sm:text-sm mb-6"
-          >
-            The punishing promise keeper.
-          </p>
-
           {/* Heading with rotating word — "Stop" on line 1, rotating word on line 2 */}
           <h1
             ref={headingRef}
@@ -147,8 +138,8 @@ export function Hero() {
             Stop
             <br />
             <span
-              className="inline-block relative"
-              style={{ clipPath: "inset(0 -200% 0 -200%)" }}
+              className="inline-block relative pb-2"
+              style={{ clipPath: "inset(0 -200% -10% -200%)" }}
             >
               <span
                 ref={wordContainerRef}

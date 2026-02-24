@@ -2,7 +2,7 @@
 @import "tw-animate-css";
 
 :root {
-  --font-bricolage-grotesque: "Bricolage Grotesque";
+  --font-inclusive-sans: "Inclusive Sans";
   --font-dm-sans: "DM Sans";
 }
 
@@ -10,7 +10,7 @@
 
 @theme {
   --font-sans: var(--font-dm-sans);
-  --font-serif: var(--font-bricolage-grotesque);
+  --font-serif: var(--font-inclusive-sans);
 
   --color-background: #003949;
   --color-foreground: #ffffff;
@@ -29,7 +29,7 @@
 @layer utilities {
   .font-serif-custom {
     /* Display font for headings and hero copy. */
-    font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
+    font-family: var(--font-inclusive-sans), var(--font-dm-sans), system-ui, sans-serif;
   }
 
   .font-sans-flex {
@@ -39,7 +39,7 @@
 
   .font-immersive {
     /* Interactive brand mark with subtle typography motion. */
-    font-family: var(--font-bricolage-grotesque), var(--font-dm-sans), system-ui, sans-serif;
+    font-family: var(--font-inclusive-sans), var(--font-dm-sans), system-ui, sans-serif;
     font-optical-sizing: auto;
     transition: letter-spacing 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
