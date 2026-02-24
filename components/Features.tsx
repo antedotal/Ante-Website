@@ -91,7 +91,9 @@ export function Features() {
     const track = trackRef.current;
     if (!container || !section || !track) return;
 
-    let isPaused = false;
+    let isHovering = false;
+    let isScrolling = false;
+    let scrollTimeout: NodeJS.Timeout;
 
     // IntersectionObserver to start/stop auto-scroll based on visibility.
     const observer = new IntersectionObserver(
@@ -101,40 +103,93 @@ export function Features() {
     observer.observe(section);
 
     // Pause auto-scroll while the user is interacting with the carousel.
-    const pause = () => { isPaused = true; };
-    const resume = () => { isPaused = false; };
-    container.addEventListener("pointerenter", pause);
-    container.addEventListener("pointerleave", resume);
-    container.addEventListener("touchstart", pause, { passive: true });
-    container.addEventListener("touchend", resume);
+    const handlePointerEnter = () => { isHovering = true; };
+    const handlePointerLeave = () => { isHovering = false; };
+    const handleTouchStart = () => { isHovering = true; };
+    const handleTouchEnd = () => { isHovering = false; };
+
+    const handleScroll = () => {
+      isScrolling = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+      }, 1000); // Resume 1 second after last scroll event
+    };
+
+    container.addEventListener("pointerenter", handlePointerEnter);
+    container.addEventListener("pointerleave", handlePointerLeave);
+    container.addEventListener("touchstart", handleTouchStart, { passive: true });
+    container.addEventListener("touchend", handleTouchEnd);
+    container.addEventListener("scroll", handleScroll, { passive: true });
+
+    // Start halfway through the carousel
+    setTimeout(() => {
+      if (container && track && track.children.length >= features.length * 2) {
+        const firstChild = track.children[0] as HTMLElement;
+        const secondSetFirstChild = track.children[features.length] as HTMLElement;
+        const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
+        // Start in the middle of the second set
+        
+        // Temporarily disable scroll snapping to set initial position
+        const originalSnap = container.style.scrollSnapType;
+        container.style.scrollSnapType = 'none';
+        container.scrollLeft = oneSetWidth + (oneSetWidth / 2);
+        
+        // Re-enable scroll snapping after a short delay
+        setTimeout(() => {
+          container.style.scrollSnapType = originalSnap;
+        }, 50);
+      }
+    }, 100);
 
     const speed = 0.6; // px per frame (~36px/sec at 60fps)
     let rafId: number;
 
     const tick = () => {
-      if (isVisibleRef.current && !isPaused) {
-        // Width of one full set of cards (half the track, since cards are duplicated).
-        const halfWidth = track.scrollWidth / 2;
-        if (container.scrollLeft >= halfWidth) {
-          // Silently jump back — the duplicate set makes this invisible.
-          container.scrollLeft -= halfWidth;
-        } else {
-          container.scrollLeft += speed;
+      if (!container || !track || track.children.length < features.length * 2) return;
+
+      const firstChild = track.children[0] as HTMLElement;
+      const secondSetFirstChild = track.children[features.length] as HTMLElement;
+      const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
+      
+      // Handle infinite looping in both directions
+      if (container.scrollLeft >= oneSetWidth * 2) {
+        const originalSnap = container.style.scrollSnapType;
+        container.style.scrollSnapType = 'none';
+        container.scrollLeft -= oneSetWidth;
+        // Only restore snap if we aren't actively scrolling/hovering
+        if (!isHovering && !isScrolling) {
+            container.style.scrollSnapType = originalSnap;
+        }
+      } else if (container.scrollLeft <= 0) {
+        const originalSnap = container.style.scrollSnapType;
+        container.style.scrollSnapType = 'none';
+        container.scrollLeft += oneSetWidth;
+        // Only restore snap if we aren't actively scrolling/hovering
+        if (!isHovering && !isScrolling) {
+            container.style.scrollSnapType = originalSnap;
         }
       }
+
+      if (isVisibleRef.current && !isHovering && !isScrolling) {
+        container.scrollLeft += speed;
+      }
+      
       rafId = requestAnimationFrame(tick);
     };
     rafId = requestAnimationFrame(tick);
 
     return () => {
       cancelAnimationFrame(rafId);
+      clearTimeout(scrollTimeout);
       observer.disconnect();
-      container.removeEventListener("pointerenter", pause);
-      container.removeEventListener("pointerleave", resume);
-      container.removeEventListener("touchstart", pause);
-      container.removeEventListener("touchend", resume);
+      container.removeEventListener("pointerenter", handlePointerEnter);
+      container.removeEventListener("pointerleave", handlePointerLeave);
+      container.removeEventListener("touchstart", handleTouchStart);
+      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("scroll", handleScroll);
     };
-  }, []);
+  }, [features.length]);
 
   return (
     <section
@@ -158,23 +213,25 @@ export function Features() {
           scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-8"
+        className="overflow-x-auto pb-8 snap-x snap-mandatory md:snap-none"
         style={{
           WebkitOverflowScrolling: "touch",
+          scrollbarWidth: "none",
+          msOverflowStyle: "none",
         }}
       >
         <div
           ref={trackRef}
           className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
-          {/* Render cards twice for seamless infinite loop */}
-          {[...features, ...features].map((feature, i) => (
+          {/* Render cards three times for seamless infinite loop in both directions */}
+          {[...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="min-w-70 md:min-w-105 shrink-0"
+              className="min-w-[75vw] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
             >
               {/* Feature image */}
-              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-6">
+              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-4 md:mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
@@ -185,17 +242,17 @@ export function Features() {
               </div>
 
               {/* Feature label */}
-              <span className="text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
+              <span className="text-xs md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
                 {feature.label}
               </span>
 
               {/* Feature title */}
-              <h3 className="text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-2">
+              <h3 className="text-xl md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
                 {feature.title}
               </h3>
 
               {/* Feature description */}
-              <p className="text-base text-[#1a1a1a]/60 mt-2">
+              <p className="text-sm md:text-base text-[#1a1a1a]/60 mt-1 md:mt-2">
                 {feature.description}
               </p>
             </article>
