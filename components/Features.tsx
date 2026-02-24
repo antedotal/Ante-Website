@@ -200,10 +200,11 @@ export function Features() {
       cancelAnimationFrame(rafId);
       clearTimeout(scrollTimeout);
       observer.disconnect();
-      container.removeEventListener("pointerenter", handlePointerEnter);
-      container.removeEventListener("pointerleave", handlePointerLeave);
-      container.removeEventListener("touchstart", handleTouchStart);
-      container.removeEventListener("touchend", handleTouchEnd);
+      container.removeEventListener("pointerenter", handleInteractionStart);
+      container.removeEventListener("pointerleave", handleInteractionEnd);
+      container.removeEventListener("touchstart", handleInteractionStart);
+      container.removeEventListener("touchend", handleInteractionEnd);
+      container.removeEventListener("wheel", handleWheel);
       container.removeEventListener("scroll", handleScroll);
     };
   }, [features.length]);
