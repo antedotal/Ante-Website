@@ -94,6 +94,8 @@ export function Features() {
     let isHovering = false;
     let isScrolling = false;
     let scrollTimeout: NodeJS.Timeout;
+    let exactScrollLeft = 0;
+    let lastProgrammaticScroll = 0;
 
     // IntersectionObserver to start/stop auto-scroll based on visibility.
     const observer = new IntersectionObserver(
@@ -103,23 +105,49 @@ export function Features() {
     observer.observe(section);
 
     // Pause auto-scroll while the user is interacting with the carousel.
-    const handlePointerEnter = () => { isHovering = true; };
-    const handlePointerLeave = () => { isHovering = false; };
-    const handleTouchStart = () => { isHovering = true; };
-    const handleTouchEnd = () => { isHovering = false; };
+    const handleInteractionStart = () => { 
+      isHovering = true; 
+      isScrolling = true;
+      clearTimeout(scrollTimeout);
+    };
+    
+    const handleInteractionEnd = () => { 
+      isHovering = false; 
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+        // Sync our accumulator with the final user scroll position
+        exactScrollLeft = container.scrollLeft;
+      }, 1000);
+    };
 
-    const handleScroll = () => {
+    const handleWheel = () => {
       isScrolling = true;
       clearTimeout(scrollTimeout);
       scrollTimeout = setTimeout(() => {
         isScrolling = false;
-      }, 1000); // Resume 1 second after last scroll event
+        exactScrollLeft = container.scrollLeft;
+      }, 1000);
     };
 
-    container.addEventListener("pointerenter", handlePointerEnter);
-    container.addEventListener("pointerleave", handlePointerLeave);
-    container.addEventListener("touchstart", handleTouchStart, { passive: true });
-    container.addEventListener("touchend", handleTouchEnd);
+    const handleScroll = () => {
+      // Ignore scroll events that were triggered by our own programmatic scrolling
+      if (Date.now() - lastProgrammaticScroll < 50) {
+        return;
+      }
+      
+      isScrolling = true;
+      clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(() => {
+        isScrolling = false;
+        exactScrollLeft = container.scrollLeft;
+      }, 1000);
+    };
+
+    container.addEventListener("pointerenter", handleInteractionStart);
+    container.addEventListener("pointerleave", handleInteractionEnd);
+    container.addEventListener("touchstart", handleInteractionStart, { passive: true });
+    container.addEventListener("touchend", handleInteractionEnd);
+    container.addEventListener("wheel", handleWheel, { passive: true });
     container.addEventListener("scroll", handleScroll, { passive: true });
 
     // Start halfway through the carousel
@@ -128,17 +156,10 @@ export function Features() {
         const firstChild = track.children[0] as HTMLElement;
         const secondSetFirstChild = track.children[features.length] as HTMLElement;
         const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
-        // Start in the middle of the second set
-        
-        // Temporarily disable scroll snapping to set initial position
-        const originalSnap = container.style.scrollSnapType;
-        container.style.scrollSnapType = 'none';
-        container.scrollLeft = oneSetWidth + (oneSetWidth / 2);
-        
-        // Re-enable scroll snapping after a short delay
-        setTimeout(() => {
-          container.style.scrollSnapType = originalSnap;
-        }, 50);
+        // Start in the middle of the sets (at the 3rd set)
+        exactScrollLeft = oneSetWidth * 2;
+        lastProgrammaticScroll = Date.now();
+        container.scrollLeft = exactScrollLeft;
       }
     }, 100);
 
@@ -153,26 +174,22 @@ export function Features() {
       const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
       
       // Handle infinite looping in both directions
-      if (container.scrollLeft >= oneSetWidth * 2) {
-        const originalSnap = container.style.scrollSnapType;
-        container.style.scrollSnapType = 'none';
-        container.scrollLeft -= oneSetWidth;
-        // Only restore snap if we aren't actively scrolling/hovering
-        if (!isHovering && !isScrolling) {
-            container.style.scrollSnapType = originalSnap;
-        }
-      } else if (container.scrollLeft <= 0) {
-        const originalSnap = container.style.scrollSnapType;
-        container.style.scrollSnapType = 'none';
-        container.scrollLeft += oneSetWidth;
-        // Only restore snap if we aren't actively scrolling/hovering
-        if (!isHovering && !isScrolling) {
-            container.style.scrollSnapType = originalSnap;
-        }
+      // We have 6 sets. We want to keep the scroll position between set 2 and set 4.
+      // We do this even when scrolling so the user never hits the end
+      if (container.scrollLeft >= oneSetWidth * 3) {
+        exactScrollLeft = container.scrollLeft - oneSetWidth;
+        lastProgrammaticScroll = Date.now();
+        container.scrollLeft = exactScrollLeft;
+      } else if (container.scrollLeft <= oneSetWidth) {
+        exactScrollLeft = container.scrollLeft + oneSetWidth;
+        lastProgrammaticScroll = Date.now();
+        container.scrollLeft = exactScrollLeft;
       }
 
-      if (isVisibleRef.current && !isHovering && !isScrolling) {
-        container.scrollLeft += speed;
+      if (!isScrolling && isVisibleRef.current && !isHovering) {
+        exactScrollLeft += speed;
+        lastProgrammaticScroll = Date.now();
+        container.scrollLeft = exactScrollLeft;
       }
       
       rafId = requestAnimationFrame(tick);
@@ -209,11 +226,11 @@ export function Features() {
       </div>
 
       {/* Horizontal auto-scroll container — pauses on hover, loops seamlessly.
-          Cards are rendered twice so the second set fills the viewport while
+          Cards are rendered multiple times so the sets fill the viewport while
           scrollLeft silently resets, preventing any visible jump. */}
       <div
         ref={scrollContainerRef}
-        className="overflow-x-auto pb-8 snap-x snap-mandatory md:snap-none"
+        className="overflow-x-auto pb-8"
         style={{
           WebkitOverflowScrolling: "touch",
           scrollbarWidth: "none",
@@ -224,11 +241,11 @@ export function Features() {
           ref={trackRef}
           className="flex gap-4 md:gap-8 px-4 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
-          {/* Render cards three times for seamless infinite loop in both directions */}
-          {[...features, ...features, ...features].map((feature, i) => (
+          {/* Render cards 6 times for seamless infinite loop even on ultrawide screens */}
+          {[...features, ...features, ...features, ...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="w-[65vw] max-w-[280px] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
+              className="w-[65vw] max-w-[280px] sm:min-w-70 md:min-w-105 shrink-0"
             >
               {/* Feature image */}
               <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-3 md:mb-6">
