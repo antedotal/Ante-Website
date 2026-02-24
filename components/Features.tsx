@@ -222,16 +222,16 @@ export function Features() {
       >
         <div
           ref={trackRef}
-          className="flex gap-6 md:gap-8 px-6 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
+          className="flex gap-4 md:gap-8 px-4 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
           {/* Render cards three times for seamless infinite loop in both directions */}
           {[...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
-              className="min-w-[75vw] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
+              className="w-[65vw] max-w-[280px] sm:min-w-70 md:min-w-105 shrink-0 snap-center md:snap-align-none"
             >
               {/* Feature image */}
-              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-4 md:mb-6">
+              <div className="rounded-xl bg-[#F0F0F0] aspect-4/3 overflow-hidden mb-3 md:mb-6">
                 <Image
                   src={feature.image}
                   alt={feature.title}
@@ -242,17 +242,17 @@ export function Features() {
               </div>
 
               {/* Feature label */}
-              <span className="text-xs md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
+              <span className="text-[10px] md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
                 {feature.label}
               </span>
 
               {/* Feature title */}
-              <h3 className="text-xl md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
+              <h3 className="text-lg md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
                 {feature.title}
               </h3>
 
               {/* Feature description */}
-              <p className="text-sm md:text-base text-[#1a1a1a]/60 mt-1 md:mt-2">
+              <p className="text-xs md:text-base text-[#1a1a1a]/60 mt-1 md:mt-2">
                 {feature.description}
               </p>
             </article>
