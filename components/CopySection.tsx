@@ -17,7 +17,7 @@ const WordSplitter = ({ children }: { children: React.ReactNode }) => {
             });
         }
         if (React.isValidElement(node)) {
-            return React.cloneElement(node as React.ReactElement<unknown>, {
+            return React.cloneElement(node as React.ReactElement<{ children?: React.ReactNode }>, {
                 children: React.Children.map((node.props as { children?: React.ReactNode }).children, split)
             });
         }
