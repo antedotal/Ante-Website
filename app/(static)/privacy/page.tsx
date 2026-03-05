@@ -53,7 +53,9 @@ export default function PrivacyPage() {
 
         {/* Coming-soon notice */}
         <p className="mb-8 text-sm text-white/50 font-sans-flex">
-          Privacy will be updated when the app is released.
+           We (as in Antedotal) do not in any way shape or form sell or do bad stuff to your (the user) data.
+           We do not use your data for any purpose other than to provide the service you signed up for.
+           To put it simply, we are not a evil megacorporation. We just want to help you get your stuff done. 
         </p>
 
         <div className="prose prose-invert max-w-none">
