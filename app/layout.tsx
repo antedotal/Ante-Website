@@ -1,15 +1,9 @@
 import type { Metadata, Viewport } from "next";
-import { Inclusive_Sans, DM_Sans } from "next/font/google";
+import { DM_Sans } from "next/font/google";
+import "@fontsource/google-sans-flex";
 import "./globals.css";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { LenisProvider } from "@/components/ui/LenisProvider";
-
-const inclusiveSans = Inclusive_Sans({
-  weight: "400",
-  variable: "--font-inclusive-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 const dmSans = DM_Sans({
   variable: "--font-dm-sans",
@@ -52,8 +46,10 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} ${inclusiveSans.variable} antialiased text-white font-sans selection:bg-blue-500 selection:text-white relative`}
+        className={`${dmSans.variable} antialiased text-white selection:bg-blue-500 selection:text-white relative`}
         style={{
+          fontFamily: '"Google Sans Flex", sans-serif',
+          fontVariationSettings: '"ROND" 50',
           background: '#FAFBFC',
           minHeight: '100vh'
         }}
