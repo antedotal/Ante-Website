@@ -34,8 +34,8 @@ Key config files:
 - **Tailwind CSS v4** (`tailwindcss` and `@tailwindcss/postcss` in `devDependencies`).
 - Global stylesheet: `app/globals.css`.
 - **Fonts**:
-  - `DM_Sans` and `Inclusive_Sans` loaded via `next/font/google` in `app/layout.tsx`.
-  - Fonts are exposed as CSS variables (`--font-dm-sans`, `--font-inclusive-sans`) and applied via classes like `font-sans`, `font-serif-custom`.
+  - `Google Sans Flex` loaded via `@fontsource/google-sans-flex` in `app/layout.tsx`.
+  - Fonts are exposed as CSS variables (`--font-google-sans`) and applied via classes like `font-sans`, `font-serif-custom`.
 
 **Global theme (from `app/layout.tsx`):**
 - `body` has a teal/blue **diagonal gradient** background:
@@ -196,11 +196,9 @@ High-level layout under the repo root:
 
 Key responsibilities:
 - Sets `<html lang="en">` and `<body>` wrapper.
-- Loads Google fonts via `next/font/google`:
-  - `DM_Sans` → `dmSans.variable`
-  - `Inclusive_Sans` → `inclusiveSans.variable`
+- Loads Google fonts via `@fontsource/google-sans-flex`.
 - Applies:
-  - Global typography classes on `<body>`: `antialiased text-white font-sans`.
+  - Global typography classes on `<body>`: `antialiased text-white`.
   - Background gradient and min-height via inline `style`.
 - Renders:
   - `LenisProvider` to enable smooth scrolling across the site.
@@ -369,14 +367,13 @@ From `app/layout.tsx`:
 ### 5.2 Typography & Branding
 
 - Fonts:
-  - `DM Sans` used for general copy and UI text.
-  - `Inclusive Sans` used for headings / display text.
+  - `Google Sans Flex` used for all text (headings, UI, and body).
 - Tailwind-style custom font utility classes:
-  - `font-serif-custom` is used in headings and hero copy.
+  - `font-serif-custom` is used in headings and hero copy (points to Google Sans Flex).
 
 **Guideline for new components:**
 - Use `font-serif-custom` for hero-like headings and brand moments.
-- Use base `font-sans` and `text-white/80` for supporting copy.
+- Use base `font-sans` and `text-white/80` for supporting copy. Both resolve to Google Sans Flex.
 
 ---
 
