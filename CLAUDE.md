@@ -41,7 +41,7 @@ lib/                    # Utilities
 
 ### Global Theme
 - **Background**: Deep teal gradient (`#003A4A` → `#001A20` at 135°) with noise overlay
-- **Fonts**: DM Sans (sans), Young Serif (serif display via `font-serif-custom`), Roboto Flex
+- **Fonts**: Google Sans Flex (primary font used for both sans and serif-style display)
 - **Text**: White with opacity variations (`text-white/80`)
 
 ## Development Guidelines

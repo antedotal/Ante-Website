@@ -1,15 +1,8 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans } from "next/font/google";
 import "@fontsource/google-sans-flex";
 import "./globals.css";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { LenisProvider } from "@/components/ui/LenisProvider";
-
-const dmSans = DM_Sans({
-  variable: "--font-dm-sans",
-  subsets: ["latin"],
-  display: "swap",
-});
 
 // Ensure mobile browsers render at device width instead of 980px desktop fallback.
 export const viewport: Viewport = {
@@ -46,10 +39,8 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${dmSans.variable} antialiased text-white selection:bg-blue-500 selection:text-white relative`}
+        className="antialiased text-white selection:bg-blue-500 selection:text-white relative"
         style={{
-          fontFamily: '"Google Sans Flex", sans-serif',
-          fontVariationSettings: '"ROND" 50',
           background: '#FAFBFC',
           minHeight: '100vh'
         }}
