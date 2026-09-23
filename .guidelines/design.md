@@ -10,6 +10,16 @@ The codebase is optimized for:
 - Adding **new static routes** (e.g., signup, legal pages).
 - Reusing a growing **library of UI primitives and section components**.
 
+### 1.1 Account session boundary (2026-09-23)
+
+The marketing site remains available without account configuration. `/signup` is a marketing waitlist, not an account registration route. The separate `/account/sign-in` route offers Google OAuth only and is intentionally absent from public navigation until provider configuration and native-first/web-first identity checks pass. Apple sign-in, billing, subscriptions, and financial controls are outside this website slice.
+
+Account auth requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or a legacy anon JWT in `NEXT_PUBLIC_SUPABASE_ANON_KEY`), plus `NEXT_PUBLIC_ANTE_SITE_ORIGIN` for the canonical website origin. Set them at website build time from the **same Supabase project as the mobile app**; the current mobile example points at `https://yxilmwxptfnebnjsikwo.supabase.co`. Missing, placeholder, or secret credentials fail closed. Only localhost may use an HTTP site origin. Browser sign-in and the OAuth callback reject requests on a different origin or host before using the code, so untrusted request headers cannot choose a redirect destination. Before deployment, compare the configured website and mobile project URLs and configure Google's provider plus the website `/auth/callback` redirect allow list in that shared project. The source alone cannot confirm those external settings or matching user UUIDs.
+
+`lib/supabase/client.ts` creates the browser cookie client; `lib/supabase/server.ts` creates request-scoped server and callback clients. The old `lib/supabase.ts` exists solely for the waitlist and has placeholder fallback values; it is never an account authorization boundary. Next 16 `proxy.ts` matches only account/callback routes, verifies claims for refresh, forwards refreshed cookies to both the request and response, and marks responses private/no-store. `/account` checks verified claims again during dynamic server rendering. `/auth/callback` exchanges one PKCE code, redirects only to `/account`, and returns safe error codes without tokens. Do not use cookie `getSession().user` for authorization.
+
+Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` explicitly permits the `sharp`, `unrs-resolver`, and `esbuild` install checks and denies the Supabase CLI build script. The account uses `@supabase/ssr` 0.8 with the existing Supabase JS version; its cookie setter has no cache-header argument, so the proxy and callback set private/no-store, Expires, and Pragma explicitly. Verification commands are `pnpm test`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run build`, and `pnpm install --frozen-lockfile`.
+
 ---
 
 ## 2. Tech Stack
@@ -22,7 +32,7 @@ The codebase is optimized for:
 - **Rendering model**:
   - App Router (`app/` directory)
   - Single `RootLayout` in `app/layout.tsx`
-  - Static marketing pages (no data fetching or APIs currently)
+  - Static marketing pages plus dynamic `/account` and `/auth/callback` routes
 
 Key config files:
 - `next.config.ts` – Next.js configuration.
@@ -84,12 +94,14 @@ From `package.json` `dependencies`:
   - `build`: `next build`
   - `start`: `next start`
   - `lint`: `eslint`
+  - `test`: `vitest run`
+  - `typecheck`: `tsc --noEmit`
 
 **Recommended workflow:**
-- Start dev server: `npm run dev`
+- Start dev server: `pnpm run dev`
 - Type check: `tsc --noEmit` (or rely on IDE/Next build)
-- Lint: `npm run lint`
-- Production build: `npm run build` then `npm run start`
+- Lint: `pnpm run lint`
+- Production build: `pnpm run build` then `pnpm run start`
 
 ---
 
@@ -246,7 +258,7 @@ This layout is shared by **all routes** under `app/`.
 Each of these pages:
 - Uses `<main className="min-h-screen text-white relative">`.
 - Wraps content in a `.container mx-auto px-4 py-16` layout.
-- Currently contains **placeholder copy** (“coming soon…”).
+- `/signup` is an active client-side waitlist form; the legal pages contain placeholder copy.
 
 **Where to add simple static pages:**
 - Duplicate one of these pages under `app/(static)/new-page-name/page.tsx`.
@@ -303,7 +315,7 @@ These are composed in `app/page.tsx`.
   - When adding reusable **non-UI** helpers, prefer placing them here.
 - `lib/gsap.ts` – shared GSAP custom ease registration for natural motion.
 - `lib/supabase.ts` – Supabase client initialization using environment variables.
-- `lib/waitlist.ts` – Waitlist signup function with enterprise-grade security (see Section 10).
+- `lib/waitlist_email_sanitisation.ts` – Existing marketing waitlist signup function (see Section 10).
 
 ### 3.4 `public/`
 
@@ -323,11 +335,14 @@ The App Router derives routes from the `app/` filesystem:
 
 - `/` → `app/page.tsx`
 - `/signup` → `app/(static)/signup/page.tsx`
+- `/account/sign-in` → `app/account/sign-in/page.tsx` (unlinked Google OAuth)
+- `/account` → `app/account/page.tsx` (verified, dynamic account view)
+- `/auth/callback` → `app/auth/callback/route.ts` (PKCE exchange)
 - `/privacy` → `app/(static)/privacy/page.tsx`
 - `/terms` → `app/(static)/terms/page.tsx`
 
 **Route groups**:
-- `(static)` is a **group only**, not part of the URL. It’s a good place to keep all mostly-static, simple pages (signup stub, legal docs, etc.).
+- `(static)` is a **group only**, not part of the URL. It contains the waitlist and legal pages.
 
 **Layouts:**
 - All routes currently share:
@@ -401,12 +416,9 @@ From `app/layout.tsx`:
 
 ### 6.2 Data & State
 
-- **Current state**: purely presentational.
-  - No API routes.
-  - No server actions.
-  - No client-side data fetching.
+- **Current state**: marketing sections are presentational; `/signup` writes to the waitlist, and the account routes use Supabase Auth cookies.
 - **Implication for onboarding**:
-  - Safe to treat all pages as static; ideal playground for adjusting copy, visuals, and layout.
+  - Marketing content can remain static; account responses must stay dynamic and private.
   - Adding dynamic behavior will require:
     - New client components (with `use client` if needed).
     - Potential `app/api` routes or integration with external backends.
@@ -418,9 +430,9 @@ From `app/layout.tsx`:
 ### 7.1 Getting Started
 
 1. Install dependencies:
-   - `npm install`
+   - `pnpm install --frozen-lockfile`
 2. Run the dev server:
-   - `npm run dev`
+   - `pnpm run dev`
 3. Visit:
    - `http://localhost:3000` for the home page.
 
@@ -474,7 +486,7 @@ From `app/layout.tsx`:
     - **Join Waitlist button**: Full-width, dark background using `PRIMARY_COLOR`, includes Send icon, with hover/tap animations via Framer Motion.
     - **Footer**: Small text with "Terms | Privacy Policy" links.
     - **Animations**: Staggered fade-in animations for all elements using Framer Motion variants.
-    - **Waitlist submission**: Uses `addToWaitlist` from `lib/waitlist.ts` with client-side validation and honeypot bot detection.
+    - **Waitlist submission**: Uses `addToWaitlist` from `lib/waitlist_email_sanitisation.ts` with client-side validation and honeypot bot detection.
   - As real signup flows are implemented (e.g., linking to a separate app or embedded form), document:
     - Where the logic lives.
     - Any external services used (Supabase, Auth0, custom backend, etc.).
@@ -515,7 +527,7 @@ From `app/layout.tsx`:
 
 ## 10. Security Implementation
 
-### 10.1 Waitlist Security (`lib/waitlist.ts`)
+### 10.1 Waitlist Security (`lib/waitlist_email_sanitisation.ts`)
 
 The waitlist signup function implements enterprise-grade security measures:
 
