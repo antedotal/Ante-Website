@@ -91,6 +91,22 @@ describe('account session', () => {
     expect(expired.headers.get('location')).not.toContain('secret')
   })
 
+  it('preserves a provider rate-limit response with retry guidance and safe logging', async () => {
+    state.exchangeCodeForSession.mockResolvedValue({ data: { user: null }, error: { status: 429, message: 'secret provider detail' } })
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { GET } = await import('../app/auth/callback/route')
+      const response = await GET(new NextRequest('https://ante.test/auth/callback?code=valid'))
+      expect(response.status).toBe(429)
+      expect(response.headers.get('retry-after')).toBe('60')
+      expect(response.headers.get('location')).toBeNull()
+      expect(response.headers.get('cache-control')).toContain('no-store')
+      expect(warning).toHaveBeenCalledWith('Auth callback rate limited by Supabase')
+    } finally {
+      warning.mockRestore()
+    }
+  })
+
   it('rejects a callback presented on a hostile origin or Host header before code exchange', async () => {
     const { GET } = await import('../app/auth/callback/route')
     for (const request of [

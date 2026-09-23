@@ -5,6 +5,19 @@ import { accountConfig } from '../../../lib/supabase/config'
 
 export const dynamic = 'force-dynamic'
 
+// Preserve Supabase's token-endpoint throttle signal without exposing provider details or OAuth codes.
+function providerRateLimitResponse() {
+  console.warn('Auth callback rate limited by Supabase')
+  return new NextResponse('Please try again later', {
+    status: 429,
+    headers: { 'Cache-Control': 'private, no-store', 'Retry-After': '60' },
+  })
+}
+
+function isProviderRateLimit(error: unknown): error is { status: 429 } {
+  return typeof error === 'object' && error !== null && 'status' in error && error.status === 429
+}
+
 export async function GET(request: NextRequest) {
   const { siteOrigin } = accountConfig()
   const site = new URL(siteOrigin)
@@ -30,7 +43,9 @@ export async function GET(request: NextRequest) {
     const supabase = createCallbackClient(request, response)
     const { error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error) return response
-  } catch {
+    if (isProviderRateLimit(error)) return providerRateLimitResponse()
+  } catch (error) {
+    if (isProviderRateLimit(error)) return providerRateLimitResponse()
     // Network, configuration, and expired-code errors all map to a safe public code.
   }
 

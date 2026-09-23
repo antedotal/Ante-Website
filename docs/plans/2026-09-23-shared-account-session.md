@@ -4,7 +4,7 @@
 
 **Specs:** `../../../Ante/docs/superpowers/audits/2026-09-21-web-first-financial-commitment-design.md` and `../../../Ante/docs/superpowers/audits/2026-09-21-subscriptions-and-spec-review.md` in the ordinary sibling checkout. The account/session portion of Task 2 in `../../../Ante/docs/superpowers/plans/2026-09-21-web-first-financial-commitments.md` is the source; its funding sections remain deferred.
 
-**Review Focus:** A forged or expired cookie must not render `/account`; a refresh must preserve the new cookies and non-cacheable headers; a callback cannot redirect off-site or leak tokens even with hostile Host headers; missing or placeholder Supabase configuration or canonical site origin must fail closed. The deployment gate separately compares the website and mobile project URLs. Marketing `/signup` remains the waitlist.
+**Review Focus:** A forged or expired cookie must not render `/account`; a refresh must preserve the new cookies and non-cacheable headers; a callback cannot redirect off-site or leak tokens even with hostile Host headers; missing or placeholder Supabase configuration or canonical site origin must fail closed. Preserve an upstream Auth 429 with retry guidance. A durable per-visitor callback limit remains an Important deployment gate until the host and trusted IP source are known. The deployment gate separately compares the website and mobile project URLs. Marketing `/signup` remains the waitlist.
 
 ## Task 1: Add the shared website session boundary
 
