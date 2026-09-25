@@ -30,3 +30,16 @@ Review follow-up on final adjusted source: `pnpm exec vitest run tests/profile-p
 ## Closed release gates
 
 The pinned JPEG Emscripten glue has `getHeapMax()=>2147483648` and grows WASM memory; it has no exposed hard per-decode allocation cap. The pinned PNG decoder's [default internal allocation limit is best effort and excludes caller output](https://github.com/image-rs/image-png/blob/v0.17.10/src/decoder/mod.rs). Preflight dimensions, one active decode and local tiny-image success do not establish safety within Cloudflare's [128 MB per-isolate limit](https://developers.cloudflare.com/workers/platform/limits/), which is shared across concurrent requests. Target-plan CPU time, peak per-isolate memory and sustained malformed/concurrent behavior must be measured and accepted before any route invokes this validator. The current plan and hosted CDN, admission, ownership, Storage and browser acceptance gates remain open. Production photo upload/serving stays disabled.
+
+## Review acceptance and controller decisions
+
+Task review identified incomplete-entropy JPEG acceptance/raw warnings, early-denial cancellation, the codec server-only boundary and valid empty-IDAT handling. Those and the test-runner private-environment gap were fixed in5c16b8f and independently accepted. Final review of698dff4..8cc748e found no Critical or Important issue;2055b02 corrects historical test-result wording. The preparation is accepted locally and remains dormant. No merge, push, deployment or serving activation occurred.
+
+Controller rulings retained from the temporary workflow ledger:
+
+- Use pinned jSquash candidates for local-only validation/runtime work, with serving closed. This fits the existing backend authorization. If the candidate proves unsuitable, the cost is reversible dependency/source work; no user photos or live resources are affected.
+- Treat inherited private environment in the diagnostic runner as an Important defect because synthetic-only execution is a binding requirement. The fix uses a narrow child environment and refuses local dotenv files. If this is stricter than needed, the cost is reversible runner complexity or requiring a clean local environment.
+
+Final-review exclusions remain explicit: resource acceptance must cover the whole pipeline, including PNG inflation before the final-codec concurrency gate, and concurrent requests; hosted credentials/Auth/cache/transforms/cookies remain unverified; endpoint token correlation, quotas and deletion semantics require their own implementation tests. Mobile/legacy avatar migration, metadata stripping and financial work remain outside this slice. Existing Node/OpenNext warnings are documented and nonblocking.
+
+A26September read-only subscription lookup for the selected Cloudflare account returned10000 Authentication error. The target Workers plan remains unknown; no account configuration or billing changed. The user has been asked for that plan.
