@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createCallbackClient } from '../../../lib/supabase/server'
 import { accountConfig } from '../../../lib/supabase/config'
-import { admitCallback } from '../../../lib/server/callback-admission'
+import { admitCallback, unavailableCallbackResponse } from '../../../lib/server/callback-admission'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -21,7 +21,13 @@ function isProviderRateLimit(error: unknown): error is { status: 429 } {
 }
 
 export async function GET(request: NextRequest) {
-  const { siteOrigin } = accountConfig()
+  let siteOrigin: string
+  try {
+    siteOrigin = accountConfig().siteOrigin
+  } catch {
+    // Public account configuration failure has the same private response as unavailable admission.
+    return unavailableCallbackResponse()
+  }
   const site = new URL(siteOrigin)
   // Reject a forged Host or forwarded host before using the OAuth code or emitting a redirect.
   const host = request.headers.get('host')

@@ -26,11 +26,14 @@ beforeEach(() => {
 })
 
 describe('callback admission', () => {
-  it('fails closed without both trusted deployment markers or valid private configuration', async () => {
+  it('fails closed without explicit ingress or valid account and private configuration', async () => {
     const { admitCallback } = await import('../lib/server/callback-admission')
     for (const [name, value] of [
       ['ANTE_AUTH_INGRESS', undefined], ['ANTE_AUTH_LIMIT_HMAC_SECRET', 'short'],
       ['SUPABASE_SECRET_KEY', undefined],
+      ['NEXT_PUBLIC_SUPABASE_URL', undefined],
+      ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_secret_wrong'],
+      ['NEXT_PUBLIC_ANTE_SITE_ORIGIN', 'https://evil.example'],
     ] as const) {
       const original = process.env[name]
       if (value === undefined) delete process.env[name]

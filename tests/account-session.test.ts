@@ -159,6 +159,31 @@ describe('account session', () => {
     expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
   })
 
+  it.each([
+    ['NEXT_PUBLIC_SUPABASE_URL', undefined],
+    ['NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_secret_wrong'],
+    ['NEXT_PUBLIC_ANTE_SITE_ORIGIN', 'https://evil.example'],
+  ] as const)('returns private 503 before external work for invalid account config %s', async (name, value) => {
+    if (value === undefined) delete process.env[name]
+    else process.env[name] = value
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    try {
+      const { GET } = await import('../app/auth/callback/route')
+      const response = await GET(callbackRequest('https://ante.test/auth/callback?code=secret-code'))
+      expect(response.status).toBe(503)
+      expect(response.headers.get('retry-after')).toBe('60')
+      expect(response.headers.get('cache-control')).toContain('private')
+      expect(response.headers.get('cache-control')).toContain('no-store')
+      expect(await response.text()).not.toContain('secret-code')
+      expect(fetch).not.toHaveBeenCalled()
+      expect(createServerClient).not.toHaveBeenCalled()
+      expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
+      expect(JSON.stringify(warning.mock.calls)).not.toMatch(/secret-code|sb_secret_wrong|evil\.example/)
+    } finally {
+      warning.mockRestore()
+    }
+  })
+
   it('does not refresh auth in proxy when the callback path is invoked directly', async () => {
     const { proxy } = await import('../proxy')
     await proxy(new NextRequest('https://ante.test/auth/callback?code=valid'))

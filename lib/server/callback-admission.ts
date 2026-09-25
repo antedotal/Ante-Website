@@ -26,7 +26,7 @@ function canonicalIp(value: string | null): string | null {
 }
 
 // Unavailable admission must carry retry guidance and forbid shared caching.
-function unavailable() {
+export function unavailableCallbackResponse() {
   console.warn('Auth callback admission unavailable')
   return new NextResponse('Authentication temporarily unavailable', {
     status: 503,
@@ -39,7 +39,7 @@ export async function admitCallback(request: NextRequest): Promise<NextResponse 
   const secret = process.env.ANTE_AUTH_LIMIT_HMAC_SECRET
   const ip = process.env.ANTE_AUTH_INGRESS === 'cloudflare' && !request.headers.has('cf-worker')
     ? canonicalIp(request.headers.get('cf-connecting-ip')) : null
-  if (!ip || !secret || Buffer.byteLength(secret, 'utf8') < 32) return unavailable()
+  if (!ip || !secret || Buffer.byteLength(secret, 'utf8') < 32) return unavailableCallbackResponse()
 
   // This digest is stable across instances without sending the visitor address to Supabase.
   const digest = createHmac('sha256', secret).update(`website-auth-callback:v1:${ip}`).digest('hex')
@@ -52,5 +52,5 @@ export async function admitCallback(request: NextRequest): Promise<NextResponse 
       headers: { 'Cache-Control': 'private, no-store', 'Retry-After': String(result.retryAfter) },
     })
   }
-  return unavailable()
+  return unavailableCallbackResponse()
 }
