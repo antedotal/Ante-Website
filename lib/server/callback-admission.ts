@@ -120,3 +120,26 @@ export async function admitEmailChangeUser(userId: string, action: 'request' | '
   }
   return unavailableCallbackResponse()
 }
+
+// A verified UUID consumes one action-specific photo quota without revealing the identifier to the store.
+export async function admitProfilePhotoUser(userId: string, action: 'upload' | 'delete' | 'read'): Promise<NextResponse | null> {
+  const secret = process.env.ANTE_AUTH_LIMIT_HMAC_SECRET
+  if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(userId) ||
+      !['upload', 'delete', 'read'].includes(action) || !secret || Buffer.byteLength(secret, 'utf8') < 32) {
+    return photoAdmissionResponse({ kind: 'unavailable' })
+  }
+  const digest = createHmac('sha256', secret).update(`website-photo-${action}:v1:${userId}`).digest('hex')
+  const result = action === 'read' ? await consumeAccountLimit(digest) : await consumeCallbackLimit(digest)
+  return photoAdmissionResponse(result)
+}
+
+// Keep photo quota failures fixed and private, including the provider's retry interval.
+function photoAdmissionResponse(result: CallbackLimitResult): NextResponse | null {
+  if (result.kind === 'allowed') return null
+  const denied = result.kind === 'denied'
+  console.warn(denied ? 'Profile photo user admission denied' : 'Profile photo user admission unavailable')
+  return new NextResponse(denied ? 'Please try again later' : 'Photo temporarily unavailable', {
+    status: denied ? 429 : 503,
+    headers: { 'Cache-Control': 'private, no-store', 'Retry-After': String(denied ? result.retryAfter : 60) },
+  })
+}
