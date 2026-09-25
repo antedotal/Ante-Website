@@ -41,7 +41,8 @@ function parseResult(value: unknown): CallbackLimitResult {
   return unavailable
 }
 
-export async function consumeCallbackLimit(visitorHash: string): Promise<CallbackLimitResult> {
+// Both fixed service-only admission RPCs share credential, timeout and reply validation.
+async function consumeLimit(visitorHash: string, functionName: 'consume_website_callback_limit' | 'consume_website_account_limit'): Promise<CallbackLimitResult> {
   if (!/^[a-f0-9]{64}$/.test(visitorHash)) return unavailable
   const credential = serviceCredential()
   if (!credential) return unavailable
@@ -58,7 +59,7 @@ export async function consumeCallbackLimit(visitorHash: string): Promise<Callbac
     const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 5000)
     try {
-      const response = await fetch(`${url}/rest/v1/rpc/consume_website_callback_limit`, {
+      const response = await fetch(`${url}/rest/v1/rpc/${functionName}`, {
         method: 'POST', headers, body: JSON.stringify({ p_visitor_hash: visitorHash }),
         cache: 'no-store', redirect: 'error', signal: controller.signal,
       })
@@ -72,4 +73,14 @@ export async function consumeCallbackLimit(visitorHash: string): Promise<Callbac
     // Configuration, transport and protocol failures all fail closed without detail logging.
     return unavailable
   }
+}
+
+// Keep the callback and normalized-email five-per-minute store unchanged.
+export function consumeCallbackLimit(visitorHash: string): Promise<CallbackLimitResult> {
+  return consumeLimit(visitorHash, 'consume_website_callback_limit')
+}
+
+// Consume the separate account visitor quota through its fixed service-only RPC.
+export function consumeAccountLimit(visitorHash: string): Promise<CallbackLimitResult> {
+  return consumeLimit(visitorHash, 'consume_website_account_limit')
 }

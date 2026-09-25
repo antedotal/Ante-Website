@@ -23,7 +23,7 @@ const valid = { easy_cents: 100, medium_cents: 2500, hard_cents: 5000 }
 const saved = { currency: 'AUD', ...valid, updated_at: '2026-09-25T10:00:00+00:00' }
 const call = (method: 'GET' | 'PUT' | 'HEAD' | 'OPTIONS' | 'POST' | 'PATCH' | 'DELETE', body: BodyInit = JSON.stringify(valid), headers: Record<string, string> = {}, suffix = '') => new NextRequest(`https://ante.test/api/account/ante-presets${suffix}`, {
   method,
-  headers: { host: 'ante.test', ...(method === 'PUT' ? { origin: 'https://ante.test', 'content-type': 'application/json' } : {}), ...headers },
+  headers: { host: 'ante.test', 'cf-connecting-ip': '192.0.2.10', ...(method === 'PUT' ? { origin: 'https://ante.test', 'content-type': 'application/json' } : {}), ...headers },
   ...(method === 'PUT' ? { body } : {}),
   ...(body instanceof ReadableStream ? { duplex: 'half' } : {}),
 } as NonNullable<ConstructorParameters<typeof NextRequest>[1]>)
@@ -32,6 +32,10 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://yxilmwxptfnebnjsikwo.supabase.co'
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_testvalue'
   process.env.NEXT_PUBLIC_ANTE_SITE_ORIGIN = 'https://ante.test'
+  process.env.ANTE_AUTH_INGRESS = 'cloudflare'
+  process.env.ANTE_AUTH_LIMIT_HMAC_SECRET = 'a'.repeat(32)
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_test_service_key'
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ allowed: true, retry_after_seconds: 0 }))))
   state.getUser.mockReset().mockResolvedValue({ data: { user: { id: 'verified-user' } }, error: null })
   state.rpc.mockReset().mockResolvedValue({ data: { ok: true, presets: saved }, error: null })
   state.setAll = undefined
@@ -65,6 +69,7 @@ describe('account preset API', () => {
     }
     expect((await PUT(call('PUT', undefined, { origin: '' }))).status).toBe(403)
     expect(createServerClient).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
   })
 
   it('fails closed with retry guidance when public account config is invalid', async () => {
@@ -91,6 +96,24 @@ describe('account preset API', () => {
     const stream = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(4090)); controller.enqueue(new Uint8Array(10)); controller.close() } })
     expect((await PUT(call('PUT', stream))).status).toBe(413)
     expect(createServerClient).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('stops before SSR and Auth when account admission denies or fails', async () => {
+    const { GET } = await import('../app/api/account/ante-presets/route')
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ allowed: false, retry_after_seconds: 11 }))))
+    const denied = await GET(call('GET'))
+    expect(denied.status).toBe(429)
+    expect(denied.headers.get('retry-after')).toBe('11')
+    expect(denied.headers.get('set-cookie')).toBeNull()
+    delete process.env.ANTE_AUTH_INGRESS
+    const unavailable = await GET(call('GET'))
+    expect(unavailable.status).toBe(503)
+    expect(unavailable.headers.get('retry-after')).toBe('60')
+    expect(createServerClient).not.toHaveBeenCalled()
+    expect(state.getUser).not.toHaveBeenCalled()
+    expect(state.rpc).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledTimes(1)
   })
 
   it('reads unset preferences and writes arbitrary valid tiers with exact RPC arguments', async () => {

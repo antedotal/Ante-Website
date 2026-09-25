@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
+import { admitAccountVisitor } from './callback-admission'
 
 type Action = 'read' | 'write'
 type Amounts = { easy_cents: number; medium_cents: number; hard_cents: number }
@@ -105,6 +106,10 @@ export async function handleAntePresets(request: NextRequest, action: Action) {
     amounts = inputAmounts(parsed)
     if (!amounts) return failure(400)
   }
+
+  // Charge the trusted visitor before constructing SSR or verifying a session.
+  const admission = await admitAccountVisitor(request)
+  if (admission) return admission
 
   const provisional = answer(200, { ok: true, presets: null })
   let supabase: ReturnType<typeof createCallbackClient>

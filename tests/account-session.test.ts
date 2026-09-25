@@ -53,7 +53,7 @@ describe('account session', () => {
       return { data: { claims: { sub: 'user-1' } }, error: null }
     })
     const { proxy } = await import('../proxy')
-    const request = new NextRequest('https://ante.test/account')
+    const request = new NextRequest('https://ante.test/account', { headers: { host: 'ante.test', 'cf-connecting-ip': '192.0.2.10' } })
     const response = await proxy(request)
     expect(request.cookies.get('sb-project-auth-token')?.value).toBe('new-token')
     expect(response.cookies.get('sb-project-auth-token')?.value).toBe('new-token')
@@ -66,8 +66,8 @@ describe('account session', () => {
   it('redirects to sign-in when claim verification throws on a malformed auth cookie', async () => {
     state.getClaims.mockRejectedValue(new Error('Missing exp claim'))
     const { proxy } = await import('../proxy')
-    const response = await proxy(new NextRequest('https://evil.test/account', {
-      headers: { cookie: 'sb-project-auth-token=malformed' },
+    const response = await proxy(new NextRequest('https://ante.test/account', {
+      headers: { host: 'ante.test', 'cf-connecting-ip': '192.0.2.10', cookie: 'sb-project-auth-token=malformed' },
     }))
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toBe('https://ante.test/account/sign-in')
@@ -78,11 +78,36 @@ describe('account session', () => {
     state.getClaims.mockRejectedValue(new Error('Missing exp claim'))
     const { proxy } = await import('../proxy')
     const response = await proxy(new NextRequest('https://ante.test/account/sign-in', {
-      headers: { cookie: 'sb-project-auth-token=malformed' },
+      headers: { host: 'ante.test', cookie: 'sb-project-auth-token=malformed' },
     }))
     expect(response.status).toBe(200)
     expect(response.headers.get('location')).toBeNull()
     expect(response.headers.get('cache-control')).toContain('private, no-store')
+    expect(state.getClaims).not.toHaveBeenCalled()
+    expect(createServerClient).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('validates protected account origin before admission and stops before Auth on denial', async () => {
+    const { proxy } = await import('../proxy')
+    for (const headers of [{ host: 'evil.test' }, { host: 'ante.test', 'x-forwarded-host': 'evil.test' }, { host: 'ante.test', origin: 'https://evil.test' }] as Record<string, string>[]) {
+      expect((await proxy(new NextRequest('https://ante.test/account', { headers }))).status).toBe(403)
+    }
+    expect(fetch).not.toHaveBeenCalled()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ allowed: false, retry_after_seconds: 9 }))))
+    const response = await proxy(new NextRequest('https://ante.test/account', { headers: { host: 'ante.test', 'cf-connecting-ip': '192.0.2.10' } }))
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('9')
+    expect(state.getClaims).not.toHaveBeenCalled()
+    expect(createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('does not duplicate admission for account API routes if proxy is invoked directly', async () => {
+    const { proxy } = await import('../proxy')
+    const response = await proxy(new NextRequest('https://ante.test/api/account/ante-presets', { headers: { host: 'ante.test' } }))
+    expect(response.status).toBe(200)
+    expect(fetch).not.toHaveBeenCalled()
+    expect(createServerClient).not.toHaveBeenCalled()
   })
 
   it('refuses an account page when claims are absent or expired', async () => {

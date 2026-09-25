@@ -1,6 +1,8 @@
 # Website callback admission contract
 
-The website calls `POST /rest/v1/rpc/consume_website_callback_limit` on its configured Supabase project before parsing a callback code or contacting Supabase Auth. The backend migration has been prepared and independently reviewed in the separate Ante checkout; hosted application of the RPC has not been verified. A configured website returns 503 until the store is available.
+The website calls `POST /rest/v1/rpc/consume_website_callback_limit` on its configured Supabase project before parsing a callback code or contacting Supabase Auth. The backend migration is owned by the separate Ante checkout. The website returns 503 whenever the store is unavailable.
+
+Protected account pages and preset requests use the separate sixty-per-minute account visitor RPC described in [account-admission.md](account-admission.md). Callback and normalized-email traffic retain this five-per-minute RPC and their existing HMAC namespaces.
 
 ## RPC
 
@@ -18,4 +20,4 @@ Cloudflare Pages remains the live static site. A compatible Next.js Worker deplo
 
 ## Local acceptance record — 25 September 2026
 
-Website implementation `5fb800b` and configuration-response correction `8482066` passed independent specification/quality review and scoped re-review. The final local run passed 52 tests, typecheck, ESLint and the Next build. These checks establish the website adapter and request ordering only. The database RPC is not installed, and no Workers deployment, real database atomicity test or provider identity test was performed. Workers runtime preparation is the next website task; the goal remains active.
+Website implementation `5fb800b` and configuration-response correction `8482066` passed independent specification/quality review and scoped re-review. The final local run passed 52 tests, typecheck, ESLint and the Next build. These checks established the website adapter and request ordering only. At that review, the database RPC was not installed and no Workers deployment, real database atomicity test or provider identity test had been performed. The paired Ante project later handled SQL installation and validation independently; this website contract does not establish live REST authorization or provider identity behavior.
