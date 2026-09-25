@@ -14,12 +14,22 @@ const user = {
   user_metadata: {},
   identities: [],
 }
+const completedUser = {
+  id: user.id,
+  aud: user.aud,
+  role: user.role,
+  email: 'next@example.test',
+  created_at: user.created_at,
+  app_metadata: user.app_metadata,
+  user_metadata: user.user_metadata,
+  identities: user.identities,
+}
 const session = {
   access_token: 'synthetic-access-token',
   refresh_token: 'synthetic-refresh-token',
   token_type: 'bearer',
   expires_in: 3600,
-  user,
+  user: completedUser,
 }
 
 function clientFor(response: Response) {
@@ -61,8 +71,11 @@ describe('installed Supabase email-change Auth response contract', () => {
     const { client } = clientFor(jsonResponse(session))
     const result = await client.auth.verifyOtp({ email: 'next@example.test', token: '009876', type: 'email_change' })
     expect(result.error).toBeNull()
-    expect(result.data.user).toMatchObject({ id: user.id, email: user.email })
+    expect(result.data.user).toMatchObject({ id: user.id, email: 'next@example.test' })
+    expect(result.data.user).not.toHaveProperty('new_email')
     expect(result.data.session).toMatchObject({ access_token: session.access_token, refresh_token: session.refresh_token })
+    expect(result.data.session?.user).toMatchObject({ id: user.id, email: 'next@example.test' })
+    expect(result.data.session?.user).not.toHaveProperty('new_email')
     expect((await client.auth.getSession()).data.session?.access_token).toBe(session.access_token)
   })
 
