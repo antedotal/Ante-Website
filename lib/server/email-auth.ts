@@ -5,6 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { admitCallback, admitEmailSubject, unavailableCallbackResponse } from './callback-admission'
 import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
+import { normalizedEmail } from './email-validation'
 
 type Action = 'request' | 'verify'
 type Input = { email: string; code?: string }
@@ -24,20 +25,6 @@ function error(status: number, retryAfter?: number) {
     429: 'Please try again later', 503: 'Authentication temporarily unavailable',
   }
   return answer(status, { error: messages[status] }, retryAfter)
-}
-
-// Accept ordinary bounded addresses, with one canonical lowercase spelling for quota and Auth.
-function normalizedEmail(value: unknown): string | null {
-  if (typeof value !== 'string') return null
-  const email = value.trim().toLowerCase()
-  if (email.length > 254 || email.length < 3) return null
-  const at = email.indexOf('@')
-  if (at < 1 || at !== email.lastIndexOf('@')) return null
-  const local = email.slice(0, at)
-  const domain = email.slice(at + 1)
-  if (local.length > 64 || local.startsWith('.') || local.endsWith('.') || local.includes('..') || !/^[a-z0-9.!#$%&'*+/=?^_`{|}~-]+$/.test(local)) return null
-  if (domain.length > 253 || !domain.includes('.') || domain.split('.').some((label) => !/^[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?$/.test(label))) return null
-  return email
 }
 
 function validInput(value: unknown, action: Action): Input | null {

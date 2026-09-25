@@ -100,3 +100,23 @@ export async function admitEmailSubject(email: string): Promise<NextResponse | n
   }
   return unavailableCallbackResponse()
 }
+
+// A verified account gets separate fixed five-per-minute buckets for each email-change action.
+export async function admitEmailChangeUser(userId: string, action: 'request' | 'confirm'): Promise<NextResponse | null> {
+  const secret = process.env.ANTE_AUTH_LIMIT_HMAC_SECRET
+  if (typeof userId !== 'string' || !userId.trim() || userId !== userId.trim() ||
+      (action !== 'request' && action !== 'confirm') || !secret || Buffer.byteLength(secret, 'utf8') < 32) {
+    return unavailableCallbackResponse()
+  }
+  const digest = createHmac('sha256', secret).update(`website-email-change-${action}:v1:${userId}`).digest('hex')
+  const result = await consumeCallbackLimit(digest)
+  if (result.kind === 'allowed') return null
+  if (result.kind === 'denied') {
+    console.warn('Email change user admission denied')
+    return new NextResponse('Please try again later', {
+      status: 429,
+      headers: { 'Cache-Control': 'private, no-store', 'Retry-After': String(result.retryAfter) },
+    })
+  }
+  return unavailableCallbackResponse()
+}
