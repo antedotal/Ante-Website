@@ -44,3 +44,7 @@ Email backend commit `30aef8b` passed independent specification and code-quality
 The shared backend repository now contains an independently reviewed local limiter release through `9c373b4`. Its real PostgreSQL 17.6 test admitted five and denied seven of twelve simultaneous first-use requests, and checked role permissions, expiry and cleanup. It remains undeployed; the hosted RPC, actual API credentials and cleanup scheduler must be verified before enabling these auth routes.
 
 A read-only `wrangler whoami` check on 25 September reported no authenticated Cloudflare account. No Worker, public URL, DNS or Pages change was made. Provider email templates/SMTP, authorized test-recipient delivery and Google/email account linking remain open. Website limits do not protect direct calls to public Supabase Auth; provider abuse settings require separate acceptance.
+
+## Whole authentication branch review
+
+Independent review of `3915a7c..1636a91` found no actionable integration issues across session validation, origins, redirects, cookie handling, quota ordering, credential isolation, email OTP and Workers configuration. It also inspected installed SDK behavior. This accepts local authentication preparation, using the previously reported tests/builds/runtime checks; hosted/provider gates and the broader account, preset, task, proof and payment-setup goal remain incomplete.
