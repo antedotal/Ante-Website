@@ -48,3 +48,9 @@ A read-only `wrangler whoami` check on 25 September reported no authenticated Cl
 ## Whole authentication branch review
 
 Independent review of `3915a7c..1636a91` found no actionable integration issues across session validation, origins, redirects, cookie handling, quota ordering, credential isolation, email OTP and Workers configuration. It also inspected installed SDK behavior. This accepts local authentication preparation, using the previously reported tests/builds/runtime checks; hosted/provider gates and the broader account, preset, task, proof and payment-setup goal remain incomplete.
+
+## Updated connected-account state
+
+The user identified antedotal.com in Havish's account (`5af41de7e4953ebc3d99f3ec07803736`). Cloudflare plugin reads confirmed active zone `de319241db3b178216ee2d05ba556509` and an empty Workers script list. Pages project and Workers-subdomain reads return API 10000 authentication errors in that account, despite Workers/domain read access. Daniel's account has no Pages projects or Workers. The other Cloudflare app connector reports not connected; use the working cloudflare_api plugin capabilities. Plugin access does not establish local Wrangler login or artifact upload credentials. No hosting/DNS change was made.
+
+Shared limiter hosted SQL and cleanup acceptance are now recorded in the backend release README; the earlier undeployed status above is historical. New product decisions: A$1..A$50 user-selected presets, all profile edits, owner/friend-only avatar images, and delivery testing deferred until Workspace email is available.

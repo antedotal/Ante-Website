@@ -39,10 +39,16 @@ Local authentication preparation is implemented and independently reviewed: dura
 
 Next steps:
 
-- Confirm the shared Supabase limiter store, then satisfy its hosted migration, permissions, API and cleanup scheduler gates.
-- Authenticate Cloudflare and confirm staging domain/ingress before hosted verification; current Pages remains live.
+- Shared Supabase is confirmed. The limiter migration and cleanup scheduler are deployed and checked; verify the website server-key connection before enabling hosted routes.
+- Target antedotal.com in Havish's Cloudflare account. Plugin Workers/domain reads work; Pages/subdomain reads still return permission errors. Confirm staging ingress and upload credentials before hosted verification; current Pages remains live.
 - Verify OTP templates, SMTP, same-account Google/email linking and successful provider session cookies. A recipient must be authorized before sending test codes.
-- Resolve initial profile editing scope and AUD preset bounds. Source audit found mobile self-display uses auth metadata while friend-facing names prefer profiles.full_name; agree on synchronization before adding website edits. Shared preset schema/RPCs are not implemented yet. Details are recorded in the Ante backend audit `docs/superpowers/audits/2026-09-25-website-account-contract-readiness.md`.
+- Implement all three profile edits: display name, email and avatar. Avatars must be owner/friend-only. Presets are user-selected A$1..A$50 per task. Shared preset SQL/RPC implementation is underway. Source audit found mobile self-display uses auth metadata while friend-facing names prefer profiles.full_name; preserve canonical profile edits from OAuth overwrites and document the mobile consumer dependency.
 - Continue account/preset, authoritative task/private-proof and consent/customer-ownership work in the goal order. Financial settlement and reviewer-silence charging remain closed.
 
 Email account creation is enabled in the backend contract, matching Google signup; if invitation-only signup is desired, revise this before enabling the routes. No UI, real-email delivery, hosted mutation or deployment was part of this email slice.
+
+## Confirmed decisions and hosted progress
+
+User confirmed all profile fields (name, email, avatar), user-selected presets from A$1 to A$50, shared Supabase, and private avatars visible only to owner/friends. Defer real email delivery tests until Google Workspace is ready; no test recipient is authorized yet. Existing site is antedotal.com in Havish's Cloudflare account.
+
+Limiter deployed to shared Supabase as migration 20260925095113. All ten permission postconditions passed. Live public API rejects anonymous calls; actual database service role admitted five requests and denied the sixth. The once-per-minute cleanup job ran successfully and removed expired synthetic entries. Both deployed function bodies match reviewed source hashes. Actual website service-key-to-PostgREST acceptance still remains; SQL SET ROLE evidence does not replace it.
