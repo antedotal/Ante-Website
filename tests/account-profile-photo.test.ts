@@ -18,6 +18,7 @@ const photo = new Uint8Array(readFileSync(new URL('./fixtures/red-2x2.png', impo
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 let calls: { url: string; init: RequestInit }[]
 let authStatus = 200
+let authBody: unknown
 let profile: unknown = [{ id: owner }]
 let photoRead: Response
 let uploadReply: Response
@@ -61,6 +62,7 @@ beforeEach(() => {
   process.env.ANTE_PROFILE_PHOTOS_MODE = 'private-v1'
   calls = []
   authStatus = 200
+  authBody = { id: owner, aud: 'authenticated', role: 'authenticated', email: 'verified@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} }
   profile = [{ id: owner }]
   photoRead = new Response(photo.slice(), { headers: { 'content-type': 'image/png', etag: 'provider-private' } })
   uploadReply = json({ Key: `profile-photos/${owner}/avatar`, Id: 'object-id' })
@@ -79,7 +81,7 @@ beforeEach(() => {
     if (address.includes('/rpc/consume_website_callback_limit')) return quota === 'allow' ? json({ allowed: true, retry_after_seconds: 0 }) : quota === 'deny' ? json({ allowed: false, retry_after_seconds: 17 }) : json({ invalid: true })
     if (address.includes('/auth/v1/token?grant_type=refresh_token')) return json({ access_token: refreshedToken ?? token, refresh_token: 'rotated.refresh', token_type: 'bearer', expires_in: 3600,
       user: { id: forged, aud: 'authenticated', role: 'authenticated', email: 'forged@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} } })
-    if (address.includes('/auth/v1/user')) return authStatus === 200 ? json({ id: owner, aud: 'authenticated', role: 'authenticated', email: 'verified@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} }) : json({ code: 'bad_jwt', msg: 'private' }, authStatus)
+    if (address.includes('/auth/v1/user')) return authStatus === 200 ? json(authBody) : json({ code: 'bad_jwt', msg: 'private' }, authStatus)
     if (address.includes('/rest/v1/profiles?')) return json(profile)
     if (address.includes('/storage/v1/object/authenticated/')) return photoRead.clone()
     if (address.includes('/storage/v1/object/')) return init.method === 'DELETE' ? deleteReply.clone() : uploadReply.clone()
@@ -186,6 +188,29 @@ describe('closed private photo routes', () => {
       expect(response.headers.get('set-cookie')).toBeNull()
       expect(calls.some(call => call.url.includes('/rest/v1/profiles?') || call.url.includes('/storage/v1/'))).toBe(false)
     }
+  })
+
+  it('treats malformed successful Auth identities as provider uncertainty after a staged refresh', async () => {
+    const { PUT } = await import('../app/api/account/profile/photo/route')
+    refreshedToken = 'rotated.checked.token'
+    for (const malformed of [{}, { id: 23 }, { id: 'NOT-A-CANONICAL-UUID' }]) {
+      calls = []; authBody = malformed
+      const response = await PUT(upload({ cookie: cookie(token, forged, 1) }))
+      expect(response.status).toBe(503)
+      expect(response.headers.get('set-cookie')).toBeNull()
+      expect(calls.some(call => call.url.includes('/auth/v1/token?grant_type=refresh_token'))).toBe(true)
+      expect(calls.some(call => call.url.includes('/auth/v1/user'))).toBe(true)
+      expect(calls.some(call => call.url.includes('/rest/v1/profiles?') || call.url.includes('/storage/v1/'))).toBe(false)
+    }
+  })
+
+  it('treats unexpected Auth redirect status as provider uncertainty', async () => {
+    const { PUT } = await import('../app/api/account/profile/photo/route')
+    authStatus = 302
+    const response = await PUT(upload())
+    expect(response.status).toBe(503)
+    expect(response.headers.get('set-cookie')).toBeNull()
+    expect(calls.some(call => call.url.includes('/rest/v1/profiles?') || call.url.includes('/storage/v1/'))).toBe(false)
   })
 
   it('cancels a rejected upload without reading or decoding its body after a user quota denial', async () => {

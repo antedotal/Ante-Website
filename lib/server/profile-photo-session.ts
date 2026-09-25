@@ -23,14 +23,15 @@ export async function verifyProfilePhotoSession(request: NextRequest): Promise<P
     const { data, error } = await supabase.auth.getUser(token)
     if (error) return { kind: 'failed', status: authFailure(error) }
     const ownerId = data?.user?.id
-    if (typeof ownerId !== 'string' || !profilePhotoKey(ownerId)) return { kind: 'failed', status: 401 }
+    // A successful Auth reply without a canonical identity is a provider protocol failure.
+    if (typeof ownerId !== 'string' || !profilePhotoKey(ownerId)) return { kind: 'failed', status: 503 }
     return { kind: 'verified', session: { ownerId, token, provisional } }
   } catch { return { kind: 'failed', status: 503 } }
 }
 
-// Auth 4xx means no usable identity; provider uncertainty cannot be treated as a missing user.
+// Only actual authentication-class 4xx replies mean no usable identity.
 function authFailure(error: unknown): 401 | 429 | 503 {
   const status = providerStatus(error)
   if (status === 429) return 429
-  return status === null || status === 0 || status === 408 || status >= 500 ? 503 : 401
+  return status !== null && status >= 400 && status < 500 && status !== 408 ? 401 : 503
 }
