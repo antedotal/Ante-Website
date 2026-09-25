@@ -24,6 +24,8 @@ The existing marketing pages render optimized Next images. OpenNext requires a C
 
 ## Deployment gates
 
+The new account email-change routes stay gated by server-only `ANTE_EMAIL_CHANGE_MODE=secure-two-inbox-otp`, deliberately unset in this Worker configuration. Set it only after the shared hosted Auth project has email confirmations and Secure Email Change enabled, its Change email address template sends distinct OTPs to both inboxes, and an authorized two-inbox/browser/Worker acceptance run confirms pending `new_email`, same-user completion and cookies. No recipient or hosted provider flow was used for local route tests; the mode string alone cannot certify those settings. See `docs/contracts/account-email-change.md`.
+
 - Verify Cloudflare account/project access, canonical domain and a staging deployment target.
 - Verify the same Supabase project as mobile, Google provider redirects, OTP email settings and SMTP delivery.
 - Configure server-side limiter credentials and an HMAC secret without exposing them in chat, logs or browser bundles.
