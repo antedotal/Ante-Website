@@ -43,16 +43,17 @@ The goal remains active. Work is committed on the existing website `codex/shared
 - A$1..A$50 independent Easy/Medium/Hard preset GET/PUT, and canonical name GET/PATCH. See [account acceptance](superpowers/audits/2026-09-25-account-api-acceptance.md).
 - Authenticated email-change request/confirm endpoints, isolated cookie stages, per-user/action admission and exact SDK 2.106.0. Both task reviews and final review are accepted through `a58c993`; 135 website tests, typecheck, lint, Next and Worker builds pass. See [email-change acceptance](superpowers/audits/2026-09-25-email-change-api-acceptance.md). The operator activation gate remains unset.
 
+- Shared server Auth transport is independently reviewed through `b2b1083`: safe SDK errors across callback/server/proxy/isolated clients, preserved RPC/Storage behavior and revoked-session cookie cleanup. 159 tests, typecheck, lint and Next/Worker builds pass. See [Auth transport acceptance](superpowers/audits/2026-09-25-shared-auth-transport-acceptance.md).
+
 ### Deployed shared prerequisites
 
 Callback limiter 20260925095113; account visitor limiter 20260925111932; preset contracts 20260925101013; narrow profile write permissions 20260925101749; friendship mutation protection 20260925103930; canonical profile names 20260925105731; confirmed-email synchronization 20260925120526. Each release has its own reviewed source, hosted metadata/postcondition receipt and preservation evidence in the paired Ante repository. Local source and SQL-role tests do not substitute for website server-key/real-JWT acceptance.
 
 ### Next work
 
-1. Verify and close the older callback/proxy/server Auth adapters' SDK logging paths using an Auth-only shared transport boundary; preserve RPC error envelopes. The new isolated email client already covers rejected fetch, provider error and malformed JSON logging.
-2. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. Bucket, validation and real Storage authorization/cache acceptance remain unimplemented.
-3. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. Hosted task create/update/archive/restore authority RPCs are still absent; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
-4. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
+1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. Bucket, validation and real Storage authorization/cache acceptance remain unimplemented.
+2. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. Hosted task create/update/archive/restore authority RPCs are still absent; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
+3. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
 
 ### Hosted and configuration gates
 
