@@ -41,11 +41,11 @@ The goal remains active. Work is committed on the existing website `codex/shared
 
 - Google callback, email OTP sign-in, private request/session boundaries and durable callback/account admission.
 - A$1..A$50 independent Easy/Medium/Hard preset GET/PUT, and canonical name GET/PATCH. See [account acceptance](superpowers/audits/2026-09-25-account-api-acceptance.md).
-- Authenticated email-change request/confirm endpoints, isolated cookie stages, per-user/action admission and exact SDK2.106.0. Both task reviews and final review are accepted through `a58c993`;135 website tests, typecheck, lint, Next and Worker builds pass. See [email-change acceptance](superpowers/audits/2026-09-25-email-change-api-acceptance.md). The operator activation gate remains unset.
+- Authenticated email-change request/confirm endpoints, isolated cookie stages, per-user/action admission and exact SDK 2.106.0. Both task reviews and final review are accepted through `a58c993`; 135 website tests, typecheck, lint, Next and Worker builds pass. See [email-change acceptance](superpowers/audits/2026-09-25-email-change-api-acceptance.md). The operator activation gate remains unset.
 
 ### Deployed shared prerequisites
 
-Callback limiter20260925095113; account visitor limiter20260925111932; preset contracts20260925101013; narrow profile write permissions20260925101749; friendship mutation protection20260925103930; canonical profile names20260925105731; confirmed-email synchronization20260925120526. Each release has its own reviewed source, hosted metadata/postcondition receipt and preservation evidence in the paired Ante repository. Local source and SQL-role tests do not substitute for website server-key/real-JWT acceptance.
+Callback limiter 20260925095113; account visitor limiter 20260925111932; preset contracts 20260925101013; narrow profile write permissions 20260925101749; friendship mutation protection 20260925103930; canonical profile names 20260925105731; confirmed-email synchronization 20260925120526. Each release has its own reviewed source, hosted metadata/postcondition receipt and preservation evidence in the paired Ante repository. Local source and SQL-role tests do not substitute for website server-key/real-JWT acceptance.
 
 ### Next work
 
