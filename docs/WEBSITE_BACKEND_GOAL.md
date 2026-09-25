@@ -32,3 +32,17 @@ Existing code supports Google sign-in only. The user has now requested email sig
 ## Goal registration status
 
 The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
+
+## Handoff status — 25 September 2026
+
+Local authentication preparation is implemented and independently reviewed: durable callback admission, Workers build/runtime refusal checks, and email one-time-code request/verification endpoints. Website implementation head `30aef8b` passes 68 tests, typecheck, lint and both production builds. Shared SQL implementation is in the Ante backend repository through `9c373b4`; its separate PostgreSQL integration test passes. Neither is a hosted release claim.
+
+Next steps:
+
+- Confirm the shared Supabase limiter store, then satisfy its hosted migration, permissions, API and cleanup scheduler gates.
+- Authenticate Cloudflare and confirm staging domain/ingress before hosted verification; current Pages remains live.
+- Verify OTP templates, SMTP, same-account Google/email linking and successful provider session cookies. A recipient must be authorized before sending test codes.
+- Resolve initial profile editing scope and AUD preset bounds. Source audit found mobile self-display uses auth metadata while friend-facing names prefer profiles.full_name; agree on synchronization before adding website edits. Shared preset schema/RPCs are not implemented yet. Details are recorded in the Ante backend audit `docs/superpowers/audits/2026-09-25-website-account-contract-readiness.md`.
+- Continue account/preset, authoritative task/private-proof and consent/customer-ownership work in the goal order. Financial settlement and reviewer-silence charging remain closed.
+
+Email account creation is enabled in the backend contract, matching Google signup; if invitation-only signup is desired, revise this before enabling the routes. No UI, real-email delivery, hosted mutation or deployment was part of this email slice.

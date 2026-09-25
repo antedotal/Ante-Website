@@ -36,3 +36,11 @@ References: [Cloudflare Next.js deployment paths](https://developers.cloudflare.
 ## Independent local review
 
 Commit `5ed65d4` passed independent specification and code-quality review with no actionable findings. Final evidence: 54 tests, typecheck, ESLint, Next build, Worker build and frozen install passed; local workerd verified callback refusal and unauthenticated/malformed-cookie account redirection, with sign-in still reachable. All owned preview sessions were stopped. This accepts local Workers preparation only: successful provider cookie refresh, hosted ingress, durable SQL admission and image delivery remain unproven. The existing Pages deployment is unchanged.
+
+## Email and database follow-up acceptance
+
+Email backend commit `30aef8b` passed independent specification and code-quality review with no findings. All 68 website tests, typecheck, ESLint, Next build and Worker build passed. Both new POST routes ran in local workerd using synthetic public configuration: hostile Origin returned 403; canonical localhost Origin with missing limiter configuration returned 503 with Retry-After 60; all responses were private/no-store without session cookies. The preview was stopped afterward. Successful provider sessions and real Workers cookie exchange still need acceptance.
+
+The shared backend repository now contains an independently reviewed local limiter release through `9c373b4`. Its real PostgreSQL 17.6 test admitted five and denied seven of twelve simultaneous first-use requests, and checked role permissions, expiry and cleanup. It remains undeployed; the hosted RPC, actual API credentials and cleanup scheduler must be verified before enabling these auth routes.
+
+A read-only `wrangler whoami` check on 25 September reported no authenticated Cloudflare account. No Worker, public URL, DNS or Pages change was made. Provider email templates/SMTP, authorized test-recipient delivery and Google/email account linking remain open. Website limits do not protect direct calls to public Supabase Auth; provider abuse settings require separate acceptance.
