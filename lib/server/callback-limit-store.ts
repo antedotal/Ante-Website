@@ -1,6 +1,7 @@
 // Call the durable callback limiter with a nonreversible visitor digest and a server-only key.
 import 'server-only'
 import { accountConfig } from '../supabase/config'
+import { serviceCredential } from './service-credential'
 
 export type CallbackLimitResult =
   | { kind: 'allowed' }
@@ -8,25 +9,6 @@ export type CallbackLimitResult =
   | { kind: 'unavailable' }
 
 const unavailable: CallbackLimitResult = { kind: 'unavailable' }
-
-// Opaque secret keys are apikey-only; legacy service JWTs also require bearer auth.
-function serviceCredential(): { key: string; bearer: boolean } | null {
-  const secret = process.env.SUPABASE_SECRET_KEY
-  if (secret !== undefined) {
-    return /^sb_secret_[A-Za-z0-9_-]+$/.test(secret) && !/placeholder|example|your[-_]/i.test(secret)
-      ? { key: secret, bearer: false }
-      : null
-  }
-
-  const legacy = process.env.SUPABASE_SERVICE_ROLE_KEY
-  if (!legacy || !/^eyJ[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(legacy)) return null
-  try {
-    const payload = JSON.parse(atob(legacy.split('.')[1].replace(/-/g, '+').replace(/_/g, '/'))) as { role?: unknown }
-    return payload.role === 'service_role' ? { key: legacy, bearer: true } : null
-  } catch {
-    return null
-  }
-}
 
 // Only the expected two-field RPC record can permit authentication work.
 function parseResult(value: unknown): CallbackLimitResult {

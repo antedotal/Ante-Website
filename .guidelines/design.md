@@ -1,5 +1,7 @@
 # Ante Website – Design & Tech Stack
 
+The server-only fixed-key photo Storage adapter is prepared under `lib/server/profile-photo-store.ts` without any permanent upload or photo-serving route. It uses the validated project origin, strict lowercase owner UUID keys, bounded ten-second provider requests, public-key caller-token reads/profile checks and privileged-key single-object upload/delete. It accepts only exact Storage protocol receipts and returns fixed unavailable results for ambiguity; raw downloaded bytes still require full validation. `serviceCredential()` was moved unchanged from the callback limiter into `lib/server/service-credential.ts` so both fixed privileged uses share its opaque-key versus legacy-JWT rule. The dormant adapter contract and isolated HTTP evidence are in `docs/contracts/profile-photos.md`; hosted opaque-key gateway, Auth, CDN/cache, cookies, and resource acceptance remain open.
+
 ## 1. Project Summary
 
 Ante Website is the marketing/landing site for **Ante – The Social Task Manager**.  

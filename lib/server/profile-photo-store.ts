@@ -1,0 +1,179 @@
+// Fixed-path, server-only Storage requests; route authorization remains the caller's responsibility.
+import 'server-only'
+import { accountConfig } from '../supabase/config'
+import type { ValidatedProfilePhoto } from './profile-photo'
+import { serviceCredential } from './service-credential'
+
+export type StoredProfilePhoto = { bytes: Uint8Array; contentType: 'image/jpeg' | 'image/png' }
+export type PhotoMutationResult = { kind: 'ok' } | { kind: 'unavailable' }
+export type PhotoReadResult = ({ kind: 'found' } & StoredProfilePhoto) | { kind: 'not_found' } | { kind: 'unavailable' }
+export type PhotoProfileResult = { kind: 'exists' } | { kind: 'missing' } | { kind: 'unavailable' }
+
+const unavailable = { kind: 'unavailable' } as const
+const photoCap = 2097152
+const jsonCap = 16384
+const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
+
+// Reject path components before they can be interpolated into a privileged request.
+export function profilePhotoKey(ownerId: string): string | null {
+  return uuid.test(ownerId) ? `${ownerId}/avatar` : null
+}
+
+function callerSuitable(token: string): boolean {
+  return typeof token === 'string' && token.length <= 8192 && /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token)
+}
+
+function record(value: unknown): Record<string, unknown> | null {
+  return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
+}
+
+// Race every fetch and stream read against one deadline even if an underlying fetch ignores abort.
+async function providerRequest(url: string, init: RequestInit, maxBytes: number, signal?: AbortSignal): Promise<{ response: Response; bytes: Uint8Array } | null> {
+  if (signal?.aborted) return null
+  const controller = new AbortController()
+  let timeout: ReturnType<typeof setTimeout> | undefined
+  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
+  let settled = false
+  const abort = () => controller.abort()
+  signal?.addEventListener('abort', abort, { once: true })
+  const deadline = new Promise<never>((_, reject) => {
+    timeout = setTimeout(() => { controller.abort(); reject(new Error('deadline')) }, 10000)
+    controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
+  })
+  try {
+    // Late responses are cancelled after a deadline rather than left to stream privately.
+    const pending = fetch(url, { ...init, signal: controller.signal }).then(response => {
+      if (settled) void response.body?.cancel().catch(() => {})
+      return response
+    })
+    const response = await Promise.race([pending, deadline])
+    if (response.redirected || response.status >= 300 && response.status < 400) {
+      void response.body?.cancel().catch(() => {})
+      return null
+    }
+    const responseCap = response.ok ? maxBytes : jsonCap
+    const declared = response.headers.get('content-length')
+    if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > responseCap)) {
+      void response.body?.cancel().catch(() => {})
+      return null
+    }
+    if (!response.body) return { response, bytes: new Uint8Array() }
+    reader = response.body.getReader()
+    const chunks: Uint8Array[] = []
+    let size = 0
+    while (true) {
+      const part = await Promise.race([reader.read(), deadline])
+      if (part.done) break
+      if (!(part.value instanceof Uint8Array) || size + part.value.length > responseCap) {
+        void reader.cancel().catch(() => {})
+        return null
+      }
+      size += part.value.length
+      chunks.push(part.value.slice())
+    }
+    const bytes = new Uint8Array(size)
+    let offset = 0
+    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
+    return { response, bytes }
+  } catch {
+    if (reader) void reader.cancel().catch(() => {})
+    return null
+  } finally {
+    settled = true
+    if (timeout !== undefined) clearTimeout(timeout)
+    signal?.removeEventListener('abort', abort)
+  }
+}
+
+function jsonBody(bytes: Uint8Array): Record<string, unknown> | null {
+  try { return record(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))) } catch { return null }
+}
+
+function authHeaders(key: string, bearer?: string): Record<string, string> {
+  return { apikey: key, ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) }
+}
+
+// Upload one already-validated original image; require the provider to confirm its exact key.
+export async function putProfilePhoto(ownerId: string, photo: ValidatedProfilePhoto, signal?: AbortSignal): Promise<PhotoMutationResult> {
+  const key = profilePhotoKey(ownerId)
+  if (!key || !photo || !(photo.bytes instanceof Uint8Array) || photo.bytes.length < 1 || photo.bytes.length > photoCap ||
+    photo.contentType !== 'image/jpeg' && photo.contentType !== 'image/png') return unavailable
+  const credential = serviceCredential()
+  if (!credential) return unavailable
+  try {
+    const { url } = accountConfig()
+    const response = await providerRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
+      method: 'POST', headers: {
+        ...authHeaders(credential.key, credential.bearer ? credential.key : undefined),
+        'content-type': photo.contentType, 'cache-control': 'max-age=0', 'x-upsert': 'true', accept: 'application/json',
+      }, body: photo.bytes.slice() as BodyInit, cache: 'no-store', redirect: 'error',
+    }, jsonCap, signal)
+    if (!response || response.response.status < 200 || response.response.status >= 300) return unavailable
+    const body = jsonBody(response.bytes)
+    return body?.Key === `profile-photos/${key}` && (!Object.hasOwn(body, 'Id') || typeof body.Id === 'string' && body.Id.length > 0)
+      ? { kind: 'ok' } : unavailable
+  } catch { return unavailable }
+}
+
+// A precise missing-object reply makes this single-key DELETE idempotent; other uncertainty fails closed.
+export async function deleteProfilePhoto(ownerId: string, signal?: AbortSignal): Promise<PhotoMutationResult> {
+  const key = profilePhotoKey(ownerId)
+  if (!key) return unavailable
+  const credential = serviceCredential()
+  if (!credential) return unavailable
+  try {
+    const { url } = accountConfig()
+    const result = await providerRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
+      method: 'DELETE', headers: { ...authHeaders(credential.key, credential.bearer ? credential.key : undefined), accept: 'application/json' },
+      cache: 'no-store', redirect: 'error',
+    }, jsonCap, signal)
+    if (!result) return unavailable
+    const body = jsonBody(result.bytes)
+    if (result.response.status === 200 && body?.message === 'Successfully deleted') return { kind: 'ok' }
+    if (result.response.status === 400 && body?.statusCode === '404' && body.code === 'NoSuchKey' && body.error === 'not_found') return { kind: 'ok' }
+    return unavailable
+  } catch { return unavailable }
+}
+
+// Read through current Storage RLS using only the public key and verified caller token.
+export async function downloadProfilePhoto(targetId: string, callerToken: string, signal?: AbortSignal): Promise<PhotoReadResult> {
+  const key = profilePhotoKey(targetId)
+  if (!key || !callerSuitable(callerToken)) return unavailable
+  try {
+    const { url, key: publicKey } = accountConfig()
+    const result = await providerRequest(`${url}/storage/v1/object/authenticated/profile-photos/${key}`, {
+      method: 'GET', headers: authHeaders(publicKey, callerToken), cache: 'no-store', redirect: 'error',
+    }, photoCap, signal)
+    if (!result) return unavailable
+    const { response, bytes } = result
+    if (response.status === 200) {
+      const contentType = response.headers.get('content-type')
+      return bytes.length > 0 && (contentType === 'image/jpeg' || contentType === 'image/png')
+        ? { kind: 'found', bytes, contentType } : unavailable
+    }
+    if (response.status !== 400) return unavailable
+    const error = jsonBody(bytes)
+    return error && (
+      error.statusCode === '404' && (error.code === 'NoSuchKey' || error.code === 'NoSuchBucket') ||
+      error.statusCode === '403' && error.code === 'AccessDenied'
+    ) ? { kind: 'not_found' } : unavailable
+  } catch { return unavailable }
+}
+
+// Owner existence is checked with caller-scoped RLS; malformed or duplicate rows never authorize writes.
+export async function photoOwnerProfile(ownerId: string, callerToken: string, signal?: AbortSignal): Promise<PhotoProfileResult> {
+  if (!profilePhotoKey(ownerId) || !callerSuitable(callerToken)) return unavailable
+  try {
+    const { url, key: publicKey } = accountConfig()
+    const result = await providerRequest(`${url}/rest/v1/profiles?select=id&id=eq.${ownerId}&limit=2`, {
+      method: 'GET', headers: { ...authHeaders(publicKey, callerToken), accept: 'application/json' },
+      cache: 'no-store', redirect: 'error',
+    }, jsonCap, signal)
+    if (!result || result.response.status !== 200) return unavailable
+    const rows = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(result.bytes)) as unknown
+    if (!Array.isArray(rows)) return unavailable
+    if (rows.length === 0) return { kind: 'missing' }
+    const row = rows.length === 1 ? record(rows[0]) : null
+    return row && Object.keys(row).length === 1 && row.id === ownerId ? { kind: 'exists' } : unavailable
+  } catch { return unavailable }
+}
