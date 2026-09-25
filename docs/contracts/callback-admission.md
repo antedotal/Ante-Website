@@ -1,0 +1,17 @@
+# Website callback admission contract
+
+The website calls `POST /rest/v1/rpc/consume_website_callback_limit` on its configured Supabase project before parsing a callback code or contacting Supabase Auth. This document is the contract for a **subsequent Ante backend migration**. The RPC has not been created or deployed by this website slice, so a configured website returns 503 until that work is complete.
+
+## RPC
+
+`public.consume_website_callback_limit(p_visitor_hash text) returns jsonb` accepts one lowercase, 64-character SHA-256 HMAC hex digest. The server sends `{ "p_visitor_hash": "..." }` with a server-only Supabase secret key in `apikey`; a legacy `service_role` JWT also goes in `Authorization: Bearer ...`. The response must be one JSON object with exactly `{ "allowed": boolean, "retry_after_seconds": integer }`. An admission has `allowed: true` and `retry_after_seconds: 0`; a denial has `allowed: false` and a retry interval from 1 through 60 seconds. Other responses fail closed.
+
+The backend must use database time and atomic serialization for a rolling 60-second window, allowing at most five admissions per visitor digest. Callers cannot supply a limit or time. Revoke function execution from `PUBLIC`, `anon` and `authenticated`; grant only the service role. Restrict the function's search path and audit its privileges, row security and concurrency before deployment. The website sends no raw IP, OAuth code, cookies or incoming authorization data to this RPC.
+
+## Visitor identity and deployment
+
+Set `ANTE_AUTH_INGRESS=cloudflare` only when `/auth/callback` runs behind **direct** Cloudflare ingress. The handler uses the single `CF-Connecting-IP` value, canonicalizes IPv6 and IPv4-mapped IPv6, and HMACs `website-auth-callback:v1:` plus the canonical IP with `ANTE_AUTH_LIMIT_HMAC_SECRET` (at least 32 UTF-8 bytes). It rejects missing, malformed or list values, the documented cross-zone Worker sentinel, and requests carrying `CF-Worker`. It ignores `X-Forwarded-For`, `X-Real-IP` and `CF-Connecting-IPv6` as visitor identity sources. Configure Cloudflare Pseudo IPv4 without **Overwrite Headers**. Do not place another Worker or proxy in front of this callback, including same-zone Worker subrequests that can rewrite the client IP. Cloudflare's [header documentation](https://developers.cloudflare.com/fundamentals/reference/http-headers/) explains these cases.
+
+Set the existing account project URL and public account configuration plus either `SUPABASE_SECRET_KEY` (`sb_secret_...`) or legacy `SUPABASE_SERVICE_ROLE_KEY` (a `service_role` JWT). Keep `ANTE_AUTH_LIMIT_HMAC_SECRET` and the privileged key in server-only Worker secrets, never `NEXT_PUBLIC_` variables. The adapter has a five-second abort, disables fetch caching and redirects, and does not read failed response bodies. Invalid ingress, missing configuration, RPC failures and malformed results return private/no-store 503 with `Retry-After: 60`; valid denials return private/no-store 429 with the RPC retry interval. Logs contain only fixed labels.
+
+Cloudflare Pages remains the live static site. A compatible Next.js Worker deployment, actual RPC migration, trusted ingress configuration, shared-project verification and provider tests are separate acceptance gates. Local fake-store tests prove request ordering, normalization and identity isolation; they do not prove database atomicity or a deployed Worker runtime.

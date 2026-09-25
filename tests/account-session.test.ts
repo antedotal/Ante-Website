@@ -2,6 +2,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { renderToStaticMarkup } from 'react-dom/server'
+import { createServerClient } from '@supabase/ssr'
+
+vi.mock('server-only', () => ({}))
+
+const callbackRequest = (url: string, headers: Record<string, string> = {}) => new NextRequest(url, {
+  headers: { 'cf-connecting-ip': '192.0.2.10', ...headers },
+})
 
 const state = vi.hoisted(() => ({
   getClaims: vi.fn(),
@@ -29,9 +36,14 @@ beforeEach(() => {
   process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://yxilmwxptfnebnjsikwo.supabase.co'
   process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_testvalue'
   process.env.NEXT_PUBLIC_ANTE_SITE_ORIGIN = 'https://ante.test'
+  process.env.ANTE_AUTH_INGRESS = 'cloudflare'
+  process.env.ANTE_AUTH_LIMIT_HMAC_SECRET = 'a'.repeat(32)
+  process.env.SUPABASE_SECRET_KEY = 'sb_secret_test_service_key'
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ allowed: true, retry_after_seconds: 0 }), { status: 200 })))
   state.getClaims.mockReset()
   state.exchangeCodeForSession.mockReset()
   state.setAll = undefined
+  vi.mocked(createServerClient).mockClear()
 })
 
 describe('account session', () => {
@@ -70,7 +82,7 @@ describe('account session', () => {
       return { data: { user: { id: 'verified-id' } }, error: null }
     })
     const { GET } = await import('../app/auth/callback/route')
-    const response = await GET(new NextRequest('https://ante.test/auth/callback?code=valid&next=https://evil.example/'))
+    const response = await GET(callbackRequest('https://ante.test/auth/callback?code=valid&next=https://evil.example/'))
     expect(response.status).toBe(307)
     expect(response.headers.get('location')).toBe('https://ante.test/account')
     expect(response.cookies.get('sb-project-auth-token')?.value).toBe('exchanged-token')
@@ -81,12 +93,13 @@ describe('account session', () => {
 
   it('fails closed on malformed and expired callbacks without leaking supplied tokens', async () => {
     const { GET } = await import('../app/auth/callback/route')
-    const malformed = await GET(new NextRequest('https://ante.test/auth/callback?code=one&code=two&access_token=secret'))
+    const malformed = await GET(callbackRequest('https://ante.test/auth/callback?code=one&code=two&access_token=secret'))
     expect(malformed.headers.get('location')).toBe('https://ante.test/account/sign-in?error=invalid_callback')
     expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
+    expect(fetch).toHaveBeenCalledTimes(1)
 
     state.exchangeCodeForSession.mockResolvedValue({ data: { user: null }, error: new Error('expired secret') })
-    const expired = await GET(new NextRequest('https://ante.test/auth/callback?code=expired'))
+    const expired = await GET(callbackRequest('https://ante.test/auth/callback?code=expired'))
     expect(expired.headers.get('location')).toBe('https://ante.test/account/sign-in?error=exchange_failed')
     expect(expired.headers.get('location')).not.toContain('secret')
   })
@@ -96,7 +109,7 @@ describe('account session', () => {
     const warning = vi.spyOn(console, 'warn').mockImplementation(() => {})
     try {
       const { GET } = await import('../app/auth/callback/route')
-      const response = await GET(new NextRequest('https://ante.test/auth/callback?code=valid'))
+      const response = await GET(callbackRequest('https://ante.test/auth/callback?code=valid'))
       expect(response.status).toBe(429)
       expect(response.headers.get('retry-after')).toBe('60')
       expect(response.headers.get('location')).toBeNull()
@@ -110,14 +123,45 @@ describe('account session', () => {
   it('rejects a callback presented on a hostile origin or Host header before code exchange', async () => {
     const { GET } = await import('../app/auth/callback/route')
     for (const request of [
-      new NextRequest('https://evil.example/auth/callback?code=valid'),
-      new NextRequest('https://ante.test/auth/callback?code=valid', { headers: { host: 'evil.example' } }),
-      new NextRequest('https://ante.test/auth/callback?code=valid', { headers: { 'x-forwarded-host': 'evil.example' } }),
+      callbackRequest('https://evil.example/auth/callback?code=valid'),
+      callbackRequest('https://ante.test/auth/callback?code=valid', { host: 'evil.example' }),
+      callbackRequest('https://ante.test/auth/callback?code=valid', { 'x-forwarded-host': 'evil.example' }),
     ]) {
       const response = await GET(request)
       expect(response.status).toBe(400)
       expect(response.headers.get('location')).toBeNull()
     }
     expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('stops callback authentication when the external admission store denies the visitor', async () => {
+    const store = vi.fn(async () => new Response(JSON.stringify({ allowed: false, retry_after_seconds: 12 }), { status: 200 }))
+    vi.stubGlobal('fetch', store)
+    const { GET } = await import('../app/auth/callback/route')
+    const response = await GET(callbackRequest('https://ante.test/auth/callback?code=one&code=two'))
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('12')
+    expect(response.headers.get('cache-control')).toContain('no-store')
+    expect(store).toHaveBeenCalledTimes(1)
+    expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
+    expect(createServerClient).not.toHaveBeenCalled()
+  })
+
+  it('does not construct an Auth client when admission is unavailable', async () => {
+    delete process.env.ANTE_AUTH_INGRESS
+    const { GET } = await import('../app/auth/callback/route')
+    const response = await GET(callbackRequest('https://ante.test/auth/callback?code=valid'))
+    expect(response.status).toBe(503)
+    expect(response.headers.get('retry-after')).toBe('60')
+    expect(fetch).not.toHaveBeenCalled()
+    expect(createServerClient).not.toHaveBeenCalled()
+    expect(state.exchangeCodeForSession).not.toHaveBeenCalled()
+  })
+
+  it('does not refresh auth in proxy when the callback path is invoked directly', async () => {
+    const { proxy } = await import('../proxy')
+    await proxy(new NextRequest('https://ante.test/auth/callback?code=valid'))
+    expect(state.getClaims).not.toHaveBeenCalled()
   })
 })

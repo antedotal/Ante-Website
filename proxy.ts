@@ -4,6 +4,12 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { accountConfig } from './lib/supabase/config'
 
 export async function proxy(request: NextRequest) {
+  // Callback admission runs in its route before any Supabase Auth work.
+  if (request.nextUrl.pathname === '/auth/callback') {
+    const response = NextResponse.next({ request })
+    response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
   const { url, key } = accountConfig()
   let response = NextResponse.next({ request })
   response.headers.set('Cache-Control', 'private, no-store')
@@ -28,4 +34,4 @@ export async function proxy(request: NextRequest) {
   return response
 }
 
-export const config = { matcher: ['/account/:path*', '/auth/callback'] }
+export const config = { matcher: ['/account/:path*'] }
