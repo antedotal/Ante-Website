@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { admitCallback, admitEmailSubject, unavailableCallbackResponse } from './callback-admission'
+import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
 
 type Action = 'request' | 'verify'
 type Input = { email: string; code?: string }
@@ -25,50 +26,6 @@ function error(status: number, retryAfter?: number) {
   return answer(status, { error: messages[status] }, retryAfter)
 }
 
-// Require the browser origin and visible host to agree with the configured canonical site.
-function trustedOrigin(request: NextRequest, siteOrigin: string) {
-  const site = new URL(siteOrigin)
-  const origin = request.headers.get('origin')
-  const host = request.headers.get('host')
-  const forwardedHost = request.headers.get('x-forwarded-host')
-  const forwardedProto = request.headers.get('x-forwarded-proto')
-  return origin === siteOrigin && request.nextUrl.origin === siteOrigin && host === site.host &&
-    (!forwardedHost || forwardedHost === site.host) &&
-    (!forwardedProto || `${forwardedProto}:` === site.protocol)
-}
-
-// Read at most 4096 bytes from the stream; headers cannot assert a smaller actual body.
-async function boundedJson(request: NextRequest): Promise<unknown | NextResponse> {
-  const contentType = request.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase()
-  if (contentType !== 'application/json') return error(415)
-  const statedLength = request.headers.get('content-length')
-  if (statedLength && /^\d+$/.test(statedLength) && Number(statedLength) > 4096) return error(413)
-  if (!request.body) return error(400)
-  const reader = request.body.getReader()
-  const parts: Uint8Array[] = []
-  let length = 0
-  try {
-    while (true) {
-      const { value, done } = await reader.read()
-      if (done) break
-      length += value.byteLength
-      if (length > 4096) {
-        void reader.cancel().catch(() => {})
-        return error(413)
-      }
-      parts.push(value)
-    }
-    const bytes = new Uint8Array(length)
-    let offset = 0
-    for (const part of parts) { bytes.set(part, offset); offset += part.byteLength }
-    return JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes)) as unknown
-  } catch {
-    return error(400)
-  } finally {
-    reader.releaseLock()
-  }
-}
-
 // Accept ordinary bounded addresses, with one canonical lowercase spelling for quota and Auth.
 function normalizedEmail(value: unknown): string | null {
   if (typeof value !== 'string') return null
@@ -84,10 +41,8 @@ function normalizedEmail(value: unknown): string | null {
 }
 
 function validInput(value: unknown, action: Action): Input | null {
-  if (!value || typeof value !== 'object' || Array.isArray(value) || Object.getPrototypeOf(value) !== Object.prototype) return null
-  const record = value as Record<string, unknown>
-  const keys = Object.keys(record).sort()
-  if (keys.join(',') !== (action === 'request' ? 'email' : 'code,email')) return null
+  if (!exactAccountRecord(value, action === 'request' ? ['email'] : ['email', 'code'])) return null
+  const record = value
   const email = normalizedEmail(record.email)
   if (!email) return null
   if (action === 'verify') {
@@ -110,12 +65,12 @@ function providerUnavailable(errorValue: unknown) {
 export async function handleEmailAuth(request: NextRequest, action: Action) {
   let siteOrigin: string
   try { siteOrigin = accountConfig().siteOrigin } catch { return unavailableCallbackResponse() }
-  if (!trustedOrigin(request, siteOrigin)) return error(403)
+  if (!trustedAccountOrigin(request, siteOrigin, true)) return error(403)
 
   // Admit the visitor before touching the body or constructing a Supabase Auth client.
   const visitorAdmission = await admitCallback(request)
   if (visitorAdmission) return visitorAdmission
-  const parsed = await boundedJson(request)
+  const parsed = await boundedAccountJson(request, error)
   if (parsed instanceof NextResponse) return parsed
   const input = validInput(parsed, action)
   if (!input) return error(400)
