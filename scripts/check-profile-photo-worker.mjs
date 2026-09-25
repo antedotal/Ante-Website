@@ -1,11 +1,30 @@
 // Exercise the complete validator through a temporary route in the actual local OpenNext Worker.
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
-import { spawn } from 'node:child_process'
+import { createHash, randomUUID } from 'node:crypto'
 import { resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { deflateSync } from 'node:zlib'
+import { makeBoundaryFixtures } from './profile-photo-boundary-fixtures.mjs'
+import { assertPortAvailable, waitForProbeNonce, withOwnedProcess } from './profile-photo-worker-process.mjs'
 
 const root = resolve(import.meta.dirname, '..')
+const boundary = process.argv.includes('--boundary')
+const portOption = process.argv.find(arg => arg.startsWith('--port='))
+const port = portOption ? Number(portOption.slice('--port='.length)) : 8787
+if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid selected preview port')
+if (process.argv.slice(2).some(arg => arg !== '--boundary' && !arg.startsWith('--port='))) throw new Error('Unknown probe argument')
+const nonce = randomUUID()
+const deadline = AbortSignal.timeout(8 * 60_000)
+const interrupted = new AbortController()
+const onSignal = signal => interrupted.abort(new Error(`Interrupted by ${signal}`))
+const onInt = () => onSignal('SIGINT')
+const onTerm = () => onSignal('SIGTERM')
+process.on('SIGINT', onInt)
+process.on('SIGTERM', onTerm)
+function checkInterrupted() {
+  if (interrupted.signal.aborted) throw interrupted.signal.reason
+  if (deadline.aborted) throw new Error('Local Worker probe exceeded overall timeout')
+}
 const routeDir = resolve(root, 'app/api/local-profile-photo-probe')
 if (existsSync(routeDir)) throw new Error('Refusing to overwrite an existing probe route')
 // Next and Wrangler can load local dotenv files independently of the child process environment.
@@ -13,23 +32,25 @@ const localEnvFiles = readdirSync(root).filter(name => name.startsWith('.env') |
 if (localEnvFiles.length) throw new Error(`Refusing local check while project dotenv files exist: ${localEnvFiles.join(', ')}`)
 const route = `import { validateProfilePhoto, ProfilePhotoError } from '@/lib/server/profile-photo'
 // This route exists only during the local check and never connects to authentication or storage.
+const nonce = ${JSON.stringify(nonce)}
+export async function GET() { return Response.json({ nonce }) }
 export async function POST(request: Request) {
   const start = performance.now()
   try {
     const result = await validateProfilePhoto(request)
-    return Response.json({ width: result.width, height: result.height, contentType: result.contentType, length: result.bytes.length, wallMs: performance.now() - start })
+    return Response.json({ nonce, width: result.width, height: result.height, contentType: result.contentType, length: result.bytes.length, wallMs: performance.now() - start })
   } catch (error) {
-    if (error instanceof ProfilePhotoError) return Response.json({ code: error.code, wallMs: performance.now() - start }, { status: error.status })
-    return Response.json({ code: 'unexpected' }, { status: 500 })
+    if (error instanceof ProfilePhotoError) return Response.json({ nonce, code: error.code, wallMs: performance.now() - start }, { status: error.status })
+    return Response.json({ nonce, code: 'unexpected' }, { status: 500 })
   }
 }`
 
-function run(command, args, env) {
-  return new Promise((resolveRun, reject) => {
-    const child = spawn(command, args, { cwd: root, env, stdio: 'inherit' })
+function run(command, args, env, signals = [interrupted.signal, deadline]) {
+  return withOwnedProcess(command, args, { cwd: root, env, stdio: 'inherit' }, child => new Promise((resolveRun, reject) => {
+    for (const signal of signals) signal.addEventListener('abort', () => reject(signal.reason), { once: true })
     child.once('error', reject)
     child.once('exit', code => code === 0 ? resolveRun() : reject(new Error(`${command} exited ${code}`)))
-  })
+  }))
 }
 function crc32(bytes) {
   let crc = 0xffffffff
@@ -77,34 +98,56 @@ function prematureJpegScan(bytes) {
 
 // A temporary HOME and narrow child environment prevent inherited provider credentials from entering the build/preview.
 const tempHome = mkdtempSync(join(tmpdir(), 'ante-photo-worker-'))
-const env = { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: tempHome, TMPDIR: tmpdir(), CI: '1', NEXT_TELEMETRY_DISABLED: '1', NEXT_PUBLIC_SUPABASE_URL: 'https://localhost.invalid', NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-key', NEXT_PUBLIC_ANTE_SITE_ORIGIN: 'http://localhost:8787' }
+const env = { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: tempHome, TMPDIR: tmpdir(), CI: '1', NEXT_TELEMETRY_DISABLED: '1', WRANGLER_SEND_METRICS: 'false', NEXT_PUBLIC_SUPABASE_URL: 'https://localhost.invalid', NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-key', NEXT_PUBLIC_ANTE_SITE_ORIGIN: `http://localhost:${port}` }
 const fixture = name => new Uint8Array(readFileSync(resolve(root, 'tests/fixtures', name)))
 const png = fixture('red-2x2.png')
 const jpeg = fixture('red-2x2.jpg')
 const [ihdr, , idat, iend] = splitPng(png)
-let preview
 let buildSucceeded = false
 try {
+  await assertPortAvailable(port)
+  checkInterrupted()
+  // Construct and independently JPEG-decode the corpus before a Worker process can return a status.
+  const boundaryFixtures = boundary ? await makeBoundaryFixtures() : undefined
   mkdirSync(routeDir, { recursive: true })
   writeFileSync(resolve(routeDir, 'route.ts'), route)
   await run('pnpm', ['run', 'build:worker'], env)
   buildSucceeded = true
-  preview = spawn('pnpm', ['run', 'preview:worker', '--port', '8787'], { cwd: root, env, stdio: 'inherit' })
-  let ready = false
-  for (let attempt = 0; attempt < 60; attempt++) {
-    try { const response = await fetch('http://127.0.0.1:8787/account/sign-in'); if (response.status) { ready = true; break } } catch {}
-    await new Promise(resolveWait => setTimeout(resolveWait, 500))
-  }
-  if (!ready) throw new Error('Local Worker preview did not become ready')
-  const url = 'http://127.0.0.1:8787/api/local-profile-photo-probe'
+  const url = `http://127.0.0.1:${port}/api/local-profile-photo-probe`
   async function check(name, bytes, mime, expected) {
+    checkInterrupted()
     const started = performance.now()
-    const response = await fetch(url, { method: 'POST', headers: { 'content-type': mime }, body: bytes })
+    const response = await fetch(url, { method: 'POST', headers: { 'content-type': mime }, body: bytes, signal: AbortSignal.any([interrupted.signal, deadline]) })
     const result = await response.json()
-    console.log(JSON.stringify({ name, status: response.status, ...result, clientWallMs: +(performance.now() - started).toFixed(1) }))
+    const receipt = { name, status: response.status, ...result, clientWallMs: +(performance.now() - started).toFixed(1), label: 'local Worker screening only; wall time is not CPU or peak isolate memory' }
+    if (boundary) { receipt.sha256 = createHash('sha256').update(bytes).digest('hex'); receipt.bytes = bytes.byteLength }
+    console.log(JSON.stringify(receipt))
+    if (result.nonce !== nonce) throw new Error(`${name}: response came from another preview run`)
     if (!(Array.isArray(expected) ? expected.includes(response.status) : response.status === expected)) throw new Error(`${name}: expected ${expected}, received ${response.status}`)
     return { ...result, status: response.status }
   }
+  await withOwnedProcess('pnpm', ['run', 'preview:worker', '--port', String(port)], { cwd: root, env, stdio: 'inherit' }, async () => {
+    await waitForProbeNonce(url, nonce, { timeoutMs: 30_000, signal: interrupted.signal })
+    checkInterrupted()
+    if (boundary) {
+      const valid = boundaryFixtures.find(item => item.name === 'png_rgba8_max')
+      for (const item of boundaryFixtures) {
+        const result = await check(item.name, item.bytes, item.mime, item.expectedStatus)
+        if (item.expectedStatus === 200 && (result.width !== item.width || result.height !== item.height || result.length !== item.bytes.byteLength || result.contentType !== item.mime)) throw new Error(`${item.name}: returned image dimensions, type or length differ`)
+        if (item.expectedStatus !== 200) {
+          const recovery = await check(`${item.name}_recovery`, valid.bytes, valid.mime, 200)
+          if (recovery.width !== valid.width || recovery.height !== valid.height || recovery.length !== valid.bytes.byteLength) throw new Error(`${item.name}: valid recovery dimensions or length differ`)
+        }
+      }
+      for (const name of ['png_rgba16_max', 'jpeg_progressive_max']) {
+        const item = boundaryFixtures.find(fixture => fixture.name === name)
+        for (let attempt = 1; attempt <= 3; attempt++) {
+          const result = await check(`${name}_warm_${attempt}`, item.bytes, item.mime, 200)
+          if (result.width !== item.width || result.height !== item.height || result.length !== item.bytes.byteLength) throw new Error(`${name}: warm returned dimensions or length differ`)
+        }
+      }
+      return
+    }
   await check('valid_png', png, 'image/png', 200)
   await check('empty_idat', makePng(png, [ihdr, idat, chunk('IDAT', new Uint8Array()), iend]), 'image/png', 200)
   await check('valid_jpeg', jpeg, 'image/jpeg', 200)
@@ -132,10 +175,14 @@ try {
   const concurrent = await Promise.all(Array.from({ length: 4 }, (_, index) => check(`concurrent_${index}`, png, 'image/png', [200, 503])))
   if (!concurrent.some(result => result.status === 200) || concurrent.some(result => result.status === 200 && result.width !== 2)) throw new Error('Concurrent batch lost a valid result')
   await check('same_isolate_recovery', jpeg, 'image/jpeg', 200)
+  })
 } finally {
-  preview?.kill('SIGTERM')
   rmSync(routeDir, { recursive: true, force: true })
   // Regenerate artifacts without the temporary route even when a probe assertion fails.
-  try { if (buildSucceeded) await run('pnpm', ['run', 'build:worker'], env) }
-  finally { rmSync(tempHome, { recursive: true, force: true }) }
+  try { if (buildSucceeded) await run('pnpm', ['run', 'build:worker'], env, [AbortSignal.timeout(120_000)]) }
+  finally {
+    rmSync(tempHome, { recursive: true, force: true })
+    process.off('SIGINT', onInt)
+    process.off('SIGTERM', onTerm)
+  }
 }
