@@ -2,7 +2,7 @@
   "$schema": "./node_modules/wrangler/config-schema.json",
   // Keep the backend artifact distinct from the live Pages project.
   "name": "ante-website-backend-preview",
-  "main": ".open-next/worker.js",
+  "main": "worker-entry.mjs",
   "compatibility_date": "2026-09-25",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   // Local preview remains available, but deployment creates no public URL or route.
