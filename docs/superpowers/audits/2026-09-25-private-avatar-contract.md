@@ -47,3 +47,11 @@ The first useful service test is upload through a synthetic service token, follo
 ## SQL prerequisite deployed
 
 The paired Ante release `supabase/releases/private-profile-photos/` is independently reviewed through3260b5a and deployed as20260925132728_private_profile_photos. Six hosted postconditions passed and eight preservation groups matched. The private bucket is empty; no existing profile, friendship, object or avatar value changed. This proves installation of the reviewed SQL contract, not Storage HTTP/cache behavior or readiness to serve photos. Continue with the isolated real-service acceptance fixture and bounded Worker validator before website activation.
+
+## Decoder runtime candidate
+
+Follow-up source research selects exact `@jsquash/png@3.1.1` and `@jsquash/jpeg@1.6.0` for a bounded Worker compatibility experiment, not activation. The project documents Workers support and has more recent maintenance evidence than the previous pure-JS candidates. Its PNG wrapper disables checksum verification, so our bounded chunk preflight must verify every CRC, ordering and legal lengths, reject animation/interlace and compressed ancillary chunks, and enforce dimensions before full decode. JPEG needs a bounded marker/dimension preflight and matching complete decoded output. Original JPEG bytes may retain metadata.
+
+The published JPEG codec has no configurable allocation cap and permits a large WASM heap; PNG's internal allocation budget is best effort and excludes output buffers. Therefore package choice alone does not satisfy resource acceptance. Verify actual OpenNext bundling, static WASM initialization, malformed input/inflation behavior, concurrent decode memory and CPU against the target Worker plan. Keep serving disabled if these gates fail; a custom capped codec build is a separate reviewed technical decision. No decoder dependency or image endpoint is installed yet.
+
+Primary source pointers: [jSquash](https://github.com/jamsinclair/jSquash), [PNG codec](https://github.com/jamsinclair/jSquash/blob/main/packages/png/codec/src/lib.rs), [JPEG decoder](https://github.com/jamsinclair/jSquash/blob/main/packages/jpeg/codec/dec/mozjpeg_dec.cpp), [Cloudflare WASM support](https://developers.cloudflare.com/workers/runtime-apis/webassembly/javascript/).
