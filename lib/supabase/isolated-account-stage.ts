@@ -21,10 +21,19 @@ function makeStage(source: Iterable<JarCookie>): AccountCookieStage {
   const pending = new Map<string, CookieWrite>()
   const client = createServerClient(url, key, {
     // Auth SDK 2.106.0 logs a rejected fetch error before returning it. Strip
-    // transport details on this isolated path so URLs/tokens cannot reach logs.
+    // transport and HTTP error bodies on this isolated path before SDK logging.
     global: {
       fetch: async (input, init) => {
-        try { return await fetch(input, init) }
+        try {
+          const response = await fetch(input, init)
+          if (response.ok) return response
+          // Routes classify failures by status; provider messages are neither
+          // needed for that decision nor safe for the SDK's internal logs.
+          return new Response(JSON.stringify({ code: 'auth_error', msg: 'Authentication request failed' }), {
+            status: response.status,
+            headers: { 'content-type': 'application/json' },
+          })
+        }
         catch { throw new Error('Auth transport unavailable') }
       },
     },
