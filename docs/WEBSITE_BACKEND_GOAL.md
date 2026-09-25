@@ -31,4 +31,4 @@ Existing code supports Google sign-in only. The workstream also mentions email s
 
 ## Goal registration status
 
-The app's create-goal tool rejected registration because this task still contains an unfinished paused cross-project goal. That old goal was not falsely marked complete. This document records the requested replacement scope; app-level replacement remains pending.
+The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
