@@ -18,7 +18,7 @@ Build and verify the server-side foundation for the website account portal, shar
 
 Shared account sign-in hardening and durable authentication rate limiting. Confirm the actual hosting/trusted-IP boundary and shared store before choosing the limiter. An in-memory counter is insufficient across server instances. Return 429 with Retry-After on exhaustion, avoid logging credentials or raw personal data, and do not let the proxy perform authentication work before the callback limit.
 
-Existing code supports Google sign-in only. The workstream also mentions email sign-in; its intended mechanism must be resolved before adding that flow. This does not block hardening the existing Google path.
+Existing code supports Google sign-in only. The user has now requested email sign-in as well; the user selected email one-time codes. Harden Google and add the confirmed email backend flow without UI changes. The user confirmed Cloudflare Pages hosting; the user authorized preparing Cloudflare Workers while the existing Pages site stays live. A real Workers build and runtime acceptance are required before release.
 
 ## Acceptance and safeguards
 
