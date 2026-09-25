@@ -1,5 +1,7 @@
 # Private photo endpoint preparation
 
+Historical preparation note, superseded by the [implemented endpoint plan](../plans/2026-09-26-private-photo-endpoints.md) and [independent final acceptance](2026-09-26-private-photo-endpoints-review.md). The validator and endpoints have since been accepted as closed local source. References below to pending implementation and proposed defaults describe the earlier preparation state; they are not the current handoff. Hosted and resource acceptance remains outstanding.
+
 26 September 2026. Read-only source review; this is preparation, not an implementation plan or activation approval.
 
 Scope: `/Users/daniel/.codex/worktrees/ante-web-first-foundation/Ante-Website`. The review changed no implementation or provider state and ran no tests. This document preserves its findings. The selected contract is `docs/superpowers/audits/2026-09-25-private-avatar-contract.md`; the points labeled **Default** below are implementation suggestions, not product decisions.
