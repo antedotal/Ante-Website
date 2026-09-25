@@ -4,7 +4,7 @@
 
 ## Current evidence
 
-Read-only hosted metadata shows no avatar bucket or application photo pointer. Existing proof Storage policies target their own buckets. Authenticated friendship INSERT/UPDATE are denied, and existing accepted relationships are preserved. The operation-aware Storage helpers exist. `profiles.avatar_url` remains a writable legacy URL column and mobile still consumes URL-shaped avatars; do not put private object paths or signed links into it. These metadata/source checks do not prove Storage HTTP behavior.
+Initial read-only hosted metadata showed no avatar bucket or application photo pointer; the empty bucket has since been deployed as recorded below. Existing proof Storage policies target their own buckets. Authenticated friendship INSERT/UPDATE are denied, and existing accepted relationships are preserved. The operation-aware Storage helpers exist. `profiles.avatar_url` remains a writable legacy URL column and mobile still consumes URL-shaped avatars; do not put private object paths or signed links into it. These metadata/source checks do not prove Storage HTTP behavior.
 
 ## Selected simple design
 
@@ -28,7 +28,7 @@ Real Storage tests must cover owner/friend in both orientations, stranger/pendin
 
 Fixed keys trade simplicity for replacement freshness. Set conservative upload cache control and forbid website caching; verify read-after-unfriend/deletion through the actual authenticated Storage endpoint. Cache settings alone do not prove current authorization checks. Already delivered bytes and in-flight reads cannot be recalled. Do not enable serving if acceptance shows cached bytes bypass current authorization.
 
-Bucket configuration and real server-key/Worker acceptance remain open. Create/manage blobs through Storage APIs, never by deleting storage.objects rows. Future account deletion must remove the canonical object and handle provider failures/in-flight writes; target-profile existence prevents an orphan from being served as an active photo. A per-upload retirement queue is unnecessary for fixed keys. No purchase or paid Images binding has been selected.
+Bucket configuration is deployed; real server-key/Worker acceptance remains open. Create/manage blobs through Storage APIs, never by deleting storage.objects rows. Future account deletion must remove the canonical object and handle provider failures/in-flight writes; target-profile existence prevents an orphan from being served as an active photo. A per-upload retirement queue is unnecessary for fixed keys. No purchase or paid Images binding has been selected.
 
 Official sources checked for this design: [access control](https://supabase.com/docs/guides/storage/security/access-control), [private downloads](https://supabase.com/docs/guides/storage/serving/downloads), [operation helpers](https://supabase.com/docs/guides/storage/schema/helper-functions), [ownership](https://supabase.com/docs/guides/storage/security/ownership), [Storage deletion](https://supabase.com/docs/guides/storage/management/delete-objects), [standard uploads](https://supabase.com/docs/guides/storage/uploads/standard-uploads), [private CDN behavior](https://supabase.com/docs/guides/storage/cdn/fundamentals), [Smart CDN](https://supabase.com/docs/guides/storage/cdn/smart-cdn).
 
