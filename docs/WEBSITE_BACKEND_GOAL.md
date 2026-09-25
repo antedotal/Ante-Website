@@ -40,9 +40,9 @@ Local authentication preparation is implemented and independently reviewed: dura
 Next steps:
 
 - Shared Supabase is confirmed. The limiter migration and cleanup scheduler are deployed and checked; verify the website server-key connection before enabling hosted routes.
-- Target antedotal.com in Havish's Cloudflare account. Plugin Workers/domain reads work; Pages/subdomain reads still return permission errors. Confirm staging ingress and upload credentials before hosted verification; current Pages remains live.
+- Target antedotal.com in Havish's Cloudflare account. Plugin Workers/domain reads and direct ante-website Pages project reads work; account-level Pages listing and Workers-subdomain reads still fail. Confirm staging ingress and upload credentials before hosted verification; current Pages remains live.
 - Verify OTP templates, SMTP, same-account Google/email linking and successful provider session cookies. A recipient must be authorized before sending test codes.
-- Implement all three profile edits: display name, email and avatar. Avatars must be owner/friend-only. Presets are user-selected A$1..A$50 per task. Shared preset SQL/RPC implementation is underway. Source audit found mobile self-display uses auth metadata while friend-facing names prefer profiles.full_name; preserve canonical profile edits from OAuth overwrites and document the mobile consumer dependency.
+- Implement all three profile edits: display name, email and avatar. Avatars must be owner/friend-only. Presets are user-selected A$1..A$50 per task. Shared preset SQL/RPC implementation passed independent review and was deployed as 20260925101013; the website route is next. Source audit found mobile self-display uses auth metadata while friend-facing names prefer profiles.full_name; preserve canonical profile edits from OAuth overwrites and document the mobile consumer dependency.
 - Continue account/preset, authoritative task/private-proof and consent/customer-ownership work in the goal order. Financial settlement and reviewer-silence charging remain closed.
 
 Email account creation is enabled in the backend contract, matching Google signup; if invitation-only signup is desired, revise this before enabling the routes. No UI, real-email delivery, hosted mutation or deployment was part of this email slice.
