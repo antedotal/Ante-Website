@@ -5,6 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
 import { admitAccountVisitor } from './callback-admission'
+import { accountTimestamp, providerCode, providerStatus, verifyAccountUser, withVerifiedCookies } from './account-session'
 
 type Action = 'read' | 'write'
 type Amounts = { easy_cents: number; medium_cents: number; hard_cents: number }
@@ -39,21 +40,6 @@ function inputAmounts(value: unknown): Amounts | null {
   return { easy_cents: value.easy_cents, medium_cents: value.medium_cents, hard_cents: value.hard_cents }
 }
 
-// The SQL timestamptz value must be a bounded real calendar time with an explicit zone.
-function timestamp(value: unknown): value is string {
-  if (typeof value !== 'string' || value.length > 64) return false
-  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.\d{1,6})?(Z|[+-]\d{2}:\d{2})$/.exec(value)
-  if (!match) return false
-  const [year, month, day, hour, minute, second] = match.slice(1, 7).map(Number)
-  const offset = match[7]
-  if (year < 1 || month < 1 || month > 12 || hour > 23 || minute > 59 || second > 59) return false
-  if (offset !== 'Z' && (Number(offset.slice(1, 3)) > 23 || Number(offset.slice(4, 6)) > 59)) return false
-  const calendar = new Date(0)
-  calendar.setUTCFullYear(year, month - 1, day)
-  return calendar.getUTCFullYear() === year && calendar.getUTCMonth() === month - 1 &&
-    calendar.getUTCDate() === day && !Number.isNaN(Date.parse(value))
-}
-
 // Reject extra keys and malformed success or denial envelopes, even from a trusted RPC.
 function rpcResult(value: unknown, action: Action): Success | { ok: false; retry_after_seconds: number } | null {
   if (exactAccountRecord(value, ['ok', 'presets']) && value.ok === true) {
@@ -61,7 +47,7 @@ function rpcResult(value: unknown, action: Action): Success | { ok: false; retry
     if (!exactAccountRecord(value.presets, ['currency', 'easy_cents', 'medium_cents', 'hard_cents', 'updated_at'])) return null
     const preset = value.presets
     if (preset.currency !== 'AUD' || !amount(preset.easy_cents) || !amount(preset.medium_cents) ||
-      !amount(preset.hard_cents) || !timestamp(preset.updated_at)) return null
+      !amount(preset.hard_cents) || !accountTimestamp(preset.updated_at)) return null
     return { ok: true, presets: {
       currency: 'AUD', easy_cents: preset.easy_cents, medium_cents: preset.medium_cents,
       hard_cents: preset.hard_cents, updated_at: preset.updated_at,
@@ -73,24 +59,6 @@ function rpcResult(value: unknown, action: Action): Success | { ok: false; retry
     return { ok: false, retry_after_seconds: value.retry_after_seconds }
   }
   return null
-}
-
-function providerStatus(value: unknown) {
-  return value && typeof value === 'object' && 'status' in value && typeof value.status === 'number' ? value.status : null
-}
-
-function providerCode(value: unknown) {
-  return value && typeof value === 'object' && 'code' in value && typeof value.code === 'string' ? value.code : null
-}
-
-// A verified refresh remains attached to all later outcomes; failed identity loses provisional cookies.
-function withVerifiedCookies(response: NextResponse, provisional: NextResponse) {
-  for (const cookie of provisional.headers.getSetCookie()) response.headers.append('Set-Cookie', cookie)
-  if (provisional.headers.has('set-cookie')) {
-    response.headers.set('Expires', '0')
-    response.headers.set('Pragma', 'no-cache')
-  }
-  return response
 }
 
 export async function handleAntePresets(request: NextRequest, action: Action) {
@@ -116,15 +84,8 @@ export async function handleAntePresets(request: NextRequest, action: Action) {
   try { supabase = createCallbackClient(request, provisional) } catch { return failure(503, 60) }
 
   // getUser asks Auth to verify the caller; a cookie's unchecked metadata is never authority.
-  try {
-    const { data, error } = await supabase.auth.getUser()
-    if (providerStatus(error) === 429) return failure(429, 60)
-    if (error) {
-      const status = providerStatus(error)
-      return status === null || status === 0 || status === 408 || status >= 500 ? failure(503, 60) : failure(401)
-    }
-    if (!data?.user || typeof data.user.id !== 'string' || !data.user.id) return failure(401)
-  } catch { return failure(503, 60) }
+  const identityFailure = await verifyAccountUser(supabase)
+  if (identityFailure) return failure(identityFailure, identityFailure === 401 ? undefined : 60)
 
   // The public authenticated RPC derives its owner from auth.uid() and enforces its own quota.
   try {
