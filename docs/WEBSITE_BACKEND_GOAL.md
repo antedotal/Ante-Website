@@ -51,7 +51,7 @@ Callback limiter 20260925095113; account visitor limiter 20260925111932; preset 
 
 ### Next work
 
-1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed; website endpoints, validation and real Storage HTTP/cache acceptance remain incomplete.
+1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed. Actual isolated Storage HTTP acceptance now passes through `1f0565f`, including owner/friend bytes, denied signing/listing/mutations and revocation controls. Website endpoints, image validation and hosted Storage/CDN/JWKS acceptance remain incomplete; local transform RLS is untested because that route was disabled.
 2. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. Hosted task create/update/archive/restore authority RPCs are still absent; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
 3. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
 
