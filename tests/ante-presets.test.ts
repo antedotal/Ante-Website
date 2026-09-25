@@ -2,6 +2,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { autoImplementMethods } from 'next/dist/server/route-modules/app-route/helpers/auto-implement-methods'
 
 vi.mock('server-only', () => ({}))
 
@@ -20,7 +21,7 @@ vi.mock('@supabase/ssr', () => ({
 
 const valid = { easy_cents: 100, medium_cents: 2500, hard_cents: 5000 }
 const saved = { currency: 'AUD', ...valid, updated_at: '2026-09-25T10:00:00+00:00' }
-const call = (method: 'GET' | 'PUT', body: BodyInit = JSON.stringify(valid), headers: Record<string, string> = {}, suffix = '') => new NextRequest(`https://ante.test/api/account/ante-presets${suffix}`, {
+const call = (method: 'GET' | 'PUT' | 'HEAD' | 'OPTIONS' | 'POST' | 'PATCH' | 'DELETE', body: BodyInit = JSON.stringify(valid), headers: Record<string, string> = {}, suffix = '') => new NextRequest(`https://ante.test/api/account/ante-presets${suffix}`, {
   method,
   headers: { host: 'ante.test', ...(method === 'PUT' ? { origin: 'https://ante.test', 'content-type': 'application/json' } : {}), ...headers },
   ...(method === 'PUT' ? { body } : {}),
@@ -38,6 +39,20 @@ beforeEach(() => {
 })
 
 describe('account preset API', () => {
+  it('returns private 405 for every other Next method without Auth or RPC', async () => {
+    const handlers = autoImplementMethods(await import('../app/api/account/ante-presets/route'))
+    for (const method of ['HEAD', 'OPTIONS', 'POST', 'PATCH', 'DELETE'] as const) {
+      const response = await handlers[method](call(method), {} as never) as Response
+      expect(response.status).toBe(405)
+      expect(response.headers.get('cache-control')).toBe('private, no-store')
+      expect(response.headers.get('allow')).toBe('GET, PUT')
+      expect(await response.text()).toBe('')
+    }
+    expect(createServerClient).not.toHaveBeenCalled()
+    expect(state.getUser).not.toHaveBeenCalled()
+    expect(state.rpc).not.toHaveBeenCalled()
+  })
+
   it('rejects hostile canonical headers, missing PUT Origin, and selectors before Auth', async () => {
     const { GET, PUT } = await import('../app/api/account/ante-presets/route')
     for (const method of ['GET', 'PUT'] as const) {
@@ -92,6 +107,20 @@ describe('account preset API', () => {
       ['set_my_ante_presets', { p_easy_cents: 100, p_medium_cents: 2500, p_hard_cents: 5000 }],
     ])
     expect(response.headers.get('cache-control')).toContain('private, no-store')
+  })
+
+  it('accepts inverted and equal tier amounts without imposing an order', async () => {
+    const { PUT } = await import('../app/api/account/ante-presets/route')
+    const inverted = { easy_cents: 5000, medium_cents: 100, hard_cents: 100 }
+    const equal = { easy_cents: 350, medium_cents: 350, hard_cents: 350 }
+    state.rpc.mockResolvedValueOnce({ data: { ok: true, presets: { currency: 'AUD', ...inverted, updated_at: saved.updated_at } }, error: null })
+    state.rpc.mockResolvedValueOnce({ data: { ok: true, presets: { currency: 'AUD', ...equal, updated_at: saved.updated_at } }, error: null })
+    expect((await PUT(call('PUT', JSON.stringify(inverted)))).status).toBe(200)
+    expect((await PUT(call('PUT', JSON.stringify(equal)))).status).toBe(200)
+    expect(state.rpc.mock.calls).toEqual([
+      ['set_my_ante_presets', { p_easy_cents: 5000, p_medium_cents: 100, p_hard_cents: 100 }],
+      ['set_my_ante_presets', { p_easy_cents: 350, p_medium_cents: 350, p_hard_cents: 350 }],
+    ])
   })
 
   it('returns 401 without RPC or provisional cookies for invalid identity', async () => {

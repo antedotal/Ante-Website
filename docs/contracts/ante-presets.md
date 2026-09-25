@@ -2,7 +2,7 @@
 
 `GET /api/account/ante-presets` reads the signed-in owner's saved task amount preferences. `PUT /api/account/ante-presets` replaces all three preferences. This endpoint stores preferences only; it neither creates tasks nor authorizes payments or enforces amounts in another product path.
 
-Both routes require valid public account configuration, the configured canonical URL and Host, and a verified Supabase user from `auth.getUser()`. A supplied GET `Origin` must equal the canonical site origin; PUT always requires that exact `Origin`. Host, forwarded host and forwarded protocol must agree with the configured site. Query parameters are rejected. Calls use the request-scoped public SSR client, never a service key or caller-selected owner. The public RPCs derive ownership from `auth.uid()`.
+Both routes require valid public account configuration, the configured canonical URL and Host, and a verified Supabase user from `auth.getUser()`. A supplied GET `Origin` must equal the canonical site origin; PUT always requires that exact `Origin`. Host, forwarded host and forwarded protocol must agree with the configured site. Query parameters are rejected. All other supported HTTP methods, including HEAD and OPTIONS, return bodyless HTTP 405 with `Allow: GET, PUT` and private/no-store headers without constructing Auth or calling an RPC. Calls use the request-scoped public SSR client, never a service key or caller-selected owner. The public RPCs derive ownership from `auth.uid()`.
 
 PUT requires `Content-Type: application/json` and a body of at most 4096 actual bytes. The entire JSON object must have exactly these three keys, with each value an integer from 100 to 5000 inclusive:
 
