@@ -61,6 +61,28 @@ describe('account session', () => {
     expect(response.headers.get('pragma')).toBe('no-cache')
   })
 
+  it('redirects to sign-in when claim verification throws on a malformed auth cookie', async () => {
+    state.getClaims.mockRejectedValue(new Error('Missing exp claim'))
+    const { proxy } = await import('../proxy')
+    const response = await proxy(new NextRequest('https://evil.test/account', {
+      headers: { cookie: 'sb-project-auth-token=malformed' },
+    }))
+    expect(response.status).toBe(307)
+    expect(response.headers.get('location')).toBe('https://ante.test/account/sign-in')
+    expect(response.headers.get('cache-control')).toContain('private, no-store')
+  })
+
+  it('keeps sign-in reachable when claim verification throws on a malformed cookie', async () => {
+    state.getClaims.mockRejectedValue(new Error('Missing exp claim'))
+    const { proxy } = await import('../proxy')
+    const response = await proxy(new NextRequest('https://ante.test/account/sign-in', {
+      headers: { cookie: 'sb-project-auth-token=malformed' },
+    }))
+    expect(response.status).toBe(200)
+    expect(response.headers.get('location')).toBeNull()
+    expect(response.headers.get('cache-control')).toContain('private, no-store')
+  })
+
   it('refuses an account page when claims are absent or expired', async () => {
     state.getClaims.mockResolvedValue({ data: { claims: null }, error: new Error('expired') })
     const { default: AccountPage } = await import('../app/account/page')

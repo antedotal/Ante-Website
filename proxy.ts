@@ -10,7 +10,7 @@ export async function proxy(request: NextRequest) {
     response.headers.set('Cache-Control', 'private, no-store')
     return response
   }
-  const { url, key } = accountConfig()
+  const { url, key, siteOrigin } = accountConfig()
   let response = NextResponse.next({ request })
   response.headers.set('Cache-Control', 'private, no-store')
 
@@ -30,7 +30,17 @@ export async function proxy(request: NextRequest) {
   })
 
   // Claims are signature-verified; the unverified user stored in a cookie is never an auth decision.
-  await supabase.auth.getClaims()
+  try {
+    await supabase.auth.getClaims()
+  } catch {
+    // A malformed cookie can make claim parsing throw; keep sign-in reachable and deny account content.
+    if (request.nextUrl.pathname === '/account/sign-in') return response
+    const denied = NextResponse.redirect(new URL('/account/sign-in', siteOrigin))
+    denied.headers.set('Cache-Control', 'private, no-store')
+    denied.headers.set('Expires', '0')
+    denied.headers.set('Pragma', 'no-cache')
+    return denied
+  }
   return response
 }
 

@@ -1,5 +1,10 @@
 allowBuilds:
   esbuild: true
+  rclone.js: false
   sharp: true
   supabase: false
   unrs-resolver: true
+  workerd: true
+minimumReleaseAgeExclude:
+  - miniflare@5.20260923.0-alpha
+  - wrangler@4.139.0

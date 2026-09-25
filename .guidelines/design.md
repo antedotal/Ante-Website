@@ -18,11 +18,15 @@ Account auth requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLI
 
 `lib/supabase/client.ts` creates the browser cookie client; `lib/supabase/server.ts` creates request-scoped server and callback clients. The old `lib/supabase.ts` exists solely for the waitlist and has placeholder fallback values; it is never an account authorization boundary. Next 16 `proxy.ts` matches only account routes, verifies claims for refresh, forwards refreshed cookies to both the request and response, and marks responses private/no-store. Direct invocation of proxy on `/auth/callback` also bypasses Auth work. `/account` checks verified claims again during dynamic server rendering. `/auth/callback` checks canonical origin and Host first, then consumes shared admission before code validation or client construction. It exchanges one PKCE code after admission, redirects only to `/account`, and returns safe error codes without tokens. A Supabase token-endpoint 429 is returned as 429 with `Retry-After: 60` and a safe log entry. Do not use cookie `getSession().user` for authorization.
 
+If claim verification throws while parsing a malformed account cookie, the proxy redirects protected account paths to the configured site's sign-in route with private/no-store headers. It lets `/account/sign-in` render under the same failure so the redirect cannot loop. Normal claim verification remains in place, and the account page still independently requires verified claims.
+
 The website callback limiter targets a future direct Cloudflare Worker ingress and an atomic shared Supabase RPC. It is disabled unless `ANTE_AUTH_INGRESS=cloudflare`, a valid single `CF-Connecting-IP`, `ANTE_AUTH_LIMIT_HMAC_SECRET` of at least 32 bytes, and a server-only `SUPABASE_SECRET_KEY` or legacy `SUPABASE_SERVICE_ROLE_KEY` are present. `lib/server/callback-admission.ts` canonicalizes the visitor IP, rejects Worker subrequests and cross-zone sentinel values, and sends only a versioned HMAC digest to `lib/server/callback-limit-store.ts`. The store module is marked `server-only`; it calls the fixed REST RPC on the already-configured Supabase project with a five-second timeout, no caching and no redirects. Missing or invalid public account configuration at the route boundary, missing identity or private configuration, network failure or an invalid RPC result yields the same private/no-store 503 with `Retry-After: 60`. A valid denial yields 429 and the RPC retry interval. Logs use fixed labels and omit visitor data and credentials. The exact RPC and backend obligations are in `docs/contracts/callback-admission.md`.
 
-Cloudflare Pages remains the live static site; Node-compatible Cloudflare Workers deployment and the Supabase RPC are not yet in place. The Worker must receive requests through direct Cloudflare ingress, with no same-zone Worker rewrite or cross-zone subrequest, and Cloudflare Pseudo IPv4 **Overwrite Headers** disabled. The Node runtime declaration, `node:crypto` and `node:net` still need a Worker adapter/runtime test. Until the RPC, Worker deployment, provider redirects and native/web identity checks are verified, the account sign-in route stays unlinked from public marketing. Local fake-store tests do not establish database atomicity or deployed behavior.
+Cloudflare Pages remains the live static site. The separate `ante-website-backend-preview` Worker is configured through `wrangler.jsonc` and `open-next.config.ts`; it has no route, `workers.dev` URL or public preview URL. `pnpm run build:worker` produces `.open-next/worker.js` and assets, while `pnpm run preview:worker --port 8787` runs the built Worker locally on `127.0.0.1`. OpenNext's Node.js proxy support is experimental. A local preview exercised marketing, callback rejection and missing-limiter denial, and protected-account redirection with synthetic, nonproduction configuration. Session cookie refresh through a real provider and hosted deployment remain unverified. The Supabase RPC is not yet in place. The Worker must receive requests through direct Cloudflare ingress, with no same-zone Worker rewrite or cross-zone subrequest, and Cloudflare Pseudo IPv4 **Overwrite Headers** disabled. Until the RPC, Worker deployment, provider redirects and native/web identity checks are verified, the account sign-in route stays unlinked from public marketing. Local fake-store tests do not establish database atomicity or deployed behavior.
 
-Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` explicitly permits the `sharp`, `unrs-resolver`, and `esbuild` install checks and denies the Supabase CLI build script. The account uses `@supabase/ssr` 0.8 with the existing Supabase JS version; its cookie setter has no cache-header argument, so the proxy and callback set private/no-store, Expires, and Pragma explicitly. Verification commands are `pnpm test`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run build`, and `pnpm install --frozen-lockfile`.
+The marketing pages use optimized Next `<Image>` components. OpenNext requires a Cloudflare Images binding or a custom loader for those image URLs; no image binding or paid image service is enabled in this preparation. Image delivery needs a separate deployment decision and check. The current Worker build uses OpenNext's default dummy incremental cache, with no R2 binding.
+
+Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` permits the `sharp`, `unrs-resolver`, `esbuild` and `workerd` install checks and denies the Supabase CLI and unused `rclone.js` self-update scripts. The account uses `@supabase/ssr` 0.8 with the existing Supabase JS version; its cookie setter has no cache-header argument, so the proxy and callback set private/no-store, Expires, and Pragma explicitly. Verification commands are `pnpm test`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run build`, `pnpm run build:worker`, and `pnpm install --frozen-lockfile`.
 
 ---
 
@@ -30,7 +34,7 @@ Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` explicitly 
 
 ### 2.1 Core Runtime & Framework
 
-- **Framework**: Next.js `16.1.1`
+- **Framework**: Next.js `16.3.3`
 - **Language**: TypeScript `^5`
 - **UI Library**: React `19.2.3`, React DOM `19.2.3`
 - **Rendering model**:
@@ -89,13 +93,16 @@ From `package.json` `dependencies`:
 
 - **Linting**:
   - `eslint` `^9`
-  - `eslint-config-next` `16.1.1`
+  - `eslint-config-next` `16.3.3`
+  - `@opennextjs/cloudflare` `1.20.6`, Wrangler `4.139.0`, and required `rclone.js` peer `0.6.6` for Workers builds
   - Config: `eslint.config.mjs`
 - **Build pipeline**:
   - `postcss.config.mjs` – PostCSS/Tailwind integration.
-- **NPM scripts** (from `package.json`):
+- **Package scripts** (from `package.json`):
   - `dev`: `next dev`
   - `build`: `next build`
+  - `build:worker`: `opennextjs-cloudflare build`
+  - `preview:worker`: local Wrangler preview bound to `127.0.0.1`
   - `start`: `next start`
   - `lint`: `eslint`
   - `test`: `vitest run`

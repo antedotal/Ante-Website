@@ -4,11 +4,17 @@ Updated 25 September 2026. The user confirmed the current site is on Cloudflare 
 
 ## Verified source state
 
-The website uses Next.js 16.1.1. Its feature branch has dynamic account rendering, a PKCE callback route and a session-refresh proxy. No Wrangler or Cloudflare adapter configuration was present when inspected. Those server functions cannot be represented by a static Next.js export.
+The website now uses Next.js 16.3.3. Its feature branch has dynamic account rendering, a PKCE callback route, a session-refresh proxy, and local Wrangler/OpenNext configuration. The earlier inspected state had no Worker adapter. Those server functions cannot be represented by a static Next.js export.
 
-Cloudflare's documentation separates static Next.js on Pages from full-stack deployment on Workers. OpenNext is a documented Workers adapter that preserves the existing Next.js application. A registry check found `@opennextjs/cloudflare@1.20.6` requires Next `>=15.5.24 <16 || >=16.3.3`, Wrangler `^4.125.0` and `rclone.js ^0.6.6`. `next@16.3.3` and matching ESLint config exist; its React peer range accepts the current React 19 dependency. These are candidate versions, not installed or verified compatibility claims. Wrangler 4.139.0 requires Node >=22; the current local Node is 26.8.2.
+Cloudflare's documentation separates static Next.js on Pages from full-stack deployment on Workers. OpenNext is a documented Workers adapter that preserves the existing Next.js application. A registry check found `@opennextjs/cloudflare@1.20.6` requires Next `>=15.5.24 <16 || >=16.3.3`, Wrangler `^4.125.0` and `rclone.js ^0.6.6`. Next 16.3.3, matching ESLint config, OpenNext 1.20.6, Wrangler 4.139.0 and `rclone.js` 0.6.6 are installed and the local Worker build passed. Wrangler requires Node >=22; the tested local Node was 26.8.2.
 
 ## Required implementation and acceptance
+
+The separate local Worker build is configured with OpenNext 1.20.6, Next 16.3.3 and Wrangler 4.139.0. It has no production route or public preview URL. A synthetic `localhost.invalid` project build ran in local `workerd`: marketing returned 200; a forged callback Host returned 400; a same-origin callback without limiter configuration returned private/no-store 503 with `Retry-After: 60`; and `/account`, including a forged cookie, redirected to sign-in with private/no-store headers. The generated static assets contained no server-only credential or limiter symbols. This proves local runtime behavior only. OpenNext warns that Node.js middleware support is experimental, and an actual cookie refresh, hosted binding, provider flow and direct-ingress check are still required before deployment.
+
+A correctly named synthetic auth cookie initially made `getClaims()` throw on a missing JWT expiry and produced a private 500 in the Worker. The proxy now catches thrown verification errors, redirects protected account paths to the configured site's sign-in route, and keeps sign-in reachable. Focused tests cover both paths; the corrected Worker preview result is recorded in the task report.
+
+The existing marketing pages render optimized Next images. OpenNext requires a Cloudflare Images binding or a custom image loader for those requests; Cloudflare Images may incur charges. Neither was enabled in this backend-only preparation, so verify image delivery and choose its resource before any hosted Worker replaces Pages. No R2 cache is configured.
 
 1. Finish and independently review callback admission. Trust only the explicit Cloudflare deployment's `cf-connecting-ip`, with no fallback to arbitrary forwarding headers. Reject malformed identity and fail closed when configuration or the durable store is unavailable.
 2. Add pinned, compatible Workers build tooling and configuration. Preserve the existing Pages deployment, marketing files and routes. Do not publish or change DNS as part of local preparation. Keep secrets out of tracked files and assets.
