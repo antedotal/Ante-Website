@@ -1,12 +1,16 @@
 // Exercise the complete validator through a temporary route in the actual local OpenNext Worker.
-import { existsSync, mkdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync, readFileSync } from 'node:fs'
 import { spawn } from 'node:child_process'
-import { resolve } from 'node:path'
+import { resolve, join } from 'node:path'
+import { tmpdir } from 'node:os'
 import { deflateSync } from 'node:zlib'
 
 const root = resolve(import.meta.dirname, '..')
 const routeDir = resolve(root, 'app/api/local-profile-photo-probe')
 if (existsSync(routeDir)) throw new Error('Refusing to overwrite an existing probe route')
+// Next and Wrangler can load local dotenv files independently of the child process environment.
+const localEnvFiles = readdirSync(root).filter(name => name.startsWith('.env') || name.startsWith('.dev.vars'))
+if (localEnvFiles.length) throw new Error(`Refusing local check while project dotenv files exist: ${localEnvFiles.join(', ')}`)
 const route = `import { validateProfilePhoto, ProfilePhotoError } from '@/lib/server/profile-photo'
 // This route exists only during the local check and never connects to authentication or storage.
 export async function POST(request: Request) {
@@ -60,7 +64,20 @@ function mutatePngHeader(bytes, change) {
   return copy
 }
 
-const env = { ...process.env, NEXT_PUBLIC_SUPABASE_URL: 'https://localhost.invalid', NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-key', NEXT_PUBLIC_ANTE_SITE_ORIGIN: 'http://localhost:8787' }
+function prematureJpegScan(bytes) {
+  let offset = 2
+  while (offset < bytes.length) {
+    const marker = bytes[offset + 1]
+    const length = bytes[offset + 2] * 256 + bytes[offset + 3]
+    if (marker === 0xda) return new Uint8Array([...bytes.subarray(0, offset + 2 + length + 1), 0xff, 0xd9])
+    offset += 2 + length
+  }
+  throw new Error('Synthetic JPEG fixture has no scan')
+}
+
+// A temporary HOME and narrow child environment prevent inherited provider credentials from entering the build/preview.
+const tempHome = mkdtempSync(join(tmpdir(), 'ante-photo-worker-'))
+const env = { PATH: process.env.PATH ?? '/usr/bin:/bin', HOME: tempHome, TMPDIR: tmpdir(), CI: '1', NEXT_TELEMETRY_DISABLED: '1', NEXT_PUBLIC_SUPABASE_URL: 'https://localhost.invalid', NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: 'synthetic-public-key', NEXT_PUBLIC_ANTE_SITE_ORIGIN: 'http://localhost:8787' }
 const fixture = name => new Uint8Array(readFileSync(resolve(root, 'tests/fixtures', name)))
 const png = fixture('red-2x2.png')
 const jpeg = fixture('red-2x2.jpg')
@@ -89,6 +106,7 @@ try {
     return { ...result, status: response.status }
   }
   await check('valid_png', png, 'image/png', 200)
+  await check('empty_idat', makePng(png, [ihdr, idat, chunk('IDAT', new Uint8Array()), iend]), 'image/png', 200)
   await check('valid_jpeg', jpeg, 'image/jpeg', 200)
   await check('progressive_jpeg', fixture('red-2x2-progressive.jpg'), 'image/jpeg', 200)
   await check('wide_png', fixture('red-2048x2.png'), 'image/png', 200)
@@ -104,6 +122,8 @@ try {
   await check('overlong_chunk', makePng(png, [ihdr, (() => { const copy = idat.slice(); new DataView(copy.buffer).setUint32(0, 0x7fffffff); return copy })(), iend]), 'image/png', 422)
   await check('trailing_png', new Uint8Array([...png, 0]), 'image/png', 422)
   await check('truncated_jpeg', jpeg.slice(0, -2), 'image/jpeg', 422)
+  await check('premature_scan_jpeg', prematureJpegScan(fixture('red-2048x2.jpg')), 'image/jpeg', 422)
+  await check('jpeg_recovery_after_warning', jpeg, 'image/jpeg', 200)
   await check('multi_jpeg', new Uint8Array([...jpeg, ...jpeg]), 'image/jpeg', 422)
   const oversized = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(2_097_152)); controller.enqueue(new Uint8Array(1)); controller.close() } })
   const overResponse = await fetch(url, { method: 'POST', headers: { 'content-type': 'image/png' }, body: oversized, duplex: 'half' })
@@ -116,5 +136,6 @@ try {
   preview?.kill('SIGTERM')
   rmSync(routeDir, { recursive: true, force: true })
   // Regenerate artifacts without the temporary route even when a probe assertion fails.
-  if (buildSucceeded) await run('pnpm', ['run', 'build:worker'], env)
+  try { if (buildSucceeded) await run('pnpm', ['run', 'build:worker'], env) }
+  finally { rmSync(tempHome, { recursive: true, force: true }) }
 }

@@ -61,6 +61,23 @@ function originalPngChunks(): Uint8Array[] {
   return chunks
 }
 
+// Preserve the JPEG frame and EOI but truncate its entropy stream to exercise a warning-tolerant decoder.
+function prematureJpegScan(bytes: Uint8Array): Uint8Array {
+  let offset = 2
+  while (offset < bytes.length) {
+    const marker = bytes[offset + 1]
+    const length = bytes[offset + 2] * 256 + bytes[offset + 3]
+    if (marker === 0xda) return new Uint8Array([...bytes.subarray(0, offset + 2 + length + 1), 0xff, 0xd9])
+    offset += 2 + length
+  }
+  throw new Error('Synthetic JPEG fixture has no scan')
+}
+
+function streamedRequest(mime: string, headers: Record<string, string>, onCancel: () => void, signal?: AbortSignal): Request {
+  const body = new ReadableStream<Uint8Array>({ pull() {}, cancel() { onCancel(); return new Promise(() => {}) } })
+  return new Request('https://local.invalid/photo', { method: 'PUT', headers: { 'content-type': mime, ...headers }, body, signal, duplex: 'half' } as RequestInit)
+}
+
 describe('validateProfilePhoto', () => {
   beforeAll(async () => {
     codecEnv.PROFILE_PNG_WASM = await WebAssembly.compile(readFileSync(new URL('../node_modules/@jsquash/png/codec/pkg/squoosh_png_bg.wasm', import.meta.url)))
@@ -129,6 +146,16 @@ describe('validateProfilePhoto', () => {
     expect((await validateProfilePhoto(upload(jpeg, 'image/jpeg'))).width).toBe(2)
   })
 
+  it('rejects a premature JPEG scan retaining EOI without emitting decoder messages, then recovers', async () => {
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const emitted = vi.spyOn(console, 'error').mockImplementation(() => {})
+    try {
+      await expect(validateProfilePhoto(upload(prematureJpegScan(wideJpeg), 'image/jpeg'))).rejects.toMatchObject({ status: 422, code: 'invalid_image' })
+      expect(emitted).not.toHaveBeenCalled()
+      expect((await validateProfilePhoto(upload(jpeg, 'image/jpeg'))).width).toBe(2)
+    } finally { emitted.mockRestore() }
+  })
+
   it('accepts progressive JPEG and exact axis boundary in both formats', async () => {
     const { validateProfilePhoto } = await import('../lib/server/profile-photo')
     expect((await validateProfilePhoto(upload(progressiveJpeg, 'image/jpeg'))).height).toBe(2)
@@ -155,6 +182,33 @@ describe('validateProfilePhoto', () => {
     ]
     for (const [index, bytes] of cases.entries()) {
       await expect(validateProfilePhoto(upload(bytes))).rejects.toMatchObject({ status: index < 3 ? 415 : 422 })
+    }
+  })
+
+  it('accepts a legal empty IDAT adjacent to a valid compressed IDAT', async () => {
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const [ihdr, , idat, iend] = originalPngChunks()
+    const bytes = pngFromChunks([ihdr, idat, pngChunk('IDAT', new Uint8Array()), iend])
+    expect((await validateProfilePhoto(upload(bytes))).bytes).toEqual(bytes)
+  })
+
+  it('cancels bodies on MIME, declared-length and already-aborted early denials without waiting', async () => {
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const controller = new AbortController()
+    const cases: [Request, number, { value: number }][] = []
+    for (const [mime, headers, signal, status] of [
+      ['image/gif', {}, undefined, 415],
+      ['image/png', { 'content-length': 'not-a-number' }, undefined, 400],
+      ['image/png', { 'content-length': '2097153' }, undefined, 413],
+      ['image/png', {}, controller.signal, 400],
+    ] as const) {
+      const counter = { value: 0 }
+      cases.push([streamedRequest(mime, headers, () => counter.value++, signal), status, counter])
+    }
+    controller.abort()
+    for (const [request, status, counter] of cases) {
+      await expect(validateProfilePhoto(request)).rejects.toMatchObject({ status })
+      expect(counter.value).toBe(1)
     }
   })
 

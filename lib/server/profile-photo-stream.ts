@@ -4,13 +4,26 @@ import { ProfilePhotoError } from './profile-photo-error'
 export const MAX_PROFILE_PHOTO_BYTES = 2_097_152
 const READ_DEADLINE_MS = 10_000
 
+// Early header/signal denials have no reader yet; cancel an unlocked body without waiting on its producer.
+export function cancelProfilePhotoBody(request: Request): void {
+  if (!request.body || request.body.locked) return
+  try { void request.body.cancel().catch(() => {}) } catch { /* Body cancellation itself may throw. */ }
+}
+
 export async function readProfilePhotoBody(request: Request): Promise<Uint8Array> {
-  if (!request.body || request.signal.aborted) throw new ProfilePhotoError('invalid_input', 400)
-  const declared = request.headers.get('content-length')
-  if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || !Number.isSafeInteger(Number(declared)))) {
+  if (!request.body || request.body.locked || request.signal.aborted) {
+    cancelProfilePhotoBody(request)
     throw new ProfilePhotoError('invalid_input', 400)
   }
-  if (declared !== null && Number(declared) > MAX_PROFILE_PHOTO_BYTES) throw new ProfilePhotoError('too_large', 413)
+  const declared = request.headers.get('content-length')
+  if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || !Number.isSafeInteger(Number(declared)))) {
+    cancelProfilePhotoBody(request)
+    throw new ProfilePhotoError('invalid_input', 400)
+  }
+  if (declared !== null && Number(declared) > MAX_PROFILE_PHOTO_BYTES) {
+    cancelProfilePhotoBody(request)
+    throw new ProfilePhotoError('too_large', 413)
+  }
 
   const reader = request.body.getReader()
   const chunks: Uint8Array[] = []

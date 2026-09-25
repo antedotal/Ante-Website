@@ -73,7 +73,7 @@ export async function inspectPng(bytes: Uint8Array): Promise<ImageDimensions> {
       if (color === 0 && length !== 2 || color === 2 && length !== 6) invalid()
       seenTransparency = true
     } else if (name === 'IDAT') {
-      if (afterData || color === 3 && !seenPalette || length === 0) invalid()
+      if (afterData || color === 3 && !seenPalette) invalid()
       seenData = true
       compressed.push(bytes.subarray(dataStart, dataEnd))
     } else if (name === 'IEND') {

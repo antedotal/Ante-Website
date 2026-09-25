@@ -1,3 +1,4 @@
+import 'server-only'
 // The codec boundary uses only precompiled modules supplied by the same Wrangler/OpenNext Worker.
 import { getCloudflareContext } from '@opennextjs/cloudflare'
 import decodePng, { init as initPng } from '@jsquash/png/decode'
@@ -6,7 +7,10 @@ import { ProfilePhotoError } from './profile-photo-error'
 import type { ImageDimensions } from './profile-photo-png'
 
 type CodecEnv = { PROFILE_PNG_WASM?: WebAssembly.Module; PROFILE_JPEG_WASM?: WebAssembly.Module }
+// The pinned package implements this two-argument initializer, although its published declaration omits that overload.
+const initializeJpeg = initJpeg as unknown as (wasm: WebAssembly.Module, options: { print: () => void; printErr: () => void }) => Promise<void>
 let jpegInitialization: Promise<void> | undefined
+let jpegEmittedOutput = false
 let decoderBusy = false
 
 export async function fullyDecodeProfilePhoto(bytes: Uint8Array, format: 'image/png' | 'image/jpeg', dimensions: ImageDimensions): Promise<void> {
@@ -23,11 +27,16 @@ export async function fullyDecodeProfilePhoto(bytes: Uint8Array, format: 'image/
     if (format === 'image/png') {
       await initPng(wasmModule)
     } else {
-      jpegInitialization ??= initJpeg(wasmModule)
+      jpegInitialization ??= initializeJpeg(wasmModule, {
+        // The decoder tolerates some incomplete scans and reports them only through these instance-local callbacks.
+        print: () => { jpegEmittedOutput = true },
+        printErr: () => { jpegEmittedOutput = true },
+      })
       await jpegInitialization
     }
+    jpegEmittedOutput = false
     const image = format === 'image/png' ? await decodePng(source) : await decodeJpeg(source, { preserveOrientation: false })
-    if (image.width !== dimensions.width || image.height !== dimensions.height || image.data.length !== dimensions.width * dimensions.height * 4) {
+    if (jpegEmittedOutput || image.width !== dimensions.width || image.height !== dimensions.height || image.data.length !== dimensions.width * dimensions.height * 4) {
       throw new ProfilePhotoError('invalid_image', 422)
     }
   } catch (error) {
