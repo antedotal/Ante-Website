@@ -173,10 +173,12 @@ describe('account profile API', () => {
       state.rpc.mockResolvedValueOnce({ data: null, error: { code, message: 'private' } })
       expect((await PATCH(call('PATCH'))).status).toBe(status)
     }
-    state.rpc.mockResolvedValueOnce({ data: null, error: { status: 429, message: 'private' } })
+    state.rpc.mockResolvedValueOnce({ data: null, error: { code: '429', message: 'private', details: null, hint: null }, status: 429, statusText: 'Too Many Requests', count: null })
     const throttle = await GET(call('GET'))
     expect(throttle.status).toBe(429)
     expect(throttle.headers.get('retry-after')).toBe('60')
+    expect(throttle.headers.get('set-cookie')).toContain('rotated-secret')
+    expect(JSON.stringify(await throttle.json())).not.toContain('private')
     state.rpc.mockRejectedValueOnce(new Error('private transport'))
     const unavailable = await GET(call('GET'))
     expect(unavailable.status).toBe(503)

@@ -5,7 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
 import { admitAccountVisitor } from './callback-admission'
-import { accountTimestamp, providerCode, providerStatus, verifyAccountUser, withVerifiedCookies } from './account-session'
+import { accountTimestamp, providerCode, verifyAccountUser, withVerifiedCookies } from './account-session'
 
 type Action = 'read' | 'write'
 type Profile = { full_name: string | null; updated_at: string | null }
@@ -92,11 +92,12 @@ export async function handleAccountProfile(request: NextRequest, action: Action)
 
   // These fixed RPCs derive the owner from the verified JWT and enforce their own read/write quota.
   try {
-    const { data, error } = action === 'read'
+    const { data, error, status } = action === 'read'
       ? await supabase.rpc('get_my_profile_name')
       : await supabase.rpc('set_my_profile_name', { p_full_name: name! })
     if (error) {
-      if (providerStatus(error) === 429) return withVerifiedCookies(failure(429, 60), provisional)
+      // PostgREST puts HTTP status on the RPC response, separate from its error body.
+      if (status === 429) return withVerifiedCookies(failure(429, 60), provisional)
       const code = providerCode(error)
       if (code === '28000') return withVerifiedCookies(failure(401), provisional)
       if (code === 'P0002') return withVerifiedCookies(failure(404), provisional)

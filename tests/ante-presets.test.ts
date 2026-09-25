@@ -194,6 +194,20 @@ describe('account preset API', () => {
     expect(unavailable.headers.get('set-cookie')).toContain('rotated-secret')
   })
 
+  it('maps a PostgREST response-envelope HTTP 429 and retains verified refresh cookies', async () => {
+    const { GET } = await import('../app/api/account/ante-presets/route')
+    state.getUser.mockImplementation(async () => {
+      state.setAll?.([{ name: 'sb-test-auth-token', value: 'rotated-secret', options: { path: '/' } }])
+      return { data: { user: { id: 'verified-user' } }, error: null }
+    })
+    state.rpc.mockResolvedValueOnce({ data: null, error: { code: '429', message: 'private', details: null, hint: null }, status: 429, statusText: 'Too Many Requests', count: null })
+    const response = await GET(call('GET'))
+    expect(response.status).toBe(429)
+    expect(response.headers.get('retry-after')).toBe('60')
+    expect(response.headers.get('set-cookie')).toContain('rotated-secret')
+    expect(JSON.stringify(await response.json())).not.toContain('private')
+  })
+
   it('rejects malformed successful RPC payloads without exposing provider fields', async () => {
     const { GET, PUT } = await import('../app/api/account/ante-presets/route')
     for (const malformed of [

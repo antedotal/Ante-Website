@@ -5,7 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { createCallbackClient } from '../supabase/server'
 import { boundedAccountJson, exactAccountRecord, trustedAccountOrigin } from './account-request'
 import { admitAccountVisitor } from './callback-admission'
-import { accountTimestamp, providerCode, providerStatus, verifyAccountUser, withVerifiedCookies } from './account-session'
+import { accountTimestamp, providerCode, verifyAccountUser, withVerifiedCookies } from './account-session'
 
 type Action = 'read' | 'write'
 type Amounts = { easy_cents: number; medium_cents: number; hard_cents: number }
@@ -89,14 +89,15 @@ export async function handleAntePresets(request: NextRequest, action: Action) {
 
   // The public authenticated RPC derives its owner from auth.uid() and enforces its own quota.
   try {
-    const { data, error } = action === 'read'
+    const { data, error, status } = action === 'read'
       ? await supabase.rpc('get_my_ante_presets')
       : await supabase.rpc('set_my_ante_presets', {
         p_easy_cents: amounts!.easy_cents, p_medium_cents: amounts!.medium_cents,
         p_hard_cents: amounts!.hard_cents,
       })
     if (error) {
-      if (providerStatus(error) === 429) return withVerifiedCookies(failure(429, 60), provisional)
+      // PostgREST puts HTTP status on the RPC response, separate from its error body.
+      if (status === 429) return withVerifiedCookies(failure(429, 60), provisional)
       const code = providerCode(error)
       if (code === '22023') return withVerifiedCookies(failure(400), provisional)
       if (code === '28000') return withVerifiedCookies(failure(401), provisional)
