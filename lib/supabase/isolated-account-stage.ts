@@ -26,7 +26,18 @@ function makeStage(source: Iterable<JarCookie>): AccountCookieStage {
       fetch: async (input, init) => {
         try {
           const response = await fetch(input, init)
-          if (response.ok) return response
+          if (response.ok) {
+            // Auth parses successful replies with response.json(). A malformed
+            // body otherwise puts its raw prefix in the SDK's retry error log.
+            // Wrap that one parse operation without reading or replacing the
+            // response stream, status, headers, or valid JSON value.
+            const parseJson = response.json.bind(response)
+            response.json = async () => {
+              try { return await parseJson() }
+              catch { throw new SyntaxError('Invalid Auth response JSON') }
+            }
+            return response
+          }
           // Routes classify failures by status; provider messages are neither
           // needed for that decision nor safe for the SDK's internal logs.
           return new Response(JSON.stringify({ code: 'auth_error', msg: 'Authentication request failed' }), {

@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { NextRequest, NextResponse } from 'next/server'
+import { createServerClient } from '@supabase/ssr'
 
 vi.mock('server-only', () => ({}))
 
@@ -26,6 +27,28 @@ beforeEach(() => {
 })
 
 describe('isolated account cookie stages', () => {
+  it('passes a successful response through without reading its stream or changing status and headers', async () => {
+    const { createIsolatedAccountStage } = await import('../lib/supabase/isolated-account-stage')
+    const response = new Response(JSON.stringify({ user: { id: 'verified' } }), {
+      status: 200,
+      headers: { 'content-type': 'application/json', 'x-supabase-api-version': '2024-01-01' },
+    })
+    vi.stubGlobal('fetch', vi.fn(async () => response))
+    try {
+      createIsolatedAccountStage(new NextRequest('https://ante.test/'))
+      const fetcher = vi.mocked(createServerClient).mock.lastCall?.[2]?.global?.fetch
+      expect(fetcher).toBeDefined()
+      const result = await fetcher!('https://yxilmwxptfnebnjsikwo.supabase.co/auth/v1/user')
+      expect(result).toBe(response)
+      expect(result.status).toBe(200)
+      expect(result.headers.get('x-supabase-api-version')).toBe('2024-01-01')
+      expect(result.bodyUsed).toBe(false)
+      expect(await result.json()).toEqual({ user: { id: 'verified' } })
+    } finally {
+      vi.unstubAllGlobals()
+    }
+  })
+
   it('keeps refresh writes out of the incoming request and response until explicitly applied', async () => {
     const { createIsolatedAccountStage, applyAccountCookieStages } = await import('../lib/supabase/isolated-account-stage')
     const request = new NextRequest('https://ante.test/api/account/email-change/request', { headers: { cookie: 'sb-auth=old; other=untouched' } })
