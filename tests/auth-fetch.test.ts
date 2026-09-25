@@ -23,6 +23,14 @@ it.each([400, 401, 429, 503])('replaces only Auth HTTP %s details and cancels it
   expect(cancel).toHaveBeenCalledOnce()
 })
 
+it('retains a bodyless Auth 304 status with a safe parse result', async () => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(null, { status: 304, statusText: secret })))
+  const response = await createAuthFetch(project)(`${project}/auth/v1/user`)
+  expect(response.status).toBe(304)
+  expect(response.statusText).not.toContain(secret)
+  expect(await response.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+})
+
 it('does not wait for a hostile body cancellation promise', async () => {
   const cancel = vi.fn(() => new Promise<void>(() => {}))
   vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ cancel }), { status: 400 })))

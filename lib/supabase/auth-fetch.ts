@@ -28,11 +28,15 @@ export function createAuthFetch(projectUrl: string): typeof fetch {
       // The provider body and headers are not needed for status classification.
       // Cancel its unread stream without waiting for an untrusted cancel promise.
       try { void response.body?.cancel().catch(() => {}) } catch { /* Cancellation is best effort. */ }
-      return new Response(safeBody, {
+      // Fetch forbids a 304 body. Keep its numeric status and supply the same
+      // fixed envelope to SDK callers that parse errors through json().
+      const safeResponse = new Response(response.status === 304 ? null : safeBody, {
         status: response.status,
         statusText: 'Authentication request failed',
         headers: { 'content-type': 'application/json' },
       })
+      if (response.status === 304) safeResponse.json = async () => JSON.parse(safeBody)
+      return safeResponse
     }
 
     // Preserve the successful Response and stream; only hide malformed JSON
