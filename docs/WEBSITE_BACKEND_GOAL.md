@@ -1,6 +1,6 @@
 # Website backend goal
 
-Updated 25 September 2026. Requested scope: Ante-Website backend only.
+Updated 26 September 2026. Requested scope: Ante-Website backend only.
 
 ## Objective
 
@@ -33,7 +33,7 @@ Existing code supports Google sign-in only. The user has now requested email sig
 
 The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
 
-## Current handoff — 25 September 2026
+## Current handoff — 26 September 2026
 
 The goal remains active. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
 
@@ -51,17 +51,21 @@ Callback limiter 20260925095113; account visitor limiter 20260925111932; preset 
 
 ### Next work
 
-1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed. Actual isolated Storage HTTP acceptance now passes through `1f0565f`, including owner/friend bytes, denied signing/listing/mutations and revocation controls. Website endpoints, image validation and hosted Storage/CDN/JWKS acceptance remain incomplete; local transform RLS is untested because that route was disabled.
+1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed. Actual isolated Storage HTTP acceptance now passes through `1f0565f`, including owner/friend bytes, denied signing/listing/mutations and revocation controls. Server-only image validation is implemented through5c16b8f with14 focused tests, lint/typecheck and actual local Worker checks after review fixes; the preceding full suite passed170 tests. Independent review is in progress. Website endpoints, target-plan CPU/peak-memory acceptance and hosted Storage/CDN/JWKS acceptance remain incomplete; local transform RLS is untested because that route was disabled.
 2. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. Hosted task create/update/archive/restore authority RPCs are still absent; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
 3. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
 
 ### Hosted and configuration gates
 
 - Shared project is confirmed. Verify actual website server-key PostgREST access and real JWT ownership/session flows; database SET ROLE evidence is a different layer.
-- Target antedotal.com in Havish's Cloudflare account. Direct Pages project/domain and Workers reads worked; account-level Pages listing and Workers-subdomain reads failed. Upload credentials and direct staging ingress remain unverified. Keep the Pages site live while preparing Workers.
+- Target antedotal.com in Havish's Cloudflare account. Direct Pages project/domain and Workers reads worked; account-level Pages listing and Workers-subdomain reads failed. Upload credentials and direct staging ingress remain unverified. A26September read-only account subscription lookup returned Cloudflare10000 Authentication error; the Workers plan is still unknown, and the user has been asked whether it is Free or Paid. No billing or deployment changed. Keep the Pages site live while preparing Workers.
 - Verify OTP/Change-email templates, SMTP, secure two-inbox settings, fresh Auth pending-email exposure, Google/email same-account behavior and browser/Worker cookies. No real recipient is authorized until Workspace setup. Local preparation has sent no emails.
 - OpenNext reports experimental Node middleware support; hosted runtime acceptance remains required before release.
 
 ## Confirmed decisions
 
 All three profile edits (name, email, avatar); shared Supabase; user-selected A$1 minimum/A$50 maximum presets; owner/friend-only photos; email sign-in and editing use OTP; no UI/mobile implementation in this goal. Canonical names live in profiles, not mutable OAuth metadata; mobile self-name readers remain a separate compatibility dependency. Email signup matches existing Google signup. No paid image infrastructure or live-money activation has been selected.
+
+### Current bounded slice
+
+Private photo validator source and fixes:9660a22 and5c16b8f. The independent reviewer found and the implementer corrected incomplete-entropy JPEG acceptance/raw decoder warnings, early upload-body cancellation, the raw codec server-only boundary and legal empty PNG IDAT handling. The local runner now excludes inherited private environment and refuses local dotenv files. Review acceptance is still pending. See [validator evidence](superpowers/audits/2026-09-26-profile-photo-validator-local-acceptance.md) and [endpoint preparation](superpowers/audits/2026-09-26-private-photo-endpoint-preparation.md). Product serving remains closed, with no new route or hosted photo.
