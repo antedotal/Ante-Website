@@ -31,6 +31,46 @@ it('retains a bodyless Auth 304 status with a safe parse result', async () => {
   expect(await response.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
 })
 
+it.each(['code', 'error_code'] as const)('retains only a safe session-not-found classification from %s', async (field) => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ [field]: 'session_not_found', msg: secret, details: secret }), {
+    status: 403, statusText: secret,
+    headers: { 'x-supabase-api-version': '2024-01-01', 'x-provider-detail': secret },
+  })))
+  const response = await createAuthFetch(project)(`${project}/auth/v1/user`)
+  expect(response.status).toBe(403)
+  expect(response.headers.get('x-provider-detail')).toBeNull()
+  expect(response.statusText).not.toContain(secret)
+  const body = await response.json()
+  expect(body).toEqual({ code: 'auth_error', error_code: 'session_not_found', msg: 'Authentication request failed' })
+  expect(JSON.stringify(body)).not.toContain(secret)
+})
+
+it.each([
+  '{"code":"session_not_found",',
+  JSON.stringify({ code: 'session_not_found', msg: secret, padding: 'x'.repeat(8192) }),
+])('does not classify malformed or oversized Auth failure bodies', async (body) => {
+  const cancel = vi.fn(async () => {})
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({
+    start(controller) { controller.enqueue(new TextEncoder().encode(body)) }, cancel,
+  }), { status: 403 })))
+  const response = await createAuthFetch(project)(`${project}/auth/v1/user`)
+  expect(await response.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+  expect(cancel).toHaveBeenCalledOnce()
+})
+
+it('bounds a stalled Auth failure body and returns a generic safe error', async () => {
+  vi.useFakeTimers()
+  const cancel = vi.fn(async () => {})
+  try {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ cancel }), { status: 403 })))
+    const pending = createAuthFetch(project)(`${project}/auth/v1/user`)
+    await vi.advanceTimersByTimeAsync(2000)
+    const response = await pending
+    expect(await response.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+    expect(cancel).toHaveBeenCalledOnce()
+  } finally { vi.useRealTimers() }
+})
+
 it('does not wait for a hostile body cancellation promise', async () => {
   const cancel = vi.fn(() => new Promise<void>(() => {}))
   vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ cancel }), { status: 400 })))
