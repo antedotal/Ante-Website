@@ -1,6 +1,6 @@
 # Website callback admission contract
 
-The website calls `POST /rest/v1/rpc/consume_website_callback_limit` on its configured Supabase project before parsing a callback code or contacting Supabase Auth. This document is the contract for a **subsequent Ante backend migration**. The RPC has not been created or deployed by this website slice, so a configured website returns 503 until that work is complete.
+The website calls `POST /rest/v1/rpc/consume_website_callback_limit` on its configured Supabase project before parsing a callback code or contacting Supabase Auth. The backend migration has been prepared and independently reviewed in the separate Ante checkout; hosted application of the RPC has not been verified. A configured website returns 503 until the store is available.
 
 ## RPC
 

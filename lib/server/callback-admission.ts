@@ -54,3 +54,20 @@ export async function admitCallback(request: NextRequest): Promise<NextResponse 
   }
   return unavailableCallbackResponse()
 }
+
+// Consume the same fixed five-per-minute RPC in a separate normalized-email namespace.
+export async function admitEmailSubject(email: string): Promise<NextResponse | null> {
+  const secret = process.env.ANTE_AUTH_LIMIT_HMAC_SECRET
+  if (!secret || Buffer.byteLength(secret, 'utf8') < 32) return unavailableCallbackResponse()
+  const digest = createHmac('sha256', secret).update(`website-auth-email:v1:${email}`).digest('hex')
+  const result = await consumeCallbackLimit(digest)
+  if (result.kind === 'allowed') return null
+  if (result.kind === 'denied') {
+    console.warn('Auth email admission denied')
+    return new NextResponse('Please try again later', {
+      status: 429,
+      headers: { 'Cache-Control': 'private, no-store', 'Retry-After': String(result.retryAfter) },
+    })
+  }
+  return unavailableCallbackResponse()
+}

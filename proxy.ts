@@ -1,7 +1,7 @@
 // Refresh account cookies before server rendering and prevent shared caches from storing them.
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { accountConfig } from './lib/supabase/config'
+import { accountConfig, accountCookieOptions } from './lib/supabase/config'
 
 export async function proxy(request: NextRequest) {
   // Callback admission runs in its route before any Supabase Auth work.
@@ -15,13 +15,14 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Cache-Control', 'private, no-store')
 
   const supabase = createServerClient(url, key, {
+    cookieOptions: accountCookieOptions(siteOrigin),
     cookies: {
       getAll() { return request.cookies.getAll() },
       setAll(cookiesToSet) {
         // Request cookies feed Server Components; response cookies update the browser.
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         response = NextResponse.next({ request })
-        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, options))
+        cookiesToSet.forEach(({ name, value, options }) => response.cookies.set(name, value, { ...options, ...accountCookieOptions(siteOrigin) }))
         response.headers.set('Cache-Control', 'private, no-store')
         response.headers.set('Expires', '0')
         response.headers.set('Pragma', 'no-cache')

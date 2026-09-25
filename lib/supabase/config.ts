@@ -44,3 +44,8 @@ export function accountConfig(): { url: string; key: string; siteOrigin: string 
 
   return { url: parsed.origin, key, siteOrigin: site.origin }
 }
+
+// Pin one cookie policy across browser, server, callback and proxy clients.
+export function accountCookieOptions(siteOrigin: string) {
+  return { path: '/', sameSite: 'lax' as const, secure: new URL(siteOrigin).protocol === 'https:' }
+}

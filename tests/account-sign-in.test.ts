@@ -1,5 +1,6 @@
 // Verify that Google OAuth starts a PKCE callback on this site, never a caller-supplied destination.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { createBrowserClient } from '@supabase/ssr'
 
 const signInWithOAuth = vi.hoisted(() => vi.fn())
 vi.mock('@supabase/ssr', () => ({ createBrowserClient: vi.fn(() => ({ auth: { signInWithOAuth } })) }))
@@ -13,6 +14,13 @@ beforeEach(() => {
 })
 
 describe('Google account sign-in', () => {
+  it('uses the canonical HTTPS cookie policy in the browser client', async () => {
+    const { createClient } = await import('../lib/supabase/client')
+    createClient()
+    expect(createBrowserClient).toHaveBeenCalledWith('https://yxilmwxptfnebnjsikwo.supabase.co', 'sb_publishable_testvalue', {
+      cookieOptions: { path: '/', sameSite: 'lax', secure: true },
+    })
+  })
   it('starts at the fixed same-origin callback', async () => {
     signInWithOAuth.mockResolvedValue({ data: { url: 'https://accounts.google.com/' }, error: null })
     const { beginGoogleSignIn } = await import('../lib/supabase/google-sign-in')

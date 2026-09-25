@@ -1,6 +1,6 @@
 // Exercise the account configuration boundary so marketing placeholders cannot authorize users.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { accountConfig } from '../lib/supabase/config'
+import { accountConfig, accountCookieOptions } from '../lib/supabase/config'
 
 const originalEnv = { ...process.env }
 
@@ -10,6 +10,10 @@ afterEach(() => {
 })
 
 describe('account configuration', () => {
+  it('keeps localhost HTTP cookies usable without widening the domain', () => {
+    expect(accountCookieOptions('http://localhost:3000')).toEqual({ path: '/', sameSite: 'lax', secure: false })
+    expect(accountCookieOptions('https://ante.test')).toEqual({ path: '/', sameSite: 'lax', secure: true })
+  })
   it('rejects missing and placeholder project settings', () => {
     delete process.env.NEXT_PUBLIC_SUPABASE_URL
     delete process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
