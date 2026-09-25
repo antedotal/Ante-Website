@@ -47,11 +47,11 @@ The goal remains active. Work is committed on the existing website `codex/shared
 
 ### Deployed shared prerequisites
 
-Callback limiter 20260925095113; account visitor limiter 20260925111932; preset contracts 20260925101013; narrow profile write permissions 20260925101749; friendship mutation protection 20260925103930; canonical profile names 20260925105731; confirmed-email synchronization 20260925120526. Each release has its own reviewed source, hosted metadata/postcondition receipt and preservation evidence in the paired Ante repository. Local source and SQL-role tests do not substitute for website server-key/real-JWT acceptance.
+Callback limiter 20260925095113; account visitor limiter 20260925111932; preset contracts 20260925101013; narrow profile write permissions 20260925101749; friendship mutation protection 20260925103930; canonical profile names 20260925105731; confirmed-email synchronization 20260925120526; private-photo bucket/download authorization 20260925132728 (empty bucket, six postconditions and eight preservation groups verified). Each release has its own reviewed source, hosted metadata/postcondition receipt and preservation evidence in the paired Ante repository. Local source and SQL-role tests do not substitute for website server-key/real-JWT acceptance.
 
 ### Next work
 
-1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. Bucket, validation and real Storage authorization/cache acceptance remain unimplemented.
+1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed; website endpoints, validation and real Storage HTTP/cache acceptance remain incomplete.
 2. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. Hosted task create/update/archive/restore authority RPCs are still absent; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
 3. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
 

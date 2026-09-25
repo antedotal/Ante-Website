@@ -1,6 +1,6 @@
 # Private profile photos: next backend contract
 
-25 September 2026. Proposed implementation, not deployed behavior. Owner/current accepted friends is the confirmed user requirement. No additional product decision is needed for this bounded backend slice.
+25 September 2026. Selected implementation contract. The SQL prerequisite is now deployed; website endpoints and HTTP/cache acceptance remain incomplete. Owner/current accepted friends is the confirmed user requirement. No additional product decision is needed for this bounded backend slice.
 
 ## Current evidence
 
@@ -43,3 +43,7 @@ Validator research found a bounded candidate in pinned `jpeg-js@0.4.4` plus `png
 Read-only research suggests a separate run-owned Storage API container can share the disposable Postgres container's isolated network namespace and use its own tmpfs file backend. Synthetic JWTs and direct loopback HTTP would test the real operation tags without real credentials, published ports, host mounts or the retained Supabase fixture. This topology has not booted or passed a request yet; self-migrations, role/JWT propagation, PostgREST requirements and image-transform dependencies must be checked before relying on it. Use the actual `public."friend pairs"` schema and reviewed release, not a rewritten policy. Pin and inspect the chosen official image digest first.
 
 The first useful service test is upload through a synthetic service token, followed by owner/friend/stranger download and denied signing/listing through user tokens. Then test both friendship orientations, revocation, replacement, removal and mutation denials. A disabled transform endpoint is not proof of transform RLS. Even complete local HTTP coverage does not establish hosted CDN revocation behavior, real Auth keys or Worker/browser acceptance.
+
+## SQL prerequisite deployed
+
+The paired Ante release `supabase/releases/private-profile-photos/` is independently reviewed through3260b5a and deployed as20260925132728_private_profile_photos. Six hosted postconditions passed and eight preservation groups matched. The private bucket is empty; no existing profile, friendship, object or avatar value changed. This proves installation of the reviewed SQL contract, not Storage HTTP/cache behavior or readiness to serve photos. Continue with the isolated real-service acceptance fixture and bounded Worker validator before website activation.
