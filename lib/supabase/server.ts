@@ -3,11 +3,13 @@ import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
 import type { NextRequest, NextResponse } from 'next/server'
 import { accountConfig, accountCookieOptions } from './config'
+import { createAuthFetch } from './auth-fetch'
 
 export async function createClient() {
   const cookieStore = await cookies()
   const { url, key, siteOrigin } = accountConfig()
   return createServerClient(url, key, {
+    global: { fetch: createAuthFetch(url) },
     cookieOptions: accountCookieOptions(siteOrigin),
     cookies: {
       getAll() { return cookieStore.getAll() },
@@ -26,6 +28,7 @@ export async function createClient() {
 export function createCallbackClient(request: NextRequest, response: NextResponse) {
   const { url, key, siteOrigin } = accountConfig()
   return createServerClient(url, key, {
+    global: { fetch: createAuthFetch(url) },
     cookieOptions: accountCookieOptions(siteOrigin),
     cookies: {
       getAll() { return request.cookies.getAll() },

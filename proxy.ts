@@ -2,6 +2,7 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { accountConfig, accountCookieOptions } from './lib/supabase/config'
+import { createAuthFetch } from './lib/supabase/auth-fetch'
 import { admitAccountVisitor } from './lib/server/callback-admission'
 import { trustedAccountOrigin } from './lib/server/account-request'
 
@@ -37,6 +38,7 @@ export async function proxy(request: NextRequest) {
   response.headers.set('Cache-Control', 'private, no-store')
 
   const supabase = createServerClient(url, key, {
+    global: { fetch: createAuthFetch(url) },
     cookieOptions: accountCookieOptions(siteOrigin),
     cookies: {
       getAll() { return request.cookies.getAll() },

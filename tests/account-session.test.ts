@@ -1,6 +1,6 @@
 // Exercise the actual account routes and cookie adapter while replacing only external Auth calls.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createServerClient } from '@supabase/ssr'
 
@@ -47,6 +47,28 @@ beforeEach(() => {
 })
 
 describe('account session', () => {
+  it('uses the shared Auth boundary in server, callback, and proxy SSR constructors', async () => {
+    const { createClient, createCallbackClient } = await import('../lib/supabase/server')
+    await createClient()
+    const serverFetch = vi.mocked(createServerClient).mock.lastCall?.[2]?.global?.fetch
+    createCallbackClient(new NextRequest('https://ante.test/auth/callback'), NextResponse.next())
+    const callbackFetch = vi.mocked(createServerClient).mock.lastCall?.[2]?.global?.fetch
+    state.getClaims.mockResolvedValue({ data: { claims: { sub: 'verified-id' } }, error: null })
+    const { proxy } = await import('../proxy')
+    await proxy(new NextRequest('https://ante.test/account', {
+      headers: { host: 'ante.test', 'cf-connecting-ip': '192.0.2.10' },
+    }))
+    const proxyFetch = vi.mocked(createServerClient).mock.lastCall?.[2]?.global?.fetch
+    const secret = 'private-provider@example.test secret-token-004321'
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ msg: secret }), { status: 429 })))
+    for (const fetcher of [serverFetch, callbackFetch, proxyFetch]) {
+      expect(fetcher).toBeDefined()
+      const auth = await fetcher!('https://yxilmwxptfnebnjsikwo.supabase.co/auth/v1/user')
+      expect(auth.status).toBe(429)
+      expect(await auth.text()).not.toContain(secret)
+    }
+  })
+
   it('propagates refreshed cookies and no-store headers to the server and browser', async () => {
     state.getClaims.mockImplementation(async () => {
       state.setAll?.([{ name: 'sb-project-auth-token', value: 'new-token', options: { path: '/' } }])
