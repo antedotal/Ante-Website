@@ -5,7 +5,7 @@ import { resolve, join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { deflateSync } from 'node:zlib'
 import { makeBoundaryFixtures } from './profile-photo-boundary-fixtures.mjs'
-import { assertPortAvailable, waitForProbeNonce, withOwnedProcess } from './profile-photo-worker-process.mjs'
+import { assertPortAvailable, fetchProbeResult, waitForProbeNonce, withOwnedProcess, withTemporaryProbe } from './profile-photo-worker-process.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const boundary = process.argv.includes('--boundary')
@@ -103,28 +103,30 @@ const fixture = name => new Uint8Array(readFileSync(resolve(root, 'tests/fixture
 const png = fixture('red-2x2.png')
 const jpeg = fixture('red-2x2.jpg')
 const [ihdr, , idat, iend] = splitPng(png)
-let buildSucceeded = false
 try {
   await assertPortAvailable(port)
   checkInterrupted()
   // Construct and independently JPEG-decode the corpus before a Worker process can return a status.
   const boundaryFixtures = boundary ? await makeBoundaryFixtures() : undefined
-  mkdirSync(routeDir, { recursive: true })
-  writeFileSync(resolve(routeDir, 'route.ts'), route)
-  await run('pnpm', ['run', 'build:worker'], env)
-  buildSucceeded = true
+  await withTemporaryProbe({
+    createRoute: () => { mkdirSync(routeDir, { recursive: true }); writeFileSync(resolve(routeDir, 'route.ts'), route) },
+    build: clean => run('pnpm', ['run', 'build:worker'], env, clean ? [AbortSignal.timeout(120_000)] : undefined),
+    removeRoute: () => rmSync(routeDir, { recursive: true, force: true }),
+    // If even the clean rebuild fails, generated artifacts cannot be trusted and are discarded.
+    discardArtifacts: () => { rmSync(resolve(root, '.next'), { recursive: true, force: true }); rmSync(resolve(root, '.open-next'), { recursive: true, force: true }) },
+    getAbortReason: () => interrupted.signal.aborted ? interrupted.signal.reason : deadline.aborted ? new Error('Local Worker probe exceeded overall timeout') : undefined,
+    probe: async () => {
   const url = `http://127.0.0.1:${port}/api/local-profile-photo-probe`
   async function check(name, bytes, mime, expected) {
     checkInterrupted()
     const started = performance.now()
-    const response = await fetch(url, { method: 'POST', headers: { 'content-type': mime }, body: bytes, signal: AbortSignal.any([interrupted.signal, deadline]) })
-    const result = await response.json()
-    const receipt = { name, status: response.status, ...result, clientWallMs: +(performance.now() - started).toFixed(1), label: 'local Worker screening only; wall time is not CPU or peak isolate memory' }
+    const { status, result } = await fetchProbeResult(url, bytes, mime, AbortSignal.any([interrupted.signal, deadline]))
+    const receipt = { name, status, ...result, clientWallMs: +(performance.now() - started).toFixed(1), label: 'local Worker screening only; wall time is not CPU or peak isolate memory' }
     if (boundary) { receipt.sha256 = createHash('sha256').update(bytes).digest('hex'); receipt.bytes = bytes.byteLength }
     console.log(JSON.stringify(receipt))
     if (result.nonce !== nonce) throw new Error(`${name}: response came from another preview run`)
-    if (!(Array.isArray(expected) ? expected.includes(response.status) : response.status === expected)) throw new Error(`${name}: expected ${expected}, received ${response.status}`)
-    return { ...result, status: response.status }
+    if (!(Array.isArray(expected) ? expected.includes(status) : status === expected)) throw new Error(`${name}: expected ${expected}, received ${status}`)
+    return { ...result, status }
   }
   await withOwnedProcess('pnpm', ['run', 'preview:worker', '--port', String(port)], { cwd: root, env, stdio: 'inherit' }, async () => {
     await waitForProbeNonce(url, nonce, { timeoutMs: 30_000, signal: interrupted.signal })
@@ -169,20 +171,17 @@ try {
   await check('jpeg_recovery_after_warning', jpeg, 'image/jpeg', 200)
   await check('multi_jpeg', new Uint8Array([...jpeg, ...jpeg]), 'image/jpeg', 422)
   const oversized = new ReadableStream({ start(controller) { controller.enqueue(new Uint8Array(2_097_152)); controller.enqueue(new Uint8Array(1)); controller.close() } })
-  const overResponse = await fetch(url, { method: 'POST', headers: { 'content-type': 'image/png' }, body: oversized, duplex: 'half' })
-  console.log(JSON.stringify({ name: 'chunked_over_cap', status: overResponse.status, ...await overResponse.json() }))
+  const overResponse = await fetchProbeResult(url, oversized, 'image/png', AbortSignal.any([interrupted.signal, deadline]), true)
+  console.log(JSON.stringify({ name: 'chunked_over_cap', status: overResponse.status, ...overResponse.result }))
   if (overResponse.status !== 413) throw new Error('Streaming cap was bypassed')
   const concurrent = await Promise.all(Array.from({ length: 4 }, (_, index) => check(`concurrent_${index}`, png, 'image/png', [200, 503])))
   if (!concurrent.some(result => result.status === 200) || concurrent.some(result => result.status === 200 && result.width !== 2)) throw new Error('Concurrent batch lost a valid result')
   await check('same_isolate_recovery', jpeg, 'image/jpeg', 200)
   })
+    },
+  })
 } finally {
-  rmSync(routeDir, { recursive: true, force: true })
-  // Regenerate artifacts without the temporary route even when a probe assertion fails.
-  try { if (buildSucceeded) await run('pnpm', ['run', 'build:worker'], env, [AbortSignal.timeout(120_000)]) }
-  finally {
-    rmSync(tempHome, { recursive: true, force: true })
-    process.off('SIGINT', onInt)
-    process.off('SIGTERM', onTerm)
-  }
+  rmSync(tempHome, { recursive: true, force: true })
+  process.off('SIGINT', onInt)
+  process.off('SIGTERM', onTerm)
 }

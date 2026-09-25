@@ -59,3 +59,46 @@ export async function withOwnedProcess(command, args, options, work) {
   try { return await work(child) }
   finally { await stopOwnedProcess(child) }
 }
+
+// One request path covers ordinary and streamed probes so both observe interruption and deadline signals.
+export async function fetchProbeResult(url, body, mime, signal, streamed = false) {
+  const init = { method: 'POST', headers: { 'content-type': mime }, body, signal }
+  if (streamed) init.duplex = 'half'
+  const response = await fetch(url, init)
+  return { status: response.status, result: await response.json() }
+}
+
+// Cleanup runs after any attempted diagnostic build, even if that build emitted artifacts then failed.
+export async function withTemporaryProbe({ createRoute, build, probe, removeRoute, discardArtifacts, getAbortReason = () => undefined }) {
+  let buildAttempted = false
+  let value
+  const errors = []
+  try {
+    await createRoute()
+    buildAttempted = true
+    await build(false)
+    value = await probe()
+  } catch (error) { errors.push(error) }
+
+  let removed = false
+  try { await removeRoute(); removed = true }
+  catch (error) { errors.push(error) }
+  if (buildAttempted) {
+    if (removed) {
+      try { await build(true) }
+      catch (error) {
+        errors.push(error)
+        try { await discardArtifacts() }
+        catch (discardError) { errors.push(discardError) }
+      }
+    } else {
+      try { await discardArtifacts() }
+      catch (discardError) { errors.push(discardError) }
+    }
+  }
+  const aborted = getAbortReason?.()
+  if (aborted && !errors.includes(aborted)) errors.push(aborted)
+  if (errors.length === 1) throw errors[0]
+  if (errors.length > 1) throw new AggregateError(errors, errors.map(error => error?.message ?? String(error)).join('; '))
+  return value
+}
