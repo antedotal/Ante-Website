@@ -43,7 +43,7 @@ export function photoOwnerProfile(ownerId: string, callerToken: string, signal?:
 ```
 All functions above are in server-only `profile-photo-store.ts`; `ValidatedProfilePhoto` is the existing validator type. The adapter receives only trusted internal arguments from Task 2, but still validates ID grammar, token/header suitability, supported MIME and2MiB input cap. It never performs Auth or claims a raw `StoredProfilePhoto` was fully validated.
 
-- [ ] Read current installedSDK 2.106.0 and pinned Storage1.74.0 source/protocol note `/tmp/ante-photo-storage-protocol-20260926.md`. Source and official OpenAPI establish single-object DELETE; do not replace it with SDK bulk remove implicitly. Record references in contract. Read-only hosted metadata26September: authenticated has profiles.id SELECT and its only SELECT policy is own auth.uid=id; this is metadata, not a real-token HTTP receipt.
+- [ ] Read current installedSDK 2.106.0 and pinned Storage1.74.0 source/protocol note `docs/superpowers/audits/2026-09-26-private-photo-storage-protocol.md`. Source and official OpenAPI establish single-object DELETE; do not replace it with SDK bulk remove implicitly. Record references in contract. Read-only hosted metadata26September: authenticated has profiles.id SELECT and its only SELECT policy is own auth.uid=id; this is metadata, not a real-token HTTP receipt.
 - [ ] Write failing tests exercising real adapter requests with only fetch replaced. Pin fixed URL/header/body behavior, malformed IDs producing no fetch, public read versus privileged mutation credentials, response mapping and no retry. Example:
 ```ts
 expect(await deleteProfilePhoto(owner)).toEqual({ kind: 'ok' })
