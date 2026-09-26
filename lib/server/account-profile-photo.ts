@@ -5,7 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { trustedAccountOrigin } from './account-request'
 import { withVerifiedCookies } from './account-session'
 import { admitAccountVisitor, admitProfilePhotoUser } from './callback-admission'
-import { ProfilePhotoError, validateProfilePhoto } from './profile-photo'
+import { ProfilePhotoError, withProfilePhotoProcessing } from './profile-photo'
 import { cancelProfilePhotoBody, MAX_PROFILE_PHOTO_BYTES } from './profile-photo-stream'
 import { deleteProfilePhoto, downloadProfilePhoto, photoOwnerProfile, profilePhotoKey, putProfilePhoto } from './profile-photo-store'
 import { verifyProfilePhotoSession, type VerifiedPhotoSession } from './profile-photo-session'
@@ -84,14 +84,19 @@ export async function handleAccountProfilePhoto(request: NextRequest, action: 'u
     return verified(result.kind === 'ok' ? success() : failure(503), session)
   }
 
-  let image
-  try { image = await validateProfilePhoto(request) }
+  try {
+    // Keep validated bytes and Storage's upload copy inside the same admitted scope through acknowledgement.
+    return await withProfilePhotoProcessing(async validate => {
+      const image = await validate(request)
+      const result = await putProfilePhoto(session.ownerId, image, request.signal)
+      return verified(result.kind === 'ok' ? success() : failure(503), session)
+    })
+  }
   catch (error) {
+    cancelProfilePhotoBody(request)
     if (error instanceof ProfilePhotoError) return verified(failure(error.status), session)
     return verified(failure(503), session)
   }
-  const result = await putProfilePhoto(session.ownerId, image, request.signal)
-  return verified(result.kind === 'ok' ? success() : failure(503), session)
 }
 
 export async function handleProfilePhotoRead(request: NextRequest, targetId: string): Promise<NextResponse> {
@@ -110,16 +115,21 @@ export async function handleProfilePhotoRead(request: NextRequest, targetId: str
   const userAdmission = await admitProfilePhotoUser(session.ownerId, 'read')
   if (userAdmission) return verified(userAdmission, session)
 
-  // Ignore client validators and ranges; every read downloads through the checked caller token.
-  const result = await downloadProfilePhoto(targetId, session.token, request.signal)
-  if (result.kind !== 'found') return verified(failure(result.kind === 'not_found' ? 404 : 503, true), session)
   try {
-    const image = await validateProfilePhoto(new Request(request.url, {
-      method: 'PUT', headers: { 'content-type': result.contentType }, body: result.bytes.slice() as BodyInit,
-    }))
-    const response = new NextResponse(image.bytes.slice() as BodyInit, { status: 200, headers: {
-      'Content-Type': image.contentType, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
-    } })
-    return verified(response, session)
+    // Admit before Storage download; returned response bytes belong to the caller after construction.
+    return await withProfilePhotoProcessing(async validate => {
+      // Ignore client validators and ranges; every read downloads through the checked caller token.
+      const result = await downloadProfilePhoto(targetId, session.token, request.signal)
+      if (result.kind !== 'found') return verified(failure(result.kind === 'not_found' ? 404 : 503, true), session)
+      try {
+        const image = await validate(new Request(request.url, {
+          method: 'PUT', headers: { 'content-type': result.contentType }, body: result.bytes.slice() as BodyInit,
+        }))
+        const response = new NextResponse(image.bytes.slice() as BodyInit, { status: 200, headers: {
+          'Content-Type': image.contentType, 'Cache-Control': 'private, no-store', 'X-Content-Type-Options': 'nosniff',
+        } })
+        return verified(response, session)
+      } catch { return verified(failure(503), session) }
+    })
   } catch { return verified(failure(503), session) }
 }

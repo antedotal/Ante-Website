@@ -10,7 +10,8 @@ export function cancelProfilePhotoBody(request: Request): void {
   try { void request.body.cancel().catch(() => {}) } catch { /* Body cancellation itself may throw. */ }
 }
 
-export async function readProfilePhotoBody(request: Request): Promise<Uint8Array> {
+// Check cheap upload eligibility without acquiring a reader or pulling producer bytes.
+export function assertProfilePhotoBodyReadable(request: Request): void {
   if (!request.body || request.body.locked || request.signal.aborted) {
     cancelProfilePhotoBody(request)
     throw new ProfilePhotoError('invalid_input', 400)
@@ -24,8 +25,13 @@ export async function readProfilePhotoBody(request: Request): Promise<Uint8Array
     cancelProfilePhotoBody(request)
     throw new ProfilePhotoError('too_large', 413)
   }
+}
 
-  const reader = request.body.getReader()
+export async function readProfilePhotoBody(request: Request): Promise<Uint8Array> {
+  // Recheck at reader acquisition because the request may change after admission.
+  assertProfilePhotoBodyReadable(request)
+  const declared = request.headers.get('content-length')
+  const reader = request.body!.getReader()
   const chunks: Uint8Array[] = []
   let size = 0
   let completed = false

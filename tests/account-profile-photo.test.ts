@@ -26,6 +26,23 @@ let deleteReply: Response
 let quota: 'allow' | 'deny' | 'unavailable' = 'allow'
 let visitor: 'allow' | 'deny' | 'unavailable' = 'allow'
 let refreshedToken: string | null = null
+let storageHold: { kind: 'read' | 'upload'; entered: () => void; wait: Promise<void> } | null = null
+
+function barrier() {
+  let open!: () => void
+  const wait = new Promise<void>(resolve => { open = resolve })
+  return { wait, open }
+}
+
+function pendingUpload() {
+  let pulls = 0
+  let cancellations = 0
+  const body = new ReadableStream<Uint8Array>({
+    pull(controller) { pulls++; controller.enqueue(photo.slice()); controller.close() },
+    cancel() { cancellations++; return new Promise<void>(() => {}) },
+  }, { highWaterMark: 0 })
+  return { request: upload({ body }), get pulls() { return pulls }, get cancellations() { return cancellations } }
+}
 
 function cookie(accessToken = token, userId = forged, expiresAt = Math.floor(Date.now() / 1000) + 3600) {
   const session = { access_token: accessToken, refresh_token: 'refresh.secret', token_type: 'bearer', expires_at: expiresAt, expires_in: 3600,
@@ -70,6 +87,7 @@ beforeEach(() => {
   quota = 'allow'
   visitor = 'allow'
   refreshedToken = null
+  storageHold = null
   vi.stubGlobal('fetch', vi.fn(async (url: string | URL | Request, init: RequestInit = {}) => {
     const address = String(url)
     calls.push({ url: address, init })
@@ -83,8 +101,14 @@ beforeEach(() => {
       user: { id: forged, aud: 'authenticated', role: 'authenticated', email: 'forged@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} } })
     if (address.includes('/auth/v1/user')) return authStatus === 200 ? json(authBody) : json({ code: 'bad_jwt', msg: 'private' }, authStatus)
     if (address.includes('/rest/v1/profiles?')) return json(profile)
-    if (address.includes('/storage/v1/object/authenticated/')) return photoRead.clone()
-    if (address.includes('/storage/v1/object/')) return init.method === 'DELETE' ? deleteReply.clone() : uploadReply.clone()
+    if (address.includes('/storage/v1/object/authenticated/')) {
+      if (storageHold?.kind === 'read') { storageHold.entered(); await storageHold.wait }
+      return photoRead.clone()
+    }
+    if (address.includes('/storage/v1/object/')) {
+      if (init.method !== 'DELETE' && storageHold?.kind === 'upload') { storageHold.entered(); await storageHold.wait }
+      return init.method === 'DELETE' ? deleteReply.clone() : uploadReply.clone()
+    }
     throw new Error(`Unexpected provider URL ${address}`)
   }))
 })
@@ -336,5 +360,86 @@ describe('closed private photo routes', () => {
     response = await PUT(upload({ cookie: cookie(token, forged, 1) }))
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('holds upload capacity through Storage acknowledgement while GET, raw and PUT contenders do no image work', async () => {
+    const { PUT, DELETE } = await import('../app/api/account/profile/photo/route')
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const entered = barrier(); const release = barrier()
+    storageHold = { kind: 'upload', entered: entered.open, wait: release.wait }
+    refreshedToken = 'rotated.checked.token'
+    const first = PUT(upload({ cookie: cookie(token, forged, 1) }))
+    try {
+      await entered.wait
+      const contender = pendingUpload()
+      const rejected = await PUT(upload({ body: contender.request.body!, cookie: cookie(token, forged, 1) }))
+      expect([rejected.status, rejected.headers.get('retry-after')]).toEqual([503, '60'])
+      expect(rejected.headers.get('set-cookie')).toContain('Secure')
+      expect([contender.pulls, contender.cancellations]).toEqual([0, 1])
+      expect((await PUT(upload({ headers: { origin: 'https://other.test' } }))).status).toBe(403)
+      authStatus = 401
+      expect((await PUT(upload())).status).toBe(401)
+      authStatus = 200
+      profile = []
+      expect((await PUT(upload())).status).toBe(404)
+      profile = [{ id: owner }]
+      const readsBefore = calls.filter(call => call.url.includes('/storage/v1/object/authenticated/')).length
+      expect((await GET(read(), { params: Promise.resolve({ ownerId: owner }) })).status).toBe(503)
+      expect(calls.filter(call => call.url.includes('/storage/v1/object/authenticated/'))).toHaveLength(readsBefore)
+      const raw = pendingUpload()
+      await expect(validateProfilePhoto(raw.request)).rejects.toMatchObject({ status: 503 })
+      expect([raw.pulls, raw.cancellations]).toEqual([0, 1])
+      expect((await DELETE(deletion())).status).toBe(200)
+      release.open()
+      expect((await first).status).toBe(200)
+      expect((await PUT(upload())).status).toBe(200)
+    } finally { release.open(); storageHold = null }
+  })
+
+  it('holds GET capacity before download and releases it for unread response ownership', async () => {
+    const { PUT } = await import('../app/api/account/profile/photo/route')
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const entered = barrier(); const release = barrier()
+    storageHold = { kind: 'read', entered: entered.open, wait: release.wait }
+    const first = GET(read(), { params: Promise.resolve({ ownerId: owner }) })
+    try {
+      await entered.wait
+      const contender = pendingUpload()
+      expect((await PUT(contender.request)).status).toBe(503)
+      expect([contender.pulls, contender.cancellations]).toEqual([0, 1])
+      const raw = pendingUpload()
+      await expect(validateProfilePhoto(raw.request)).rejects.toMatchObject({ status: 503 })
+      expect([raw.pulls, raw.cancellations]).toEqual([0, 1])
+      const before = calls.filter(call => call.url.includes('/storage/v1/object/authenticated/')).length
+      expect((await GET(read(), { params: Promise.resolve({ ownerId: owner }) })).status).toBe(503)
+      expect(calls.filter(call => call.url.includes('/storage/v1/object/authenticated/'))).toHaveLength(before)
+      release.open()
+      const unread = await first
+      expect(unread.status).toBe(200)
+      storageHold = null
+      expect((await PUT(upload())).status).toBe(200)
+      expect(new Uint8Array(await unread.arrayBuffer())).toEqual(photo)
+    } finally { release.open(); storageHold = null }
+  })
+
+  it('restores capacity after missing, corrupt and unavailable downloads and rejected uploads', async () => {
+    const { PUT } = await import('../app/api/account/profile/photo/route')
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const get = () => GET(read(), { params: Promise.resolve({ ownerId: owner }) })
+    for (const [reply, expected] of [
+      [json({ statusCode: '404', code: 'NoSuchKey', error: 'not_found' }, 400), 404],
+      [new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/png' } }), 503],
+      [json({ private: 'provider failure' }, 500), 503],
+    ] as const) {
+      photoRead = reply
+      expect((await get()).status).toBe(expected)
+      expect((await PUT(upload())).status).toBe(200)
+    }
+    photoRead = new Response(photo.slice(), { headers: { 'content-type': 'image/png' } })
+    uploadReply = json({ unexpected: true })
+    expect((await PUT(upload())).status).toBe(503)
+    expect((await get()).status).toBe(200)
   })
 })
