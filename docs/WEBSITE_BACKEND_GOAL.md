@@ -49,7 +49,7 @@ The user removed the previous paused cross-project goal. The website-backend rep
 A fresh key-type-only scan of expected local files found public legacy anon credentials only, not a server key. No values were displayed. The file-path clarification and Workers-plan question remain unanswered. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
 
 
-The goal remains active. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
+The goal remains incomplete and awaits external prerequisites. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
 
 ### Accepted locally
 
@@ -121,3 +121,9 @@ On 26 September the connected Stripe documentation tool returned UNAUTHORIZED / 
 A context-aware follow-up successfully profiled five maximum-area RGBA16 PNG validations in the actual local Worker. All returned200. The 511.114 ms profile window contains324.295 ms active sampled attribution,33.638 ms GC,149.325 ms idle and3.856 ms not represented by sample deltas. This is a batch-window sample on one machine, not per-request CPU. The updated [receipt](superpowers/audits/2026-09-26-photo-cpu-profiling-attempt.md), retained raw artifacts and [independent evidence review](superpowers/audits/2026-09-26-photo-cpu-evidence-review.md) replace the prior inconclusive-only status.
 
 Execution-context selection is now demonstrated for this local target. Broader inputs/JPEG/full authenticated routes, peak memory and hosted target-plan CPU acceptance remain open. No further implementation or activation follows automatically from a local profile.
+
+### External dependency stop — 26 September 2026
+
+The final recheck found a clean website worktree at `6cef4f2`, no named server key in expected app/website environment files, none of the four planned hosted task-authority RPCs, and Stripe still requiring reauthentication. All dispatched agents are terminal; no build or profiling job is being abandoned. The preceding turn made progress by retaining reviewed CPU evidence. The same missing configuration and contract dependencies have persisted across more than three consecutive goal continuations; the remaining goal cannot be completed by additional local test variants.
+
+Resume with the server-key file path (never paste the key), target Workers plan/configuration, and Stripe reconnection. Hosted account/photo verification additionally needs actual runtime ingress/cookie/resource acceptance. Task/proof work waits for accepted shared authority contracts; sandbox card setup waits for approved consent and customer-ownership contracts. Profiling/resource limitations remain open, not passed. Do not reinterpret this stop as completion, erase the dependency gates, activate photos/email changes/payments, or disturb retained recovery fixtures. Branch/worktree and all reviewable commits are preserved.
