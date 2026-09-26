@@ -35,6 +35,20 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ## Current handoff — 26 September 2026
 
+### Completion audit — current evidence, not a completion claim
+
+| Goal requirement | Current evidence | Remaining requirement |
+| --- | --- | --- |
+| Shared Auth and durable visitor admission | Implemented routes and reviewed local tests; shared limiter SQL deployed | Real server-key/JWT, ingress and browser/Worker acceptance |
+| Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Hosted ownership/JWT checks; SMTP/two-inbox configuration and authorized recipients |
+| Private photos | Reviewed source; maximum-boundary and controlled same-isolate local Worker evidence | Full authenticated route/hosted checks, CPU characterization and defensible total-memory acceptance; serving disabled |
+| Task/private-proof contracts | Fresh 26 September public function-catalog query returned no four planned task-authority RPCs | Authoritative backend contracts must be ready; no legacy-write fallback |
+| Stripe sandbox setup | Workstream mandates versioned consent/server-owned customer IDs; current goal conditions setup on approved contracts | Approved consent/customer-ownership implementation contract; no settlement or live money |
+| Reviewable commits/handoff | Current isolated branch commits and acceptance receipts | Entire objective is not achieved; no deployment or whole-project completion claimed |
+
+A fresh key-type-only scan of expected local files found public legacy anon credentials only, not a server key. No values were displayed. The file-path clarification and Workers-plan question remain unanswered. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
+
+
 The goal remains active. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
 
 ### Accepted locally
@@ -91,3 +105,9 @@ This changes admitted application concurrency, not total memory: response/runtim
 `208a6af` adds a bounded overlap probe using the real processing scope and raw validator across distinct temporary route modules. The actual local Worker reported one matching isolate identity; both controlled rounds rejected raw/scoped contenders with decoder_unavailable503, zero raw body pulls and one cancellation invocation. Maximum-area PNG/JPEG recovered after normal holder completion and synthetic callback failure. The final clean build and listener cleanup passed. Twelve focused tests, typecheck and targeted lint passed. Task and [final review](superpowers/audits/2026-09-26-photo-worker-overlap-review.md) accepted with no blocking findings. See [runtime receipt](superpowers/audits/2026-09-26-photo-worker-overlap-results.md).
 
 This narrows the local bundle-sharing gap for diagnostic/raw paths only. Full authenticated production route overlap, hosted behaviour, CPU and total memory remain unverified. Cancellation in the Worker probe resolves synchronously; stalled-cancellation safety is covered separately by source tests, not this runtime experiment.
+
+### Profiling and remaining critical path
+
+Two bounded local profiling attempts and one no-build inspector comparison produced no photo CPU samples. The header-capable installed WebSocket client connected, but application execution-context identification remained unresolved; the driver stopped before photo POSTs rather than attribute a profile to the wrong context. Both attempts removed their temporary source, rebuilt clean artifacts and closed owned listeners. See [inconclusive profiling receipt](superpowers/audits/2026-09-26-photo-cpu-profiling-attempt.md). No memory or hosted limit inference follows.
+
+The goal is not complete. Next critical dependencies remain the server-key file location, target Workers plan/configuration and hosted acceptance, authoritative task RPC readiness, and approved Stripe consent/customer-ownership contracts. Existing nonblocking test follow-ups are not substitutes for those dependencies. Further profiling must retain exact CDP context/error evidence and choose the actual application target; do not repeat the unsuccessful driver unchanged.
