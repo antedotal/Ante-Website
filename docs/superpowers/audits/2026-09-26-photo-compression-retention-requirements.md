@@ -48,3 +48,10 @@ Independent review accepted the policy and evidence distinctions after correctin
 The paired Ante backend worktree now contains `docs/superpowers/audits/2026-09-26-photo-normalizer-candidate.md` and `2026-09-26-shared-photo-upload-contract.md`. The candidate handles synthetic JPEG/PNG/HEIC locally, but HEIC peak process memory requires hosted verification. No runtime is accepted or dependency installed in production. CLI 2.118.0 authentication now lists the expected Ante project, enabling the documented static-WASM deployment path.
 
 The proposed contract reserves immutable keys, verifies stored normalized bytes, and publishes with an idempotent operation and profile revision check. Orphan cleanup must serialize against publication. Proof integration remains dependent on accepted shared task/attempt authority. JPEG quality, color/HDR behavior, still-image detection, resource limits and any normalized-PNG fallback remain implementation decisions to validate; the proposal is not an implemented API or cleanup activation.
+
+
+### Hosted normalization result — 26 September 2026
+
+The paired backend audit `docs/superpowers/audits/2026-09-26-photo-normalizer-hosted-probe.md` records actual hosted processing: synthetic JPEG/PNG passed, but the 6.36 MB HEIC fixture returned546 and provider logs identify CPUTime shutdown. Current magick-wasm configuration is not accepted for the full proof envelope; local success did not establish hosted suitability. JPEG handler wall time was1950ms; retained shutdown CPU telemetry is not uniquely correlated to requests, so per-request CPU headroom remains unproven. Do not activate photo routes, remove HEIC support, or retry CPU exhaustion as if transient.
+
+The temporary function and operator secret were removed. Existing function bundle hashes/auth settings remain unchanged, though secret changes incremented their version counters. No database/Storage operations or user photos were involved. Next evaluate a faster codec/compute strategy against the failing fixture, while independently progressing immutable asset/profile authority. No paid service selected; containment remains active.
