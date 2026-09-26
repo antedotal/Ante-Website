@@ -37,13 +37,13 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ### Completion audit — current evidence, not a completion claim
 
-The configuration and photo-policy update below supersedes earlier missing-key, unknown-plan and disconnected-Stripe observations. Earlier dated entries are retained as historical evidence.
+Current status: server-key access works, Workers Free is confirmed, and Stripe sandbox discovery works. Photo retention containment is deployed. The current hosted image codec failed the HEIC CPU test; replacement processing, immutable photo integration and cleanup remain unfinished. Earlier dated entries below are historical evidence, not a list of current blockers.
 
 | Goal requirement | Current evidence | Remaining requirement |
 | --- | --- | --- |
 | Shared Auth and durable visitor admission | Reviewed source and deployed SQL; actual opaque-server-key HTTP limits verified (5/6 and 60/61 admitted; anonymous calls denied) | Real user JWT, ingress and browser/Worker acceptance |
 | Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Hosted ownership/JWT checks; SMTP/two-inbox configuration and authorized recipients |
-| Private photos | Reviewed source; maximum-boundary and controlled same-isolate local Worker evidence | Full authenticated route/hosted checks, CPU characterization and defensible total-memory acceptance; serving disabled |
+| Private photos | Legacy routes remain gated; retention containment deployed; hosted HEIC failed CPU limit; new profile asset authority deployed and independently reviewed | Accepted normalizer, immutable upload/readback and reader integration, safe cleanup and authenticated hosted acceptance |
 | Task/private-proof contracts | Fresh 26 September public function-catalog query returned no four planned task-authority RPCs | Authoritative backend contracts must be ready; no legacy-write fallback |
 | Stripe sandbox setup | Workstream mandates versioned consent/server-owned customer IDs; current goal conditions setup on approved contracts | Approved consent/customer-ownership implementation contract; no settlement or live money |
 | Reviewable commits/handoff | Current isolated branch commits and acceptance receipts | Entire objective is not achieved; no deployment or whole-project completion claimed |
@@ -51,7 +51,7 @@ The configuration and photo-policy update below supersedes earlier missing-key, 
 The user has supplied a server key in the main app and website `.env.local` files, confirmed Workers Free, and reconnected Stripe. Server-key gateway and limiter checks now pass; these do not establish real-user JWT or hosted website acceptance. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
 
 
-The goal remains incomplete and awaits external prerequisites. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
+The goal remains active and incomplete. Shared photo authority work is progressing; external prerequisites still gate full acceptance. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
 
 ### Accepted locally
 
@@ -67,14 +67,14 @@ Callback limiter 20260925095113; account visitor limiter 20260925111932; preset 
 
 ### Next work
 
-1. Implement private profile photos using the [selected minimal contract](superpowers/audits/2026-09-25-private-avatar-contract.md): private canonical object, server-only validated mutations and authenticated owner/current-friend reads. No public/signed links or silent changes to legacy avatar_url/mobile consumers. The empty private bucket and SQL download policy are deployed. Actual isolated Storage HTTP acceptance now passes through `1f0565f`, including owner/friend bytes, denied signing/listing/mutations and revocation controls. Server-only image validation is implemented through5c16b8f with14 focused tests, lint/typecheck and actual local Worker checks after review fixes; the preceding full suite passed170 tests. Task and final independent reviews accepted the dormant local slice; production resource and hosted acceptance are not complete. The fixed-key provider adapter is accepted through `b8d5b2c`, with exact real Storage HTTP protocol coverage in paired backend `83affa4`. Closed-by-default photo endpoints are implemented through `ee2478e`, with Auth error-classification fixes in `32d39bc`. Task and whole-plan independent reviews are accepted; see [final review](superpowers/audits/2026-09-26-private-photo-endpoints-review.md). The initial 201 website tests and synthetic Worker build passed; after the fix, 18 focused route tests, typecheck and lint passed. Target-plan CPU/peak-memory acceptance and hosted Storage/CDN/JWKS acceptance remain incomplete; local transform RLS is untested because that route was disabled.
+1. Immutable profile-asset authority is deployed and verified (see receipt below). Evaluate a HEIC-capable normalization runtime using the retained failing fixture. The new [shared photo contract](../../Ante/docs/superpowers/audits/2026-09-26-shared-photo-upload-contract.md) supersedes the old fixed-object photo implementation as the target. Wire immutable uploads, exact readback, authorized readers and race-safe cleanup only after their respective acceptance gates. Current photo routes remain disabled.
 2. Continue authoritative task/private-proof integration when its shared contracts are independently accepted. A 26 September hosted metadata check confirms `create_zero_stake_friend_task_v1`, `update_zero_stake_friend_task_v1`, `archive_zero_stake_friend_task_v1` and `restore_zero_stake_friend_task_v1` are absent. Legacy proof submission/response functions exist, but do not establish acceptance of the planned authority contract; do not bypass that gap through legacy table writes or disturb retained recovery fixtures.
 3. Prepare Stripe sandbox card setup only under an approved consent and customer-ownership contract. Settlement, reviewer-silence charging and live money remain closed.
 
 ### Hosted and configuration gates
 
-- Shared project is confirmed. Verify actual website server-key PostgREST access and real JWT ownership/session flows; database SET ROLE evidence is a different layer.
-- Target antedotal.com in Havish's Cloudflare account. Direct Pages project/domain and Workers reads worked; account-level Pages listing and Workers-subdomain reads failed. Upload credentials and direct staging ingress remain unverified. A26September read-only account subscription lookup returned Cloudflare10000 Authentication error; the Workers plan is still unknown, and the user has been asked whether it is Free or Paid. No billing or deployment changed. Keep the Pages site live while preparing Workers.
+- Shared project and server-key PostgREST access are verified. Real JWT ownership/session flows and deployed website ingress remain unverified; database SET ROLE evidence is a different layer.
+- Target antedotal.com in Havish's Cloudflare account on Workers Free. Isolated connector calls now verify an empty Workers list and subdomain `walihavish`. Upload and staging ingress remain unverified; the Images usage API returned5403 (account/service access unavailable). That does not establish Images binding entitlement. See [candidate audit](superpowers/audits/2026-09-26-cloudflare-images-candidate.md). Keep the Pages site live; no paid upgrade selected.
 - Verify OTP/Change-email templates, SMTP, secure two-inbox settings, fresh Auth pending-email exposure, Google/email same-account behavior and browser/Worker cookies. No real recipient is authorized until Workspace setup. Local preparation has sent no emails.
 - OpenNext reports experimental Node middleware support; hosted runtime acceptance remains required before release.
 
@@ -176,3 +176,10 @@ Next bounded slice: finalize and test the normalizer plus immutable profile-gene
 The paired backend audit `docs/superpowers/audits/2026-09-26-photo-normalizer-hosted-probe.md` records actual hosted processing: synthetic JPEG/PNG passed, but the 6.36 MB HEIC fixture returned546 and provider logs identify CPUTime shutdown. Current magick-wasm configuration is not accepted for the full proof envelope; local success did not establish hosted suitability. JPEG handler wall time was1950ms; retained shutdown CPU telemetry is not uniquely correlated to requests, so per-request CPU headroom remains unproven. Do not activate photo routes, remove HEIC support, or retry CPU exhaustion as if transient.
 
 The temporary function and operator secret were removed. Existing function bundle hashes/auth settings remain unchanged, though secret changes incremented their version counters. No database/Storage operations or user photos were involved. Next evaluate a faster codec/compute strategy against the failing fixture, while independently progressing immutable asset/profile authority. No paid service selected; containment remains active.
+
+
+### Immutable profile metadata authority deployed — 26 September 2026
+
+Paired backend implementation `f9a116c` and reviewed fix `c779275` are installed as `20260926034235_profile_photo_asset_authority`. Two private tables and seven service-only RPCs supply immutable generation identity, fenced leases, frozen manifests, revision checks and durable upload/delete receipts. Independent task/final review found and resolved one replay transaction guard;12 PostgreSQL tests passed. All12 hosted catalog checks passed; seven actual server-key requests correctly denied a nonexistent profile. Existing profile/task/payment/Storage fingerprints and grants matched; new tables remain empty.
+
+See [backend acceptance](../../Ante/docs/superpowers/audits/2026-09-26-profile-photo-authority-acceptance.md). This does not enable photo processing, readers or cleanup. Next: accepted HEIC-capable runtime, immutable Storage/readback integration, coordinated readers and race-safe cleanup. Cloudflare Workers reads work, but Images stats returned5403; binding entitlement and upload permission remain unverified. The whole goal remains active; existing branches and worktrees are preserved.
