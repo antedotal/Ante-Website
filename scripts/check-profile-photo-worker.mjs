@@ -6,13 +6,16 @@ import { tmpdir } from 'node:os'
 import { deflateSync } from 'node:zlib'
 import { makeBoundaryFixtures } from './profile-photo-boundary-fixtures.mjs'
 import { assertPortAvailable, fetchProbeResult, waitForProbeNonce, withOwnedProcess, withTemporaryProbe } from './profile-photo-worker-process.mjs'
+import { makeOverlapSources, runOverlapRound } from './profile-photo-worker-overlap.mjs'
 
 const root = resolve(import.meta.dirname, '..')
 const boundary = process.argv.includes('--boundary')
+const overlap = process.argv.includes('--overlap')
+if (boundary && overlap) throw new Error('--boundary and --overlap are mutually exclusive')
 const portOption = process.argv.find(arg => arg.startsWith('--port='))
 const port = portOption ? Number(portOption.slice('--port='.length)) : 8787
 if (!Number.isInteger(port) || port < 1024 || port > 65535) throw new Error('Invalid selected preview port')
-if (process.argv.slice(2).some(arg => arg !== '--boundary' && !arg.startsWith('--port='))) throw new Error('Unknown probe argument')
+if (process.argv.slice(2).some(arg => arg !== '--boundary' && arg !== '--overlap' && !arg.startsWith('--port='))) throw new Error('Unknown probe argument')
 const nonce = randomUUID()
 const deadline = AbortSignal.timeout(8 * 60_000)
 const interrupted = new AbortController()
@@ -26,21 +29,25 @@ function checkInterrupted() {
   if (deadline.aborted) throw new Error('Local Worker probe exceeded overall timeout')
 }
 const routeDir = resolve(root, 'app/api/local-profile-photo-probe')
-if (existsSync(routeDir)) throw new Error('Refusing to overwrite an existing probe route')
+const holderDir = resolve(root, 'app/api/local-profile-photo-holder')
+const contenderDir = resolve(root, 'app/api/local-profile-photo-contender')
+const stateFile = resolve(root, 'lib/server/local-profile-photo-diagnostic.ts')
+if ([routeDir, holderDir, contenderDir, stateFile].some(path => existsSync(path))) throw new Error('Refusing to overwrite an existing probe route or diagnostic module')
 // Next and Wrangler can load local dotenv files independently of the child process environment.
 const localEnvFiles = readdirSync(root).filter(name => name.startsWith('.env') || name.startsWith('.dev.vars'))
 if (localEnvFiles.length) throw new Error(`Refusing local check while project dotenv files exist: ${localEnvFiles.join(', ')}`)
 const route = `import { validateProfilePhoto, ProfilePhotoError } from '@/lib/server/profile-photo'
+${overlap ? "import { isolateId } from '@/lib/server/local-profile-photo-diagnostic'" : ''}
 // This route exists only during the local check and never connects to authentication or storage.
 const nonce = ${JSON.stringify(nonce)}
-export async function GET() { return Response.json({ nonce }) }
+export async function GET() { return Response.json({ nonce${overlap ? ', isolateId' : ''} }) }
 export async function POST(request: Request) {
   const start = performance.now()
   try {
     const result = await validateProfilePhoto(request)
-    return Response.json({ nonce, width: result.width, height: result.height, contentType: result.contentType, length: result.bytes.length, wallMs: performance.now() - start })
+    return Response.json({ nonce, ${overlap ? 'isolateId,' : ''} width: result.width, height: result.height, contentType: result.contentType, length: result.bytes.length, wallMs: performance.now() - start })
   } catch (error) {
-    if (error instanceof ProfilePhotoError) return Response.json({ nonce, code: error.code, wallMs: performance.now() - start }, { status: error.status })
+    if (error instanceof ProfilePhotoError) return Response.json({ nonce, ${overlap ? 'isolateId,' : ''} code: error.code, wallMs: performance.now() - start }, { status: error.status })
     return Response.json({ nonce, code: 'unexpected' }, { status: 500 })
   }
 }`
@@ -103,15 +110,26 @@ const fixture = name => new Uint8Array(readFileSync(resolve(root, 'tests/fixture
 const png = fixture('red-2x2.png')
 const jpeg = fixture('red-2x2.jpg')
 const [ihdr, , idat, iend] = splitPng(png)
+const overlapSources = overlap ? makeOverlapSources({ nonce, pngBase64: Buffer.from(png).toString('base64') }) : undefined
 try {
   await assertPortAvailable(port)
   checkInterrupted()
   // Construct and independently JPEG-decode the corpus before a Worker process can return a status.
-  const boundaryFixtures = boundary ? await makeBoundaryFixtures() : undefined
+  const boundaryFixtures = boundary || overlap ? await makeBoundaryFixtures() : undefined
   await withTemporaryProbe({
-    createRoute: () => { mkdirSync(routeDir, { recursive: true }); writeFileSync(resolve(routeDir, 'route.ts'), route) },
+    createRoute: () => {
+      mkdirSync(routeDir, { recursive: true }); writeFileSync(resolve(routeDir, 'route.ts'), route)
+      if (overlapSources) {
+        mkdirSync(holderDir, { recursive: true }); writeFileSync(resolve(holderDir, 'route.ts'), overlapSources.holder)
+        mkdirSync(contenderDir, { recursive: true }); writeFileSync(resolve(contenderDir, 'route.ts'), overlapSources.contender)
+        writeFileSync(stateFile, overlapSources.state)
+      }
+    },
     build: clean => run('pnpm', ['run', 'build:worker'], env, clean ? [AbortSignal.timeout(120_000)] : undefined),
-    removeRoute: () => rmSync(routeDir, { recursive: true, force: true }),
+    removeRoute: () => {
+      for (const path of [routeDir, holderDir, contenderDir]) rmSync(path, { recursive: true, force: true })
+      if (overlap) rmSync(stateFile, { force: true })
+    },
     // If even the clean rebuild fails, generated artifacts cannot be trusted and are discarded.
     discardArtifacts: () => { rmSync(resolve(root, '.next'), { recursive: true, force: true }); rmSync(resolve(root, '.open-next'), { recursive: true, force: true }) },
     getAbortReason: () => interrupted.signal.aborted ? interrupted.signal.reason : deadline.aborted ? new Error('Local Worker probe exceeded overall timeout') : undefined,
@@ -131,6 +149,31 @@ try {
   await withOwnedProcess('pnpm', ['run', 'preview:worker', '--port', String(port)], { cwd: root, env, stdio: 'inherit' }, async () => {
     await waitForProbeNonce(url, nonce, { timeoutMs: 30_000, signal: interrupted.signal })
     checkInterrupted()
+    if (overlap) {
+      const initial = await fetch(url, { signal: AbortSignal.any([interrupted.signal, deadline, AbortSignal.timeout(6500)]) }).then(response => response.json())
+      if (initial.nonce !== nonce || !initial.isolateId) throw new Error('Diagnostic route has no authenticated isolate identity')
+      const fetchJson = async (target, init) => {
+        const response = await fetch(target, { ...init, headers: { 'content-type': 'application/json' }, signal: AbortSignal.any([interrupted.signal, deadline, AbortSignal.timeout(6500)]) })
+        return { status: response.status, result: await response.json() }
+      }
+      const holderUrl = `http://127.0.0.1:${port}/api/local-profile-photo-holder`
+      const contenderUrl = `http://127.0.0.1:${port}/api/local-profile-photo-contender`
+      for (const [round, fixtureName] of [['normal', 'png_rgba8_max'], ['failure', 'jpeg_baseline_max']]) {
+        const item = boundaryFixtures.find(fixture => fixture.name === fixtureName)
+        const receipt = await runOverlapRound({
+          fetchJson, nonce, holderUrl, contenderUrl, round,
+          signal: AbortSignal.any([interrupted.signal, deadline]),
+          recovery: async () => {
+            const result = await check(`${round}_max_area_recovery`, item.bytes, item.mime, 200)
+            if (result.isolateId !== initial.isolateId || result.width !== item.width || result.height !== item.height || result.length !== item.bytes.length) throw new Error('Recovery used another isolate or changed image dimensions/length')
+            return result
+          },
+        })
+        if (receipt.isolateId !== initial.isolateId) throw new Error('Diagnostic routes did not share the initial isolate')
+        console.log(JSON.stringify({ name: `${round}_overlap`, runNonce: nonce, ...receipt, recovery: { status: receipt.recovery.status, width: receipt.recovery.width, height: receipt.recovery.height, length: receipt.recovery.length } }))
+      }
+      return
+    }
     if (boundary) {
       const valid = boundaryFixtures.find(item => item.name === 'png_rgba8_max')
       for (const item of boundaryFixtures) {
