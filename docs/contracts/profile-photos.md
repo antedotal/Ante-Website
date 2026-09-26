@@ -1,6 +1,6 @@
 # Private profile photo backend contract
 
-**Pending requirement change (26 September):** The user now requires orientation-aware 1080p compression, retaining only verified compressed storage bytes, plus cleanup of replaced/deleted avatars. The implementation described below still preserves original bytes and uses a fixed key; it remains gated and does not yet meet the new requirements. See [confirmed requirements](../superpowers/audits/2026-09-26-photo-compression-retention-requirements.md).
+**Pending requirement change (26 September):** The user now requires orientation-aware 1080p compression, retaining only verified compressed storage bytes, plus cleanup of replaced/deleted avatars as soon as safely unreferenced. Ordinary photos use JPEG, transparency uses PNG, and uploads accept still photos only (normal HEIC auxiliary items are permitted). The implementation described below still preserves original bytes and uses a fixed key; it remains gated and does not yet meet the new requirements. See [confirmed requirements](../superpowers/audits/2026-09-26-photo-compression-retention-requirements.md).
 
 The fixed Storage adapter described first remains server-only and does not authorize callers or validate downloaded images. The gated website endpoints below supply admission, fresh Auth verification, full image validation and private responses. The release remains closed until hosted gateway, CDN/JWKS, cookie and resource checks pass.
 

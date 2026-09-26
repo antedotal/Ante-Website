@@ -160,3 +160,12 @@ The paired backend release is now applied as `20260926023351_photo_retention_con
 The legacy SQL purge is a no-op. Task/payment-hold hard deletion, protected-table truncation, and client proof-object deletion/overwrite are held. Existing reads/new-object uploads and soft archive remain. No scheduled job was rescheduled, no image or financial row was deleted, and live-money endpoints remain paused. Some account hard-deletion flows are temporarily blocked.
 
 Next required photo work: immutable proof/asset history and protected final-resolution/dispute/financial holds; generation-safe avatar replacement; server-normalized orientation-aware1080p compressed-only storage; bounded exact-key cleanup after seven days for definitively resolved nonfinancial proof. Current review/proof projections remain mutable and service-role Storage bypass still exists. The blanket hold is a precursor, not final retention or compression acceptance. Continue shared schema work in the paired Ante repository, and keep website photo activation closed pending the new contract and hosted acceptance.
+
+
+### Photo policy and normalization research — 26 September 2026
+
+Confirmed: JPEG ordinary photos, PNG for transparency, still photos only with normal HEIC auxiliary depth/thumbnail items accepted. Delete replaced/deleted profile generations as soon as safely unreferenced; current avatars never expire by age. Orientation-aware 1080p, compressed-only storage and seven days after final resolution for nonfinancial proof remain the targets.
+
+Paired backend research is retained in `docs/superpowers/audits/2026-09-26-photo-normalizer-candidate.md` and `2026-09-26-shared-photo-upload-contract.md`. Synthetic local JPEG/PNG/HEIC processing succeeded; local HEIC process RSS exceeded 256 MiB, which requires a hosted measurement and does not prove hosted failure. Runtime selection and the full input envelope remain unaccepted. Supabase CLI 2.118.0 authentication now lists the expected Ante project; the temporary synthetic-image hosted probe is the next verification step.
+
+Next bounded slice: finalize and test the normalizer plus immutable profile-generation reservation/publication contract, using readback verification, retry reconciliation and revision checks. Profile cleanup must serialize with publication. Keep current photo routes closed, preserve deployed containment, and do not wire proof publication through the legacy task path. No image processor, cleanup schedule or new photo route was deployed by this research.
