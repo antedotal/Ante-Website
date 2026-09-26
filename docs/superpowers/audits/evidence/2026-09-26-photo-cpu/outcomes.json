@@ -1,0 +1,52 @@
+[
+  {
+    "attempt": 1,
+    "status": 200,
+    "nonceMatches": true,
+    "width": 2000,
+    "height": 2000,
+    "length": 43271,
+    "workerWallMs": 86,
+    "clientWallMs": 93.89591699999983
+  },
+  {
+    "attempt": 2,
+    "status": 200,
+    "nonceMatches": true,
+    "width": 2000,
+    "height": 2000,
+    "length": 43271,
+    "workerWallMs": 67,
+    "clientWallMs": 72.33016700000007
+  },
+  {
+    "attempt": 3,
+    "status": 200,
+    "nonceMatches": true,
+    "width": 2000,
+    "height": 2000,
+    "length": 43271,
+    "workerWallMs": 70,
+    "clientWallMs": 74.7757500000007
+  },
+  {
+    "attempt": 4,
+    "status": 200,
+    "nonceMatches": true,
+    "width": 2000,
+    "height": 2000,
+    "length": 43271,
+    "workerWallMs": 64,
+    "clientWallMs": 69.59154200000012
+  },
+  {
+    "attempt": 5,
+    "status": 200,
+    "nonceMatches": true,
+    "width": 2000,
+    "height": 2000,
+    "length": 43271,
+    "workerWallMs": 64,
+    "clientWallMs": 67.45758399999977
+  }
+]

@@ -1,0 +1,79 @@
+{
+  "hypothesis": "Runtime must be enabled and a specific execution context selected before nonce evaluation",
+  "contexts": [
+    {
+      "targetId": "ff711571-8fa9-4058-9f3b-e5f7e4a76095",
+      "events": [
+        {
+          "method": "Runtime.executionContextCreated",
+          "context": {
+            "id": 193096353,
+            "origin": "",
+            "name": "Worker",
+            "uniqueId": "-3104802728074689645.-982991420298166999"
+          }
+        }
+      ]
+    }
+  ],
+  "evaluations": [
+    {
+      "targetId": "ff711571-8fa9-4058-9f3b-e5f7e4a76095",
+      "contextId": 193096353,
+      "reply": {
+        "id": 2,
+        "result": {
+          "result": {
+            "type": "string",
+            "value": "b47dd6c4-b77c-4d3b-85f3-38434795574a"
+          }
+        }
+      }
+    }
+  ],
+  "targets": [
+    {
+      "id": "ff711571-8fa9-4058-9f3b-e5f7e4a76095",
+      "title": "Cloudflare Worker",
+      "type": "node",
+      "webSocketDebuggerUrl": "ws://127.0.0.1:19231/ws"
+    }
+  ],
+  "requests": [
+    {
+      "targetId": "ff711571-8fa9-4058-9f3b-e5f7e4a76095",
+      "method": "Runtime.enable",
+      "reply": {
+        "id": 1,
+        "result": {}
+      }
+    },
+    {
+      "method": "route GET",
+      "nonceMatched": true
+    },
+    {
+      "method": "Profiler.enable",
+      "reply": {
+        "id": 3,
+        "method": "Profiler.enable",
+        "params": {}
+      }
+    },
+    {
+      "method": "Profiler.start",
+      "reply": {
+        "id": 4,
+        "method": "Profiler.start",
+        "params": {}
+      }
+    },
+    {
+      "method": "Profiler.stop",
+      "reply": {
+        "nodeCount": 64,
+        "sampleCount": 221
+      }
+    }
+  ]
+}
