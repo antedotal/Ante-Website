@@ -1,5 +1,7 @@
 # Private profile photo backend contract
 
+**Pending requirement change (26 September):** The user now requires orientation-aware 1080p compression, retaining only verified compressed storage bytes, plus cleanup of replaced/deleted avatars. The implementation described below still preserves original bytes and uses a fixed key; it remains gated and does not yet meet the new requirements. See [confirmed requirements](../superpowers/audits/2026-09-26-photo-compression-retention-requirements.md).
+
 The fixed Storage adapter described first remains server-only and does not authorize callers or validate downloaded images. The gated website endpoints below supply admission, fresh Auth verification, full image validation and private responses. The release remains closed until hosted gateway, CDN/JWKS, cookie and resource checks pass.
 
 `lib/server/profile-photo-store.ts` derives the only object key as `<canonical lowercase UUID>/avatar` in the private `profile-photos` bucket. A caller cannot provide a bucket, key, origin, URL or extra headers. It uses the project origin and public key from `accountConfig()`. Its owner-existence query is `GET /rest/v1/profiles?select=id&id=eq.<owner>&limit=2` with the public apikey and the verified caller bearer token; only one exact `{id}` row counts as existing. Hosted metadata checked 26 September shows authenticated `profiles.id` SELECT with an own-row `auth.uid() = id` policy, but no real-token REST receipt was taken. Profile existence is a precondition, not an account-deletion race guarantee.

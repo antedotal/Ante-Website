@@ -37,16 +37,18 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ### Completion audit — current evidence, not a completion claim
 
+The configuration and photo-policy update below supersedes earlier missing-key, unknown-plan and disconnected-Stripe observations. Earlier dated entries are retained as historical evidence.
+
 | Goal requirement | Current evidence | Remaining requirement |
 | --- | --- | --- |
-| Shared Auth and durable visitor admission | Implemented routes and reviewed local tests; shared limiter SQL deployed | Real server-key/JWT, ingress and browser/Worker acceptance |
+| Shared Auth and durable visitor admission | Reviewed source and deployed SQL; actual opaque-server-key HTTP limits verified (5/6 and 60/61 admitted; anonymous calls denied) | Real user JWT, ingress and browser/Worker acceptance |
 | Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Hosted ownership/JWT checks; SMTP/two-inbox configuration and authorized recipients |
 | Private photos | Reviewed source; maximum-boundary and controlled same-isolate local Worker evidence | Full authenticated route/hosted checks, CPU characterization and defensible total-memory acceptance; serving disabled |
 | Task/private-proof contracts | Fresh 26 September public function-catalog query returned no four planned task-authority RPCs | Authoritative backend contracts must be ready; no legacy-write fallback |
 | Stripe sandbox setup | Workstream mandates versioned consent/server-owned customer IDs; current goal conditions setup on approved contracts | Approved consent/customer-ownership implementation contract; no settlement or live money |
 | Reviewable commits/handoff | Current isolated branch commits and acceptance receipts | Entire objective is not achieved; no deployment or whole-project completion claimed |
 
-A fresh key-type-only scan of expected local files found public legacy anon credentials only, not a server key. No values were displayed. The file-path clarification and Workers-plan question remain unanswered. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
+The user has supplied a server key in the main app and website `.env.local` files, confirmed Workers Free, and reconnected Stripe. Server-key gateway and limiter checks now pass; these do not establish real-user JWT or hosted website acceptance. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
 
 
 The goal remains incomplete and awaits external prerequisites. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
@@ -127,3 +129,18 @@ Execution-context selection is now demonstrated for this local target. Broader i
 The final recheck found a clean website worktree at `6cef4f2`, no named server key in expected app/website environment files, none of the four planned hosted task-authority RPCs, and Stripe still requiring reauthentication. All dispatched agents are terminal; no build or profiling job is being abandoned. The preceding turn made progress by retaining reviewed CPU evidence. The same missing configuration and contract dependencies have persisted across more than three consecutive goal continuations; the remaining goal cannot be completed by additional local test variants.
 
 Resume with the server-key file path (never paste the key), target Workers plan/configuration, and Stripe reconnection. Hosted account/photo verification additionally needs actual runtime ingress/cookie/resource acceptance. Task/proof work waits for accepted shared authority contracts; sandbox card setup waits for approved consent and customer-ownership contracts. Profiling/resource limitations remain open, not passed. Do not reinterpret this stop as completion, erase the dependency gates, activate photos/email changes/payments, or disturb retained recovery fixtures. Branch/worktree and all reviewable commits are preserved.
+
+
+### Configuration and photo policy update — 26 September 2026
+
+The goal tool was freshly checked as **active** after the prior external-dependency stop. Continue the existing worktrees; the stop above is historical, not the current execution status.
+
+- Server credential is present under `EXPO_PRIVATE_SUPABASE_SECRET_KEY` in the main app/website `.env.local`. Website runtime expects `SUPABASE_SECRET_KEY` (or legacy `SUPABASE_SERVICE_ROLE_KEY`); map the value only in a server process/deployment secret. No credential value is recorded or copied to client/build configuration.
+- Hosted opaque-key requests successfully reached the profiles REST endpoint (zero-row limit) and private profile bucket metadata. Concurrent HTTP checks admitted exactly 5 of 6 callback requests and 60 of 61 account requests; anonymous requests returned 401. Synthetic limiter entries use the existing expiry cleanup. See the retained [HTTP receipt](superpowers/audits/evidence/2026-09-26-hosted-limiter-server-key.json). This is gateway/RPC evidence, not browser, JWT/RLS or deployed website evidence.
+- Workers Free is the confirmed target. Stripe account discovery now succeeds and lists the `ante-test` sandbox; no payment object was created. Consent/customer ownership, real user acceptance and deployment gates remain open.
+- Both proof and profile photos must be compressed to orientation-aware 1080p, preserving aspect ratio without cropping or enlarging. Keep only compressed bytes after verified storage success. The currently gated validator still returns original bytes and does not satisfy this new requirement.
+- Delete nonfinancial proof photos seven days after authoritative final resolution. Protect pending reviews, resubmissions, unresolved disputes, financial evidence and unknown legacy classifications. Active avatars remain; profile cleanup concerns replaced/deleted assets.
+
+The deployed metadata audit found a broad owner proof-image DELETE allowance and a task purge running every 30 seconds based only on archive age, with cascades into proof records/payment holds. Closing those paths is the first retention prerequisite. See [deployed audit](superpowers/audits/2026-09-26-photo-retention-deployed-audit.md).
+
+The [photo lifecycle requirements and preflight](superpowers/audits/2026-09-26-photo-compression-retention-requirements.md) records the newly approved requirements, implementation conflicts and next bounded work. No photo normalization, retention migration, scheduled cleanup, image deletion or photo activation has been performed for this new slice.
