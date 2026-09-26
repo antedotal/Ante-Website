@@ -442,4 +442,22 @@ describe('closed private photo routes', () => {
     expect((await PUT(upload())).status).toBe(503)
     expect((await get()).status).toBe(200)
   })
+
+  it('releases upload capacity after a stalled Storage acknowledgement times out', async () => {
+    const { PUT } = await import('../app/api/account/profile/photo/route')
+    const entered = barrier(); const held = barrier()
+    storageHold = { kind: 'upload', entered: entered.open, wait: held.wait }
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const first = PUT(upload())
+      await entered.wait
+      await vi.advanceTimersByTimeAsync(10_000)
+      const timeout = await first
+      expect([timeout.status, timeout.headers.get('retry-after')]).toEqual([503, '60'])
+      storageHold = null
+      held.open()
+      vi.useRealTimers()
+      expect((await PUT(upload())).status).toBe(200)
+    } finally { storageHold = null; held.open(); vi.useRealTimers() }
+  })
 })

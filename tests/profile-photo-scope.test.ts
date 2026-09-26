@@ -77,22 +77,27 @@ describe('shared photo processing scope', () => {
 
   it('disallows repeated or escaped validators and holds early-return validation until settled', async () => {
     const { withProfilePhotoProcessing, validateProfilePhoto } = await import('../lib/server/profile-photo')
-    const entered = gate(); const release = gate()
+    const entered = gate(); const release = gate(); const callbackFinished = gate()
     stages.decode = () => { entered.open(); return release.promise }
     try {
       let escaped!: (request: Request) => Promise<unknown>
-      const callback = withProfilePhotoProcessing(async validate => {
-        escaped = validate
-        const pending = validate(stream().request)
-        void pending.catch(() => {})
-        await entered.promise
-        const repeated = stream()
-        await expect(validate(repeated.request)).rejects.toMatchObject({ status: 503 })
-        expect(repeated.pulls).toBe(0)
-        return 'returned'
+      const callback = withProfilePhotoProcessing(validate => {
+        const work = (async () => {
+          escaped = validate
+          const pending = validate(stream().request)
+          void pending.catch(() => {})
+          await entered.promise
+          const repeated = stream()
+          await expect(validate(repeated.request)).rejects.toMatchObject({ status: 503 })
+          expect(repeated.pulls).toBe(0)
+          return 'returned'
+        })()
+        void work.then(() => callbackFinished.open())
+        return work
       })
       let settled = false; void callback.then(() => { settled = true })
-      await Promise.resolve()
+      await callbackFinished.promise
+      expect(settled).toBe(false)
       const contender = stream()
       await expect(validateProfilePhoto(contender.request)).rejects.toMatchObject({ status: 503 })
       expect([contender.pulls, contender.cancellations, settled]).toEqual([0, 1, false])

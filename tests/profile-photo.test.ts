@@ -222,6 +222,30 @@ describe('validateProfilePhoto', () => {
       await vi.advanceTimersByTimeAsync(10_000)
       await rejection
     } finally { vi.useRealTimers() }
+    expect((await validateProfilePhoto(upload(png))).width).toBe(2)
+  })
+
+  it('releases capacity after aborting an active body read', async () => {
+    const { validateProfilePhoto } = await import('../lib/server/profile-photo')
+    const controller = new AbortController()
+    let entered!: () => void
+    const reading = new Promise<void>(resolve => { entered = resolve })
+    let pulls = 0
+    let cancellations = 0
+    const body = new ReadableStream<Uint8Array>({
+      pull() { pulls++; entered() },
+      cancel() { cancellations++; return new Promise<void>(() => {}) },
+    }, { highWaterMark: 0 })
+    const request = new Request('https://local.invalid/photo', {
+      method: 'PUT', headers: { 'content-type': 'image/png' }, body, signal: controller.signal, duplex: 'half',
+    } as RequestInit)
+    const active = validateProfilePhoto(request)
+    await reading
+    expect(pulls).toBe(1)
+    controller.abort()
+    await expect(active).rejects.toMatchObject({ code: 'invalid_input', status: 400 })
+    expect(cancellations).toBe(1)
+    expect((await validateProfilePhoto(upload(png))).width).toBe(2)
   })
 
   it('fails closed if a statically loaded codec is unavailable', async () => {
@@ -230,6 +254,7 @@ describe('validateProfilePhoto', () => {
     codecEnv.PROFILE_PNG_WASM = undefined
     try { await expect(validateProfilePhoto(upload(png))).rejects.toMatchObject({ status: 503 }) }
     finally { codecEnv.PROFILE_PNG_WASM = original }
+    expect((await validateProfilePhoto(upload(png))).width).toBe(2)
   })
 
   it('reports decoder unavailability if the Worker request context is missing', async () => {
