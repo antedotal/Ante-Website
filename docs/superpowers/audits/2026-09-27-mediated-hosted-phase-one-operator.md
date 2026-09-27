@@ -114,3 +114,10 @@ node scripts/acceptance/hosted-profile-photo-mediated.mjs cleanup \
 ```
 
 Omit `--settlement-receipt` only when no website effect is uncertain. Add `--recover-lock` only for a proved dead same-host process; live locks are refused. There is one explicit new 300-second/29-call recovery epoch. Further attempts cannot reset it. Recovery cannot turn a failed scenario into a phase-one pass. A completed cleanup, phase-one HTTP pass and all remaining unaccepted gates are reported separately. A fake-port receipt says `execution:not_attested`; only the explicit CLI identifies its execution path, and neither label alone attests deployment or overall acceptance.
+
+
+## Retained direct response evidence
+
+Journal schema version 3 and output receipt version 2 include `directObservations`: at most 324 append-only rows, each containing its fixed dispatch `descriptor`, numeric HTTP `status`, and checked `result` (`denied` or `empty_list`). Only a Storage list response with status 200 and an exact empty array can produce `empty_list`; denial statuses are 400/401/403/404/406. Each row requires its unique reserved run descriptor and completed-response counter. No fixture IDs, object keys, URLs, response bodies or provider messages enter these records.
+
+The 88 render rows additionally retain `capability:capability_unverified`. A generic 400 or any other accepted denial does not establish an unsupported endpoint, a working transformation or resource proof. Phase-one success requires exactly all 308 distinct Storage matrix descriptors and all 16 distinct Data exposure/boundary descriptors, alongside the existing scenario, budget and cleanup checks. Missing, duplicate or altered evidence is rejected on validation/reload; failed runs retain only their successfully checked prefix. Earlier journal schemas fail closed and are not silently migrated.

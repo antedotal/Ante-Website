@@ -16,13 +16,15 @@ const SHA=/^[0-9a-f]{64}$/;
 const COMMIT=/^[0-9a-f]{40}$/;
 const LABELS=['A','B','C'];
 const PIN_KEYS=['websiteCommit','backendCommit','adapterSha256','releaseSha256','catalog','ordinaryBundleSha256','acceptanceBundleSha256','origin','deploymentId','cacheReceiptSha256','quiescenceReceiptSha256'];
-const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','cleanupStartedAt','uncertainWebsite','uncertainAt','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','failures','counters','observed','intents','settlement'];
+const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','cleanupStartedAt','uncertainWebsite','uncertainAt','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','directObservations','failures','counters','observed','intents','settlement'];
 const exact=(o,keys)=>o!==null&&typeof o==='object'&&!Array.isArray(o)&&Object.keys(o).sort().join(',')===[...keys].sort().join(',');
 const need=(ok,code)=>{if(!ok)throw Error(code);};
 const timestamp=x=>typeof x==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|[+-]\d\d:\d\d)$/.test(x)&&Number.isFinite(Date.parse(x));
 const bound=(a,b)=>a===null||a===b;
 const persisted=(a,b)=>a===null||JSON.stringify(a)===JSON.stringify(b);
 const prefix=(a,b)=>a.length<=b.length&&a.every((v,i)=>JSON.stringify(v)===JSON.stringify(b[i]));
+// Descriptor identity is stable across JSON object key order.
+const descriptorIdentity=d=>JSON.stringify(Object.entries(d).sort(([a],[b])=>a.localeCompare(b)));
 const zero=caps=>Object.fromEntries(Object.keys(caps).map(k=>[k,0]));
 const stages={prepared:['preflight','run','cleanup','cleanup_blocked'],preflight:['run','cleanup','cleanup_blocked'],run:['cleanup','cleanup_blocked'],cleanup:['cleanup_blocked','complete'],cleanup_blocked:['cleanup','complete'],complete:[]};
 const fixtureStages={planned:['create_intent'],create_intent:['created','create_uncertain'],create_uncertain:['created'],created:['profile_removed','auth_delete_intent'],profile_removed:['auth_delete_intent'],auth_delete_intent:['cleaned'],cleaned:[]};
@@ -37,7 +39,8 @@ const advance=(a,b,graph)=>a===b||graph[a]?.includes(b);
 /** @typedef {{label:'G1'|'G2',operationId:string,assetId:string|null,key:string|null,leaseEpoch:number|null,sha256:string|null,byteCount:number|null,mime:'image/png',stage:string,uploadAttempts:number,deleteAttempts:number}} MediatedObject */
 /** @typedef {{visitorDigest:string|null,userDigests:(string|null)[],intentId:string,stage:'planned'|'intent'|'complete'|'uncertain'}} MediatedPreparation */
 /** @typedef {{seq:number,phase:'run'|'cleanup'|'recovery',epochId:string|null,descriptor:import('./hosted-profile-photo-mediated-protocol.mjs').DispatchDescriptor,delta:Record<string,number>}} MediatedIntent */
-/** @typedef {{version:2,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,cleanupStartedAt:string|null,uncertainWebsite:boolean,uncertainAt:string|null,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,run_id:string,origin:string,deployment_id:string,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:string}} MediatedState */
+/** @typedef {{descriptor:import('./hosted-profile-photo-mediated-protocol.mjs').DispatchDescriptor,status:number,result:'denied'|'empty_list',capability?:'capability_unverified'}} DirectObservation */
+/** @typedef {{version:3,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,cleanupStartedAt:string|null,uncertainWebsite:boolean,uncertainAt:string|null,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,directObservations:DirectObservation[],failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,run_id:string,origin:string,deployment_id:string,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:string}} MediatedState */
 
 function validatePins(p){
   need(exact(p,PIN_KEYS),'pin_shape');
@@ -50,11 +53,11 @@ function validatePins(p){
 /** Construct fixed identities and operation UUIDs before any provider call. */
 export function newMediatedState(runId,pins){
   need(UUID.test(runId),'run_id');validatePins(pins);
-  const state={version:2,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,cleanupStartedAt:null,uncertainWebsite:false,uncertainAt:null,
+  const state={version:3,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,cleanupStartedAt:null,uncertainWebsite:false,uncertainAt:null,
     fixtures:LABELS.map(label=>({label,email:`ante-mediated-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createAttempts:0,deleteAttempts:0})),
     objects:['G1','G2'].map(label=>({label,operationId:randomUUID(),assetId:null,key:null,leaseEpoch:null,sha256:null,byteCount:null,mime:'image/png',stage:'planned',uploadAttempts:0,deleteAttempts:0})),
     absenceProbeAssetId:randomUUID(),friendship:{id:randomUUID(),stage:'planned'},clear:{operationId:randomUUID(),stage:'planned'},revision:0,
-    preparation:{visitorDigest:null,userDigests:[null,null,null],intentId:randomUUID(),stage:'planned'},baseline:null,after:null,admissionRows:[],scenarioIndex:0,assertions:[],failures:[],
+    preparation:{visitorDigest:null,userDigests:[null,null,null],intentId:randomUUID(),stage:'planned'},baseline:null,after:null,admissionRows:[],scenarioIndex:0,assertions:[],directObservations:[],failures:[],
     counters:{run:zero(RUN_CAPS),cleanup:zero(CLEANUP_CAPS),recoveries:[]},observed:{run:zero(RUN_CAPS),cleanup:zero(CLEANUP_CAPS),recovery:zero(CLEANUP_CAPS)},intents:[],settlement:null};
   validateMediatedState(state);return state;
 }
@@ -95,7 +98,7 @@ function delta(d){
 
 /** Reject extra fields and invalid partial identities before they become durable. */
 export function validateMediatedState(s){
-  need(exact(s,STATE_KEYS)&&s.version===2&&s.project===PROJECT&&UUID.test(s.runId)&&timestamp(s.startedAt),'journal_shape');validatePins(s.pins);
+  need(exact(s,STATE_KEYS)&&s.version===3&&s.project===PROJECT&&UUID.test(s.runId)&&timestamp(s.startedAt),'journal_shape');validatePins(s.pins);
   need(Object.hasOwn(stages,s.stage)&&['pending','phase_one_http_passed','failed'].includes(s.outcome)&&typeof s.cleanupComplete==='boolean'&&typeof s.uncertainWebsite==='boolean','journal_stage');
   need(s.cleanupComplete===(s.stage==='complete'),'journal_completion');
   need(s.cleanupStartedAt===null||timestamp(s.cleanupStartedAt)&&new Date(s.cleanupStartedAt).toISOString()===s.cleanupStartedAt&&Date.parse(s.cleanupStartedAt)>=Date.parse(s.startedAt),'cleanup_start');
@@ -139,10 +142,11 @@ export function validateMediatedState(s){
   s.intents.forEach((i,n)=>{
     need(exact(i,['seq','phase','epochId','descriptor','delta'])&&i.seq===n+1&&['run','cleanup','recovery'].includes(i.phase)&&i.epochId===(i.phase==='recovery'?s.counters.recoveries[0]?.id??null:null),'journal_intent');
     validateDescriptor(i.descriptor);need(exact(i.delta,Object.keys(delta(i.descriptor)))&&Object.entries(delta(i.descriptor)).every(([k,v])=>i.delta[k]===v),'journal_envelope');
-    const identity=`${i.phase}:${JSON.stringify(Object.entries(i.descriptor).sort(([a],[b])=>a.localeCompare(b)))}`;need(!identities.has(identity),'duplicate_intent');identities.add(identity);
+    const identity=`${i.phase}:${descriptorIdentity(i.descriptor)}`;need(!identities.has(identity),'duplicate_intent');identities.add(identity);
     for(const [k,v] of Object.entries(i.delta)){need(Object.hasOwn(totals[i.phase],k),'phase_counter');totals[i.phase][k]+=v;}
   });
   need(JSON.stringify(totals.run)===JSON.stringify(s.counters.run)&&JSON.stringify(totals.cleanup)===JSON.stringify(s.counters.cleanup)&&JSON.stringify(totals.recovery)===JSON.stringify(s.counters.recoveries[0]?.counts??zero(CLEANUP_CAPS)),'journal_counter_envelope');
+  validateDirectObservations(s,identities);
   if(s.settlement!==null){
     const r=s.settlement;
     need(exact(r,['sha256','run_id','origin','deployment_id','closed_to_test_traffic','website_calls_settled','admission_writes_settled','issued_at'])&&SHA.test(r.sha256)&&r.run_id===s.runId&&r.origin===s.pins.origin&&r.deployment_id===s.pins.deploymentId&&r.closed_to_test_traffic===true&&r.website_calls_settled===true&&r.admission_writes_settled===true&&timestamp(r.issued_at)&&s.uncertainWebsite&&Date.parse(r.issued_at)>Date.parse(s.uncertainAt)&&s.counters.recoveries.length===1,'journal_settlement');
@@ -150,10 +154,34 @@ export function validateMediatedState(s){
   need(!s.cleanupComplete||!s.uncertainWebsite||s.settlement!==null,'settlement_required');
 }
 
+/** Retain only checked, reserved direct outcomes; fixed descriptor domains make exact counts exhaustive. */
+function validateDirectObservations(s,intents){
+  need(Array.isArray(s.directObservations)&&s.directObservations.length<=324,'direct_observations');
+  const seen=new Set();let matrix=0,data=0;
+  for(const row of s.directObservations){
+    const d=row?.descriptor;validateDescriptor(d);
+    const storage=d.kind==='directMatrix',render=storage&&d.view.startsWith('render-');
+    need(storage||d.kind==='dataExposure'||d.kind==='dataBoundary','direct_observation_descriptor');
+    need(exact(row,render?['descriptor','status','result','capability']:['descriptor','status','result'])&&(!render||row.capability==='capability_unverified'),'direct_observation_shape');
+    need(row.result==='denied'&&[400,401,403,404,406].includes(row.status)||row.result==='empty_list'&&row.status===200&&storage&&d.view==='list','direct_observation_result');
+    const identity=descriptorIdentity(d);
+    need(intents.has(`run:${identity}`)&&!seen.has(identity),'direct_observation_intent');seen.add(identity);
+    if(storage)matrix++;else data++;
+  }
+  need(matrix<=s.observed.run.directStorage&&data<=s.observed.run.directData,'direct_observation_count');
+  if(s.outcome==='phase_one_http_passed')need(matrix===308&&data===16,'direct_observations_incomplete');
+}
+
+/** Validation bounds each distinct row to the 308 matrix and 16 Data descriptors before acceptance. */
+function requireDirectObservations(s){
+  validateMediatedState(s);
+  need(s.directObservations.filter(r=>r.descriptor.kind==='directMatrix').length===308&&s.directObservations.filter(r=>r.descriptor.kind!=='directMatrix').length===16,'direct_observations_incomplete');
+}
+
 /** Compare consecutive fsynced snapshots; successful reconciliation may bind null once only. */
 export function validateMediatedHistory(old,next){
   validateMediatedState(old);validateMediatedState(next);
-  need(old.runId===next.runId&&old.startedAt===next.startedAt&&bound(old.cleanupStartedAt,next.cleanupStartedAt)&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&bound(old.uncertainAt,next.uncertainAt)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
+  need(old.runId===next.runId&&old.startedAt===next.startedAt&&bound(old.cleanupStartedAt,next.cleanupStartedAt)&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&bound(old.uncertainAt,next.uncertainAt)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.directObservations,next.directObservations)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
   for(let n=0;n<3;n++){const a=old.fixtures[n],b=next.fixtures[n];need(bound(a.id,b.id)&&bound(a.createdAt,b.createdAt)&&advance(a.stage,b.stage,fixtureStages)&&b.createAttempts>=a.createAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   for(let n=0;n<2;n++){const a=old.objects[n],b=next.objects[n];need(a.operationId===b.operationId&&bound(a.assetId,b.assetId)&&bound(a.key,b.key)&&bound(a.leaseEpoch,b.leaseEpoch)&&bound(a.sha256,b.sha256)&&bound(a.byteCount,b.byteCount)&&advance(a.stage,b.stage,objectStages)&&b.uploadAttempts>=a.uploadAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   need(old.absenceProbeAssetId===next.absenceProbeAssetId&&old.friendship.id===next.friendship.id&&advance(old.friendship.stage,next.friendship.stage,friendStages)&&old.clear.operationId===next.clear.operationId&&advance(old.clear.stage,next.clear.stage,clearStages)&&old.preparation.intentId===next.preparation.intentId&&advance(old.preparation.stage,next.preparation.stage,preparationStages)&&bound(old.preparation.visitorDigest,next.preparation.visitorDigest)&&old.preparation.userDigests.every((d,i)=>bound(d,next.preparation.userDigests[i])),'journal_history');
@@ -238,6 +266,7 @@ export async function runMediatedAcceptance(j,port){
   await port.clear();await port.directMatrix(10);await port.directMatrix(11);
   for(let id=21;id<=24;id++)await port.photoCase(id);
   await port.finish();
+  requireDirectObservations(j.state);
   need(j.state.assertions.length===24&&j.state.scenarioIndex===24&&Object.entries(RUN_CAPS).every(([k,v])=>j.state.counters.run[k]===v),'scenario_incomplete');
  }catch{assertionError='assertion_failed';await j.mutate(s=>{s.outcome='failed';s.failures.push(assertionError);});}
  try{await port.cleanup();need(j.state.cleanupComplete&&j.state.baseline!==null&&JSON.stringify(j.state.baseline)===JSON.stringify(j.state.after),'cleanup_incomplete');}
@@ -250,8 +279,8 @@ export async function runMediatedAcceptance(j,port){
 /** Public receipts contain no fixture IDs, tokens, provider bodies or implied stronger acceptance. */
 export function mediatedReceipt(s){
  validateMediatedState(s);
- return {version:1,execution:'not_attested',outcome:s.outcome,cleanup:s.cleanupComplete?'complete':'not_complete',preservation:s.baseline!==null&&JSON.stringify(s.after)===JSON.stringify(s.baseline)?'matched':'not_verified',pins:s.pins,
-  observedHttpCases:s.assertions.map(a=>({caseId:a.caseId,passed:a.passed,expected:PHOTO_CASES[a.caseId-1].expected,bytesAndCacheVerified:a.passed})),reserved:structuredClone(s.counters),observed:structuredClone(s.observed),failures:[...s.failures],
+ return {version:2,execution:'not_attested',outcome:s.outcome,cleanup:s.cleanupComplete?'complete':'not_complete',preservation:s.baseline!==null&&JSON.stringify(s.after)===JSON.stringify(s.baseline)?'matched':'not_verified',pins:s.pins,
+  observedHttpCases:s.assertions.map(a=>({caseId:a.caseId,passed:a.passed,expected:PHOTO_CASES[a.caseId-1].expected,bytesAndCacheVerified:a.passed})),directObservations:structuredClone(s.directObservations),reserved:structuredClone(s.counters),observed:structuredClone(s.observed),failures:[...s.failures],
   operatorAttestations:{cacheReceiptSha256:s.pins.cacheReceiptSha256,quiescenceReceiptSha256:s.pins.quiescenceReceiptSha256,settlementSha256:s.settlement?.sha256??null,verification:'operator_supplied'},
   remainingGates:{phase_traces:'not_accepted',controlled_races:'not_accepted',real_browser:'not_accepted',runtime_resources:'not_accepted',profile_deletion_transitions:'not_accepted',overall_acceptance:'not_accepted'}};
 }

@@ -29,7 +29,9 @@ export function assertPhotoResponse(r,expected){
 }
 function deny(r,list=false){
  const body=json(r);need(!/signedurl|signed_url|https?:\/\/|data:image|iVBORw0KGgo/i.test(JSON.stringify(body)),'direct_leak');
- need(list&&r.status===200&&Array.isArray(body)&&body.length===0||[400,401,403,404,406].includes(r.status),'direct_denial');
+ const empty=list&&r.status===200&&Array.isArray(body)&&body.length===0;
+ need(empty||[400,401,403,404,406].includes(r.status),'direct_denial');
+ return {status:r.status,result:empty?'empty_list':'denied'};
 }
 function imageReply(r,o){need(r.status===200&&r.headers.get('content-type')?.split(';')[0]==='image/png'&&r.bytes.length===o.byteCount&&hash(r.bytes)===o.sha256,'object_manifest');}
 
@@ -40,6 +42,14 @@ export function makeMediatedPort(j,credentials,{http=createMediatedHttp,query,in
  const transport=typeof http==='function'?http({journal:j,credentials:keys,sessions,cookieJars,origin:j.state.pins.origin,operatorToken}):http;
  need(typeof transport?.dispatch==='function','port_configuration');
  const send=d=>transport.dispatch(d,'run');
+ // Append the safe outcome only after the existing response assertion succeeds; never retain provider bodies.
+ async function observeDirect(descriptor){
+  const result=deny(await send(descriptor),descriptor.kind==='directMatrix'&&descriptor.view==='list');
+  const row={descriptor,...result};
+  // A denial (including generic 400) does not prove whether the render capability exists.
+  if(descriptor.kind==='directMatrix'&&descriptor.view.startsWith('render-'))row.capability='capability_unverified';
+  await j.mutate(s=>{s.directObservations.push(row);});
+ }
  const checkTime=()=>need(clock()>=Date.parse(j.state.startedAt)&&clock()-Date.parse(j.state.startedAt)<900000,'phase_deadline');
  async function sql(slot,statement,write=false){checkTime();await reserveDispatch(j,'run',{kind:'cli',slot});checkTime();const rows=await query(statement,{slot,phase:'run',write});need(Array.isArray(rows),'sql_reply');await j.mutate(s=>{s.observed.run.cli++;});return rows;}
  const one=async(slot,statement)=>{const rows=await sql(slot,statement);need(rows.length===1,'sql_shape');return rows[0];};
@@ -122,8 +132,8 @@ export function makeMediatedPort(j,credentials,{http=createMediatedHttp,query,in
    await reconcileMediatedAdmissions(j,await sql(16+caseId,mediatedAdmissionsSql(j.state,'inspect')),new Date(clock()).toISOString());
    await j.mutate(s=>{s.scenarioIndex=caseId;s.assertions.push({caseId,passed:true});});
   },
-  async directMatrix(matrixId){const keyLabel=MATRIX_KEYS[matrixId-1];need(keyLabel,'matrix_id');for(const d of directMatrix(keyLabel))deny(await send({kind:'directMatrix',matrixId,...d}),d.view==='list');},
-  async exposure(label){need(['absence','G1','G2'].includes(label),'exposure_label');for(const actor of ['A','B','C','N'])deny(await send({kind:'dataExposure',label,actor}));if(label==='absence')for(const slot of [1,2,3,4])deny(await send({kind:'dataBoundary',slot}));},
+  async directMatrix(matrixId){const keyLabel=MATRIX_KEYS[matrixId-1];need(keyLabel,'matrix_id');for(const d of directMatrix(keyLabel))await observeDirect({kind:'directMatrix',matrixId,...d});},
+  async exposure(label){need(['absence','G1','G2'].includes(label),'exposure_label');for(const actor of ['A','B','C','N'])await observeDirect({kind:'dataExposure',label,actor});if(label==='absence')for(const slot of [1,2,3,4])await observeDirect({kind:'dataBoundary',slot});},
   async clear(){await j.mutate(s=>{s.clear.stage='intent';});const r=ok(await send({kind:'dataClear'}));need(r.code==='OK'&&Number(r.revision)===3&&r.current_asset_id===null,'clear_receipt');await j.mutate(s=>{s.clear.stage='completed';s.revision=3;});},
   async finish(){need((await one(41,catalogSql)).digest===j.state.pins.catalog,'catalog_drift');validateMediatedState(j.state);},
   cleanup:()=>cleanupMediated(j,{sql:query,http:transport,quiescenceReceipt,clock},recovery?'recovery':'cleanup'),

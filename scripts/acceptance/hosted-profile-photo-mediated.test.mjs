@@ -254,3 +254,17 @@ test('admission IDs preserve canonical PostgreSQL bigint precision and cannot re
  for(const id of ['1','9007199254740993','9223372036854775807']){const next=copy(s);next.admissionRows=[{id,digest:sha,createdAt:s.startedAt}];validateMediatedState(next);const changed=copy(next);changed.admissionRows[0].id='2';assert.throws(()=>validateMediatedHistory(next,changed));}
  for(const id of ['0','-1','01','9223372036854775808',randomUUID(),1]){const next=copy(s);next.admissionRows=[{id,digest:sha,createdAt:s.startedAt}];assert.throws(()=>validateMediatedState(next));}
 });
+
+test('direct evidence is bounded, descriptor-bound and append-only with exact safe outcome vocabulary',async()=>{
+ const s=make(),j={state:s,async mutate(fn){const next=copy(this.state);fn(next);validateMediatedState(next);validateMediatedHistory(this.state,next);this.state=next;}};
+ assert.deepEqual(s.directObservations,[]);
+ const descriptor={kind:'directMatrix',matrixId:1,keyLabel:'absence',actor:'A',view:'render-auth'},row={descriptor,status:400,result:'denied',capability:'capability_unverified'};
+ const unreserved=copy(s);unreserved.directObservations=[row];assert.throws(()=>validateMediatedState(unreserved));
+ await reserveDispatch(j,'run',descriptor);await j.mutate(n=>{n.observed.run.directStorage++;});await j.mutate(n=>{n.directObservations.push(row);});
+ const before=copy(j.state);
+ for(const patch of [{status:503},{status:200},{result:'unsupported'},{result:'empty_list'},{capability:'supported'},{body:'private'},{url:'https://foreign.test'},{descriptor:{...descriptor,keyLabel:'G1'}},{descriptor:{kind:'authProbe'}}]){const bad=copy(before);bad.directObservations[0]={...row,...patch};assert.throws(()=>validateMediatedState(bad));}
+ const duplicate=copy(before);duplicate.directObservations.push(copy(row));assert.throws(()=>validateMediatedState(duplicate));
+ const changed=copy(before);changed.directObservations[0].status=403;validateMediatedState(changed);assert.throws(()=>validateMediatedHistory(before,changed));
+ const removed=copy(before);removed.directObservations=[];validateMediatedState(removed);assert.throws(()=>validateMediatedHistory(before,removed));
+ const old=copy(s);old.version=2;assert.throws(()=>validateMediatedState(old));
+});

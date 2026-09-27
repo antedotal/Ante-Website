@@ -61,3 +61,30 @@ Preserved pre-existing warnings:
 The integration suite covers preparation failure after identities, refresh-cookie and refreshed identity mismatch, lease expiry, unknown ingress digest, 900-second run exhaustion, failed cleanup, unknown authority operation, lost website completion, warm ordinary leak, broken photo cache policy, failed mediated postconditions, foreign bind acknowledgment, unknown CLI operation, absent inputs, real source/bundle pin mismatch, receipt shape/hash/identity/timestamp/private-mode/symlink rejection, later settlement, import safety and interrupted-run recovery. Existing Task 1–4 suites retain detailed ledger, transport, SDK and actual disposable PostgreSQL preservation/recovery coverage.
 
 Local checks establish source behavior only. No hosted run, remote SQL/config/catalog state, intended real origin/account/deployment, deployed cache bypass, live sessions, actual ingress stability, runtime limits, traces/races/browser behavior or overall acceptance is claimed. Required next step is root-owned independent whole-package review, then separately authorized operator prerequisites; this implementation/report authorizes no provider action.
+
+## Task 5 fix round 1 — retained direct response evidence
+
+Status: DONE for the one P2 in `task-5-review.md`, pending independent scoped re-review and whole-package review. Resumed the interrupted fix on `b53fc7a` with its two uncommitted test additions preserved; no Tasks 1–5 were repeated. Root's recorded ruling authorizes the narrow new journal/receipt amendment. No provider calls, credentials, deployment, production source/config, historical runner or paired backend edits.
+
+- Journal schema 3 adds at most 324 append-only `directObservations`; receipt schema 2 copies them. Each record contains only its fixed descriptor, numeric status and checked `denied|empty_list` outcome. Render descriptors also require `capability_unverified`; generic 400 responses never establish unsupported capability or transformation/resource proof.
+- Records are written after the existing successful response assertion and require a unique reserved run descriptor and sufficient observed-response counts. Exact descriptor domains plus uniqueness require all 308 matrix and 16 Data rows before phase-one success. Accepted-state/receipt validation rejects missing matrix or Data evidence, duplicate rows and invalid status/result/field combinations; history validation rejects rewrites or removal. Older journal schemas fail closed rather than silently migrating absent evidence.
+- Existing dispatch sequence and 1,184 run + 29 cleanup reservations remain unchanged. Operator contract, current phase-one design and `.guidelines/design.md` describe the retained evidence and conservative render label. No additional provider dispatch was added.
+
+Verification:
+
+| Check | Result | Evidence |
+| --- | --- | --- |
+| Recovered interrupted RED | 3 tests failed for absent observations and missing completeness rejection | `/tmp/ante-mediated-task5-fix1-red.log` |
+| Fresh RED before implementation, with explicit generic-render-400 and missing-Data coverage | 3 failed for the same expected behavior | `/tmp/ante-mediated-task5-fix1-resumed-red.log` |
+| Focused GREEN | 3/3 passed; persisted/reloaded receipt keeps 324 rows, including 44 empty lists, 88 capability-unverified generic-400 render denials and 16 Data denials | `/tmp/ante-mediated-task5-fix1-focused-green.log` |
+| Full affected `pnpm test:acceptance:local`, once | 154/154 passed, zero failed/skipped; 58.5 seconds | `/tmp/ante-mediated-task5-fix1-acceptance.log` |
+| Scoped ESLint on four changed mediated modules/tests | exit 0 | `/tmp/ante-mediated-task5-fix1-eslint.log` |
+| `git diff --check` | exit 0 | direct check |
+| Ordinary application, Worker/config, historical runners and mediated HTTP/cleanup/SQL source diff against `b53fc7a` | empty | direct `git diff --exit-code` |
+| Paired backend checkout | clean | direct `git status --short` |
+
+The first focused GREEN attempt exposed an overbroad inherited test substring: forbidding `denied"}` also forbade the intended safe `result:"denied"`. It was corrected to forbid the actual raw provider body `{message:"denied"}` and provider field name; the final focused and broad runs above passed after that test correction. No implementation check was relaxed.
+
+The Node suite used only `DOCKER_HOST=unix:///Users/daniel/.colima/ante-website-tests/docker.sock` and `DOCKER_CONTEXT=colima-ante-website-tests`, with `--test-concurrency=1` already in its command. The context was inspected before execution. The harness removed its exact ephemeral containers; the post-run filtered inventory found no `ante-mediated-sql-test-*` container. No retained context/container/network/volume was changed. The existing backend adapter `MODULE_TYPELESS_PACKAGE_JSON` warning remains visible.
+
+Per root ruling, unchanged 366-test Vitest, typecheck, ordinary/separate build and artifact-scan evidence above is reused, not rerun or represented as fresh. This fix changes runner evidence and documentation only. Hosted phase-one execution and all stronger acceptance gates remain unverified and unaccepted.

@@ -74,7 +74,7 @@ async function setup(fault=''){
   if(d.kind==='storageUpload'){const o=j.state.objects.find(o=>o.label===d.label);objects.set(o.key,syntheticReaderBytes(d.label));return json({Key:o.key});}
   if(['storageReadback','storageWarm','storageOwnership','storageAbsence'].includes(d.kind)){const o=j.state.objects.find(o=>o.label===d.label);return objects.has(o.key)?new Response(objects.get(o.key),{headers:{'content-type':'image/png'}}):json({code:'NoSuchKey'},404);}
   if(d.kind==='storageDelete'){objects.delete(j.state.objects.find(o=>o.label===d.label).key);return json({});}
-  if(d.kind==='directMatrix'){if(fault==='warm_leak'&&d.matrixId===2)return new Response(syntheticReaderBytes('G1'),{headers:{'content-type':'image/png'}});return d.view==='list'?json([]):json({message:'denied'},403);}
+  if(d.kind==='directMatrix'){if(fault==='warm_leak'&&d.matrixId===2)return new Response(syntheticReaderBytes('G1'),{headers:{'content-type':'image/png'}});return d.view==='list'?json([]):json({message:'denied'},fault==='render_generic_400'&&d.view.startsWith('render-')?400:403);}
   if(d.kind==='dataExposure'||d.kind==='dataBoundary')return json({message:'denied'},403);
   if(d.kind==='photo'){
    if(fault==='lost_photo'&&d.caseId===1)throw Error('lost completion');
@@ -195,4 +195,25 @@ test('explicit recovery marks a crashed unfinished website dispatch uncertain be
  const {prepareMediatedRecovery,reserveDispatch}=await mainModule(),x=await setup();await x.port.preflight();for(const label of ['A','B','C'])await x.port.createIdentity(label);await x.port.prepareDigests();await x.j.mutate(s=>{s.stage='run';});await reserveDispatch(x.j,'run',{kind:'photo',caseId:1});
  await prepareMediatedRecovery(x.j);assert.equal(x.j.state.uncertainWebsite,true);assert.equal(x.j.state.outcome,'failed');assert.equal(x.j.state.counters.recoveries.length,1);assert.ok(x.j.state.cleanupStartedAt);assert.equal(x.j.state.stage,'cleanup_blocked');
  await assert.rejects(prepareMediatedRecovery(x.j));
+});
+
+test('retains all safe direct outcomes through journal reconstruction and receipt generation',async()=>{
+ const {runMediatedAcceptance,mediatedReceipt,MediatedJournal}=await mainModule(),x=await setup('render_generic_400');await runMediatedAcceptance(x.j,x.port);
+ assert.equal(x.j.state.directObservations?.length,324);
+ const matrix=x.j.state.directObservations.filter(r=>r.descriptor.kind==='directMatrix'),data=x.j.state.directObservations.filter(r=>r.descriptor.kind!=='directMatrix');
+ assert.equal(matrix.length,308);assert.equal(data.length,16);
+ assert.equal(matrix.filter(r=>r.result==='empty_list'&&r.status===200).length,44);
+ assert.equal(matrix.filter(r=>r.capability==='capability_unverified'&&r.result==='denied'&&r.status===400).length,88);
+ assert.ok(data.every(r=>r.status===403&&r.result==='denied'&&!Object.hasOwn(r,'capability')));
+ for(const row of matrix.filter(r=>r.descriptor.view.startsWith('render-')))assert.deepEqual(Object.keys(row).sort(),['capability','descriptor','result','status']);
+ const safe=JSON.stringify(x.j.state.directObservations);for(const forbidden of [origin,'https://',x.j.state.fixtures[0].id,'message',JSON.stringify({message:'denied'})])assert.ok(!safe.includes(forbidden));
+ const dir=await mkdtemp(join(tmpdir(),'mediated-evidence-'));let saved;
+ try{saved=await MediatedJournal.create(dir,x.j.state);await saved.close();saved=await MediatedJournal.resume(dir,x.j.state.runId);assert.deepEqual(mediatedReceipt(saved.state).directObservations,x.j.state.directObservations);}finally{await saved?.close();await rm(dir,{recursive:true,force:true});}
+ for(const action of [s=>s.directObservations.pop(),s=>s.directObservations.splice(0,1),s=>s.directObservations.splice(s.directObservations.findIndex(r=>r.descriptor.kind==='dataExposure'),1),s=>s.directObservations.push(structuredClone(s.directObservations[0]))]){const bad=structuredClone(x.j.state);action(bad);assert.throws(()=>validateMediatedState(bad));assert.throws(()=>mediatedReceipt(bad));}
+});
+test('phase-one assertion rejects omitted evidence despite complete request counters',async()=>{
+ const {runMediatedAcceptance}=await mainModule(),x=await setup();
+ // Suppress only successful observation persistence to simulate a broken injected port.
+ const mutate=x.j.mutate.bind(x.j);x.j.mutate=async fn=>{const before=x.j.state.directObservations?.length;await mutate(fn);if(x.j.state.directObservations?.length>before)x.j.state.directObservations=[];};
+ await assert.rejects(runMediatedAcceptance(x.j,x.port));assert.equal(x.j.state.outcome,'failed');assert.equal(x.j.state.counters.run.directStorage,314);
 });
