@@ -91,10 +91,10 @@ export async function handleProfilePhotoRead(request: NextRequest, params: Promi
     if (interrupted()) return failure(503)
     if (visitor) return privateProfilePhotoResponse(visitor)
     const identity = await verifyProfilePhotoSession(request, controller.signal)
-    if (interrupted()) return failure(503)
+    if (identity.kind === 'verified') verifiedSession = identity.session
+    if (interrupted()) return verifiedSession ? verified(failure(503), verifiedSession) : failure(503)
     if (identity.kind === 'failed') return failure(identity.status)
     const session = identity.session
-    verifiedSession = session
     const fail = (status: FailureStatus, missing = false) => verified(failure(status, missing), session)
     const userAdmission = await admitProfilePhotoUser(session.ownerId, 'read', controller.signal)
     if (interrupted()) return fail(503)
