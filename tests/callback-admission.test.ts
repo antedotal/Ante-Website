@@ -26,6 +26,33 @@ beforeEach(() => {
 })
 
 describe('callback admission', () => {
+  it('preserves no-argument account and photo callers while forwarding parent aborts', async () => {
+    const { admitAccountVisitor, admitProfilePhotoUser } = await import('../lib/server/callback-admission')
+    const owner = '00000000-0000-4000-8000-000000000001'
+    expect(await admitAccountVisitor(request('192.0.2.10'))).toBeNull()
+    expect(await admitProfilePhotoUser(owner, 'read')).toBeNull()
+    const controller = new AbortController()
+    controller.abort()
+    vi.mocked(fetch).mockClear()
+    expect((await admitAccountVisitor(request('192.0.2.10'), controller.signal))?.status).toBe(503)
+    expect((await admitProfilePhotoUser(owner, 'read', controller.signal))?.status).toBe(503)
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('stops account visitor admission on request abort even when provider fetch ignores it', async () => {
+    const { admitAccountVisitor } = await import('../lib/server/callback-admission')
+    const controller = new AbortController()
+    const incoming = new NextRequest('https://ante.test/account', {
+      headers: { 'cf-connecting-ip': '192.0.2.10' }, signal: controller.signal,
+    })
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
+    const pending = admitAccountVisitor(incoming)
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    controller.abort()
+    expect((await pending)?.status).toBe(503)
+    expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
   it('fails closed without explicit ingress or valid account and private configuration', async () => {
     const { admitCallback } = await import('../lib/server/callback-admission')
     for (const [name, value] of [

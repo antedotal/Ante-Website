@@ -1,6 +1,7 @@
 // Server-only photo provider requests; route authorization remains the caller's responsibility.
 import 'server-only'
 import { accountConfig } from '../supabase/config'
+import { boundedProviderRequest } from './bounded-provider-request'
 import type { ValidatedProfilePhoto } from './profile-photo'
 import { serviceCredential } from './service-credential'
 
@@ -27,64 +28,6 @@ function record(value: unknown): Record<string, unknown> | null {
   return value !== null && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : null
 }
 
-// Race every fetch and stream read against one deadline even if an underlying fetch ignores abort.
-async function providerRequest(url: string, init: RequestInit, maxBytes: number, signal?: AbortSignal): Promise<{ response: Response; bytes: Uint8Array } | null> {
-  if (signal?.aborted) return null
-  const controller = new AbortController()
-  let timeout: ReturnType<typeof setTimeout> | undefined
-  let reader: ReadableStreamDefaultReader<Uint8Array> | undefined
-  let settled = false
-  const abort = () => controller.abort()
-  signal?.addEventListener('abort', abort, { once: true })
-  const deadline = new Promise<never>((_, reject) => {
-    timeout = setTimeout(() => { controller.abort(); reject(new Error('deadline')) }, 10000)
-    controller.signal.addEventListener('abort', () => reject(new Error('aborted')), { once: true })
-  })
-  try {
-    // Late responses are cancelled after a deadline rather than left to stream privately.
-    const pending = fetch(url, { ...init, signal: controller.signal }).then(response => {
-      if (settled) void response.body?.cancel().catch(() => {})
-      return response
-    })
-    const response = await Promise.race([pending, deadline])
-    if (response.redirected || response.status >= 300 && response.status < 400) {
-      void response.body?.cancel().catch(() => {})
-      return null
-    }
-    const responseCap = response.ok ? maxBytes : jsonCap
-    const declared = response.headers.get('content-length')
-    if (declared !== null && (!/^(0|[1-9][0-9]*)$/.test(declared) || Number(declared) > responseCap)) {
-      void response.body?.cancel().catch(() => {})
-      return null
-    }
-    if (!response.body) return { response, bytes: new Uint8Array() }
-    reader = response.body.getReader()
-    const chunks: Uint8Array[] = []
-    let size = 0
-    while (true) {
-      const part = await Promise.race([reader.read(), deadline])
-      if (part.done) break
-      if (!(part.value instanceof Uint8Array) || size + part.value.length > responseCap) {
-        void reader.cancel().catch(() => {})
-        return null
-      }
-      size += part.value.length
-      chunks.push(part.value.slice())
-    }
-    const bytes = new Uint8Array(size)
-    let offset = 0
-    for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
-    return { response, bytes }
-  } catch {
-    if (reader) void reader.cancel().catch(() => {})
-    return null
-  } finally {
-    settled = true
-    if (timeout !== undefined) clearTimeout(timeout)
-    signal?.removeEventListener('abort', abort)
-  }
-}
-
 function jsonBody(bytes: Uint8Array): Record<string, unknown> | null {
   try { return record(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))) } catch { return null }
 }
@@ -95,10 +38,10 @@ function authHeaders(key: string, bearer?: string): Record<string, string> {
 
 // Accept only the published resolver union before deriving a private Storage key.
 async function resolvedPhotoKey(url: string, publicKey: string, ownerId: string, callerToken: string, signal?: AbortSignal): Promise<{ kind: 'key'; key: string } | { kind: 'not_found' } | { kind: 'unavailable' }> {
-  const result = await providerRequest(`${url}/rest/v1/rpc/resolve_profile_photo_v1`, {
+  const result = await boundedProviderRequest(`${url}/rest/v1/rpc/resolve_profile_photo_v1`, {
     method: 'POST', headers: { ...authHeaders(publicKey, callerToken), 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ p_owner: ownerId }), cache: 'no-store', redirect: 'error',
-  }, jsonCap, signal)
+  }, jsonCap, { signal })
   if (!result || result.response.status !== 200 || result.response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') return unavailable
   const body = jsonBody(result.bytes)
   if (!body) return unavailable
@@ -120,12 +63,12 @@ export async function putProfilePhoto(ownerId: string, photo: ValidatedProfilePh
   if (!credential) return unavailable
   try {
     const { url } = accountConfig()
-    const response = await providerRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
+    const response = await boundedProviderRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
       method: 'POST', headers: {
         ...authHeaders(credential.key, credential.bearer ? credential.key : undefined),
         'content-type': photo.contentType, 'cache-control': 'max-age=0', 'x-upsert': 'true', accept: 'application/json',
       }, body: photo.bytes.slice() as BodyInit, cache: 'no-store', redirect: 'error',
-    }, jsonCap, signal)
+    }, jsonCap, { signal })
     if (!response || response.response.status < 200 || response.response.status >= 300) return unavailable
     const body = jsonBody(response.bytes)
     return body?.Key === `profile-photos/${key}` && (!Object.hasOwn(body, 'Id') || typeof body.Id === 'string' && body.Id.length > 0)
@@ -141,10 +84,10 @@ export async function deleteProfilePhoto(ownerId: string, signal?: AbortSignal):
   if (!credential) return unavailable
   try {
     const { url } = accountConfig()
-    const result = await providerRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
+    const result = await boundedProviderRequest(`${url}/storage/v1/object/profile-photos/${key}`, {
       method: 'DELETE', headers: { ...authHeaders(credential.key, credential.bearer ? credential.key : undefined), accept: 'application/json' },
       cache: 'no-store', redirect: 'error',
-    }, jsonCap, signal)
+    }, jsonCap, { signal })
     if (!result) return unavailable
     const body = jsonBody(result.bytes)
     if (result.response.status === 200 && body?.message === 'Successfully deleted') return { kind: 'ok' }
@@ -161,9 +104,9 @@ export async function downloadProfilePhoto(targetId: string, callerToken: string
     const selected = await resolvedPhotoKey(url, publicKey, targetId, callerToken, signal)
     if (selected.kind !== 'key') return selected
     const key = selected.key
-    const result = await providerRequest(`${url}/storage/v1/object/authenticated/profile-photos/${key}`, {
+    const result = await boundedProviderRequest(`${url}/storage/v1/object/authenticated/profile-photos/${key}`, {
       method: 'GET', headers: authHeaders(publicKey, callerToken), cache: 'no-store', redirect: 'error',
-    }, photoCap, signal)
+    }, photoCap, { signal })
     if (!result) return unavailable
     const { response, bytes } = result
     if (response.status === 200) {
@@ -185,10 +128,10 @@ export async function photoOwnerProfile(ownerId: string, callerToken: string, si
   if (!profilePhotoKey(ownerId) || !callerSuitable(callerToken)) return unavailable
   try {
     const { url, key: publicKey } = accountConfig()
-    const result = await providerRequest(`${url}/rest/v1/profiles?select=id&id=eq.${ownerId}&limit=2`, {
+    const result = await boundedProviderRequest(`${url}/rest/v1/profiles?select=id&id=eq.${ownerId}&limit=2`, {
       method: 'GET', headers: { ...authHeaders(publicKey, callerToken), accept: 'application/json' },
       cache: 'no-store', redirect: 'error',
-    }, jsonCap, signal)
+    }, jsonCap, { signal })
     if (!result || result.response.status !== 200) return unavailable
     const rows = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(result.bytes)) as unknown
     if (!Array.isArray(rows)) return unavailable

@@ -61,9 +61,11 @@ function accountLimitResponse(result: CallbackLimitResult): NextResponse | null 
 }
 
 // Account pages and APIs consume a separate sixty-per-minute visitor quota.
-export async function admitAccountVisitor(request: NextRequest): Promise<NextResponse | null> {
+export async function admitAccountVisitor(request: NextRequest, signal?: AbortSignal): Promise<NextResponse | null> {
   const digest = visitorDigest(request, 'website-account:v1:')
-  return accountLimitResponse(digest ? await consumeAccountLimit(digest) : { kind: 'unavailable' })
+  // The transport observes both client disconnects and an optional operation deadline.
+  const operationSignal = signal ? AbortSignal.any([request.signal, signal]) : request.signal
+  return accountLimitResponse(digest ? await consumeAccountLimit(digest, operationSignal) : { kind: 'unavailable' })
 }
 
 export async function admitCallback(request: NextRequest): Promise<NextResponse | null> {
@@ -122,14 +124,14 @@ export async function admitEmailChangeUser(userId: string, action: 'request' | '
 }
 
 // A verified UUID consumes one action-specific photo quota without revealing the identifier to the store.
-export async function admitProfilePhotoUser(userId: string, action: 'upload' | 'delete' | 'read'): Promise<NextResponse | null> {
+export async function admitProfilePhotoUser(userId: string, action: 'upload' | 'delete' | 'read', signal?: AbortSignal): Promise<NextResponse | null> {
   const secret = process.env.ANTE_AUTH_LIMIT_HMAC_SECRET
   if (!/^[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}$/.test(userId) ||
       !['upload', 'delete', 'read'].includes(action) || !secret || Buffer.byteLength(secret, 'utf8') < 32) {
     return photoAdmissionResponse({ kind: 'unavailable' })
   }
   const digest = createHmac('sha256', secret).update(`website-photo-${action}:v1:${userId}`).digest('hex')
-  const result = action === 'read' ? await consumeAccountLimit(digest) : await consumeCallbackLimit(digest)
+  const result = action === 'read' ? await consumeAccountLimit(digest, signal) : await consumeCallbackLimit(digest, signal)
   return photoAdmissionResponse(result)
 }
 

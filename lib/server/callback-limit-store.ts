@@ -1,6 +1,7 @@
 // Call the durable callback limiter with a nonreversible visitor digest and a server-only key.
 import 'server-only'
 import { accountConfig } from '../supabase/config'
+import { boundedProviderRequest } from './bounded-provider-request'
 import { serviceCredential } from './service-credential'
 
 export type CallbackLimitResult =
@@ -24,7 +25,7 @@ function parseResult(value: unknown): CallbackLimitResult {
 }
 
 // Both fixed service-only admission RPCs share credential, timeout and reply validation.
-async function consumeLimit(visitorHash: string, functionName: 'consume_website_callback_limit' | 'consume_website_account_limit'): Promise<CallbackLimitResult> {
+async function consumeLimit(visitorHash: string, functionName: 'consume_website_callback_limit' | 'consume_website_account_limit', signal?: AbortSignal): Promise<CallbackLimitResult> {
   if (!/^[a-f0-9]{64}$/.test(visitorHash)) return unavailable
   const credential = serviceCredential()
   if (!credential) return unavailable
@@ -38,19 +39,13 @@ async function consumeLimit(visitorHash: string, functionName: 'consume_website_
       accept: 'application/json',
     }
     if (credential.bearer) headers.Authorization = `Bearer ${credential.key}`
-    const controller = new AbortController()
-    const timeout = setTimeout(() => controller.abort(), 5000)
-    try {
-      const response = await fetch(`${url}/rest/v1/rpc/${functionName}`, {
-        method: 'POST', headers, body: JSON.stringify({ p_visitor_hash: visitorHash }),
-        cache: 'no-store', redirect: 'error', signal: controller.signal,
-      })
-      // Failed responses may contain provider details, so never read their bodies.
-      if (!response.ok || response.redirected) return unavailable
-      return parseResult(await response.json())
-    } finally {
-      clearTimeout(timeout)
-    }
+    const result = await boundedProviderRequest(`${url}/rest/v1/rpc/${functionName}`, {
+      method: 'POST', headers, body: JSON.stringify({ p_visitor_hash: visitorHash }),
+      cache: 'no-store', redirect: 'error',
+    }, 16384, { signal, timeoutMs: 5000 })
+    // Admission only trusts a complete JSON record from an exact successful RPC reply.
+    if (!result || result.response.status !== 200) return unavailable
+    return parseResult(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(result.bytes)))
   } catch {
     // Configuration, transport and protocol failures all fail closed without detail logging.
     return unavailable
@@ -58,11 +53,11 @@ async function consumeLimit(visitorHash: string, functionName: 'consume_website_
 }
 
 // Keep the callback and normalized-email five-per-minute store unchanged.
-export function consumeCallbackLimit(visitorHash: string): Promise<CallbackLimitResult> {
-  return consumeLimit(visitorHash, 'consume_website_callback_limit')
+export function consumeCallbackLimit(visitorHash: string, signal?: AbortSignal): Promise<CallbackLimitResult> {
+  return consumeLimit(visitorHash, 'consume_website_callback_limit', signal)
 }
 
 // Consume the separate account visitor quota through its fixed service-only RPC.
-export function consumeAccountLimit(visitorHash: string): Promise<CallbackLimitResult> {
-  return consumeLimit(visitorHash, 'consume_website_account_limit')
+export function consumeAccountLimit(visitorHash: string, signal?: AbortSignal): Promise<CallbackLimitResult> {
+  return consumeLimit(visitorHash, 'consume_website_account_limit', signal)
 }

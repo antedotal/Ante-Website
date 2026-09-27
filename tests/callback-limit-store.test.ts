@@ -54,6 +54,17 @@ describe('callback limit REST adapter', () => {
     expect(headers.get('authorization')).toBe(`Bearer ${jwt}`)
   })
 
+  it('uses the same legacy service JWT header rules for account admission', async () => {
+    const { consumeAccountLimit } = await import('../lib/server/callback-limit-store')
+    delete process.env.SUPABASE_SECRET_KEY
+    const jwt = `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ role: 'service_role' })).toString('base64url')}.signature`
+    process.env.SUPABASE_SERVICE_ROLE_KEY = jwt
+    expect(await consumeAccountLimit(digest)).toEqual({ kind: 'allowed' })
+    const headers = new Headers(vi.mocked(fetch).mock.lastCall![1]?.headers)
+    expect(headers.get('apikey')).toBe(jwt)
+    expect(headers.get('authorization')).toBe(`Bearer ${jwt}`)
+  })
+
   it.each([
     new Response('provider detail with secrets', { status: 500 }),
     new Response('{broken', { status: 200 }),
@@ -95,5 +106,46 @@ describe('callback limit REST adapter', () => {
     } finally {
       vi.useRealTimers()
     }
+  })
+
+  it.each(['callback', 'account'] as const)('bounds an abort-ignoring %s RPC fetch and body at five seconds', async (kind) => {
+    const { consumeAccountLimit, consumeCallbackLimit } = await import('../lib/server/callback-limit-store')
+    const consume = kind === 'account' ? consumeAccountLimit : consumeCallbackLimit
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(() => {})))
+      const fetchPending = consume(digest)
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(await fetchPending).toEqual({ kind: 'unavailable' })
+
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({ pull() {} }), {
+        headers: { 'content-type': 'application/json' },
+      })))
+      const bodyPending = consume(digest)
+      await vi.advanceTimersByTimeAsync(5000)
+      expect(await bodyPending).toEqual({ kind: 'unavailable' })
+    } finally { vi.useRealTimers() }
+  })
+
+  it.each(['callback', 'account'] as const)('keeps the %s RPC payload and rejects oversized or malformed admission', async (kind) => {
+    const { consumeAccountLimit, consumeCallbackLimit } = await import('../lib/server/callback-limit-store')
+    const consume = kind === 'account' ? consumeAccountLimit : consumeCallbackLimit
+    expect(await consume(digest)).toEqual({ kind: 'allowed' })
+    const [url, init] = vi.mocked(fetch).mock.lastCall!
+    expect(url).toBe(`https://yxilmwxptfnebnjsikwo.supabase.co/rest/v1/rpc/consume_website_${kind === 'account' ? 'account' : 'callback'}_limit`)
+    expect(JSON.parse(String(init?.body))).toEqual({ p_visitor_hash: digest })
+    expect(new Headers(init?.headers).get('apikey')).toBe(opaqueKey)
+    expect(new Headers(init?.headers).get('authorization')).toBeNull()
+    for (const reply of [
+      new Response(JSON.stringify({ allowed: true, retry_after_seconds: 0 }) + ' '.repeat(16385)),
+      new Response(JSON.stringify({ allowed: false, retry_after_seconds: 61 })),
+      new Response(JSON.stringify({ allowed: false, retry_after_seconds: 0 })),
+      new Response(JSON.stringify({ allowed: true, retry_after_seconds: 0, extra: true })),
+    ]) {
+      vi.stubGlobal('fetch', vi.fn(async () => reply))
+      expect(await consume(digest)).toEqual({ kind: 'unavailable' })
+    }
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify({ allowed: false, retry_after_seconds: 13 }))))
+    expect(await consume(digest)).toEqual({ kind: 'denied', retryAfter: 13 })
   })
 })

@@ -30,6 +30,17 @@ beforeEach(() => {
 })
 
 describe('profile photo provider adapter', () => {
+  it('rejects an encoded or lying-length storage reply before publishing bytes', async () => {
+    const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
+    for (const headers of [
+      { 'content-type': 'image/png', 'content-encoding': 'gzip' },
+      { 'content-type': 'image/png', 'content-length': '2' },
+    ] as Record<string, string>[]) {
+      readFetch(() => new Response(new Uint8Array([1]), { headers }))
+      expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
+    }
+  })
+
   it('resolves a current generation with the exact caller token and downloads only its derived key', async () => {
     const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
     delete process.env.SUPABASE_SECRET_KEY
