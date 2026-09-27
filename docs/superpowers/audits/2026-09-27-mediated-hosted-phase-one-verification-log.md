@@ -1,3 +1,5 @@
+> Historical implementation reports preserved from the completed review workspace. Their pending-review statements describe the time each report was written; final source approval is recorded in [the acceptance audit](2026-09-27-mediated-hosted-phase-one-source-acceptance.md).
+
 # Task 5 integration report
 
 Status: DONE, pending independent whole-package review. Source-only implementation on Task 4 base `0f69e49`. No actual credentials read, hosted runner executed, provider request, SQL application, login, deployment, serving-mode change or retained Docker resource change. Root owns the aggregate acceptance audit and plan/goal/design rulings; those files are excluded from this commit.

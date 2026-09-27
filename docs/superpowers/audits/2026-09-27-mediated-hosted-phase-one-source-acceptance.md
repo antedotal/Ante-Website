@@ -16,7 +16,7 @@ The run reserves 1,184 calls plus 29 initial-cleanup calls, including conservati
 | Exact SQL and cleanup | `27eb31b`, `0f69e49` | Accepted after interrupted friendship teardown and exact timestamp fixes |
 | Scenario, CLI and evidence | `9da17d6`, `0fcc994` | Accepted after adding complete durable direct-response evidence; journal schema 3 and receipt schema 2 reject incomplete older evidence |
 
-Verification was performed by the implementation agents and checked against their reports in independent reviews. The controller did not rerun unchanged suites merely to duplicate their results.
+The [implementation verification log](2026-09-27-mediated-hosted-phase-one-verification-log.md) retains detailed commands and successive results. Verification was performed by the implementation agents and checked against their reports in independent reviews. The controller did not rerun unchanged suites merely to duplicate their results.
 
 | Verification | Result and scope |
 | --- | --- |
