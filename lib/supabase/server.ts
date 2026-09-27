@@ -25,10 +25,10 @@ export async function createClient() {
   })
 }
 
-export function createCallbackClient(request: NextRequest, response: NextResponse) {
+export function createCallbackClient(request: NextRequest, response: NextResponse, transport?: typeof fetch) {
   const { url, key, siteOrigin } = accountConfig()
   return createServerClient(url, key, {
-    global: { fetch: createAuthFetch(url) },
+    global: { fetch: createAuthFetch(url, transport) },
     cookieOptions: accountCookieOptions(siteOrigin),
     cookies: {
       getAll() { return request.cookies.getAll() },

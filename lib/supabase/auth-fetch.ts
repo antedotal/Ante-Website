@@ -47,7 +47,7 @@ async function isRevokedSession(response: Response): Promise<boolean> {
   }
 }
 
-export function createAuthFetch(projectUrl: string): typeof fetch {
+export function createAuthFetch(projectUrl: string, transport?: typeof fetch): typeof fetch {
   const projectOrigin = new URL(projectUrl).origin
   return async (input, init) => {
     let requestUrl: URL
@@ -60,11 +60,11 @@ export function createAuthFetch(projectUrl: string): typeof fetch {
     }
     const isAuth = requestUrl.origin === projectOrigin &&
       (requestUrl.pathname === '/auth/v1' || requestUrl.pathname.startsWith('/auth/v1/'))
-    if (!isAuth) return fetch(input, init)
+    if (!isAuth) return (transport ?? fetch)(input, init)
 
     let response: Response
     try {
-      response = await fetch(input, init)
+      response = await (transport ?? fetch)(input, init)
     } catch {
       throw new Error('Auth transport unavailable')
     }
