@@ -289,6 +289,8 @@ async function record(j,check,result,validate) {
 }
 const success=r=>assert.equal(r.error,null,'provider_error');
 const denied=(codes,statuses=[401,403,404])=>r=>{assert.ok(r.error,'denial_required');assert.ok(statuses.includes(r.status??r.error.status),'denial_status');assert.ok(codes.includes(r.error.code),'denial_code');};
+// PostgREST maps P0* to HTTP 500, except P0001; require this exact missing-row code.
+export const missingProfileDenied=denied(['P0002'],[500]);
 async function assertions(j,c) {
   const rpc=async(label,client,name,args,validate)=>record(j,label,await client.rpc(name,args),validate);
   const nameOk=name=>r=>{success(r);validateName(r.data,name);};
@@ -387,8 +389,8 @@ async function executeRun(j,credentials) {
     const [a]=j.state.fixtures;
     fixture='A';await removeProfile(j,a);
     const quotaSql=fixtureSql(a,j.state.runId,j.state.startedAt).quota;const before=await dbQuery(quotaSql);
-    await record(j,'missing-profile-get',await c.A.rpc('get_my_profile_name'),denied(['P0002'],[404]));
-    await record(j,'missing-profile-set',await c.A.rpc('set_my_profile_name',{p_full_name:'Fixture Missing'}),denied(['P0002'],[404]));
+    await record(j,'missing-profile-get',await c.A.rpc('get_my_profile_name'),missingProfileDenied);
+    await record(j,'missing-profile-set',await c.A.rpc('set_my_profile_name',{p_full_name:'Fixture Missing'}),missingProfileDenied);
     if(JSON.stringify(before)!==JSON.stringify(await dbQuery(quotaSql))||(await inspectFixture(j,a)).profile!==0)fail('missing_profile_mutation');
     fixture='B';await record(j,'signout-B',await c.B.auth.signOut({scope:'local'}),success);
     // getUser may still accept an access JWT until expiry. Preserve the actual provider classification.

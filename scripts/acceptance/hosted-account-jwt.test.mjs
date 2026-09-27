@@ -188,3 +188,15 @@ test('state directory rejects checkout paths from another cwd and through ancest
     await assert.rejects(promisify(execFile)(process.execPath,[fileURLToPath(new URL('./hosted-account-jwt.mjs',import.meta.url))],{cwd:dir,env:{PATH:process.env.PATH,ANTE_ACCEPTANCE_PUBLIC_KEY:credentials.publicKey,ANTE_ACCEPTANCE_SECRET_KEY:credentials.secretKey,ANTE_ACCEPTANCE_STATE_DIR:join(root,'not-created','journal')},timeout:3000}),e=>{assert.match(e.stderr,/state_inside_checkout/);return true;});
   } finally {await rm(dir,{recursive:true,force:true});}
 });
+
+test('both missing-profile calls require exact PostgREST HTTP 500/P0002',()=>{
+  assert.doesNotThrow(()=>mod.missingProfileDenied({status:500,error:{code:'P0002'}}));
+  for(const result of [
+    {status:404,error:{code:'P0002'}},
+    {status:500,error:{code:'P0001'}},
+    {status:500,error:{code:'XX000'}},
+    {status:500,error:{code:'unexpected_failure'}},
+    {status:500,error:null},
+    {status:200,error:null,data:{ok:true}},
+  ]) assert.throws(()=>mod.missingProfileDenied(result));
+});
