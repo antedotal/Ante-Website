@@ -31,6 +31,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
     const controller = new AbortController()
     const signals = [ownerSignal, input instanceof Request ? input.signal : undefined, init?.signal].filter((signal): signal is AbortSignal => !!signal)
     let stopped = false
+    let deadlineExpired = false
     let rejectStopped!: (reason: Error) => void
     const stoppedPromise = new Promise<never>((_resolve, reject) => { rejectStopped = reject })
     void stoppedPromise.catch(() => {})
@@ -46,7 +47,9 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
       for (const signal of signals) signal.removeEventListener('abort', stop)
       throw unavailable()
     }
-    const timer = setTimeout(stop, operationMs)
+    const timer = setTimeout(() => {
+      if (!stopped) { deadlineExpired = true; stop() }
+    }, operationMs)
     let response: Response | undefined
     try {
       const raw = Promise.resolve().then(() => {
@@ -61,6 +64,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
         response.status < 200 || response.status >= 300 && response.status < 400 && response.status !== 304) throw unavailable()
 
       const success = response.ok
+      if (success && (response.status === 206 || response.headers.has('content-range'))) throw unavailable()
       const length = response.headers.get('content-length')
       let advertised: number | null = null
       if (length !== null) {
@@ -124,6 +128,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
       })
     } catch {
       cancel(response?.body ?? null)
+      if (deadlineExpired && response && !response.ok) return emptyError(response.status)
       throw unavailable()
     } finally {
       clearTimeout(timer)

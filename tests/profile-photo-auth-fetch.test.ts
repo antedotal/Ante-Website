@@ -51,6 +51,14 @@ it('rejects malformed success JSON and redirect responses', async () => {
   expect(transport.mock.calls[1]?.[1]).toMatchObject({ redirect: 'manual' })
 })
 
+it.each([
+  [206, {}],
+  [200, { 'content-range': 'bytes 0-12/13' }],
+] as const)('rejects a partial success with valid JSON at HTTP %s', async (status, headers) => {
+  vi.stubGlobal('fetch', vi.fn(async () => new Response('{"user":{}}', { status, headers })))
+  await expect(createProfilePhotoAuthFetch(project, new AbortController().signal)(url)).rejects.toThrow('Profile photo Auth unavailable')
+})
+
 it.each([`${project}/storage/v1/object/x`, 'https://evil.test/auth/v1/user', 'http://yxilmwxptfnebnjsikwo.supabase.co/auth/v1/user'])('rejects a foreign or non-Auth URL before transport: %s', async (address) => {
   const transport = vi.fn(async () => json('{}'))
   vi.stubGlobal('fetch', transport)
@@ -128,6 +136,41 @@ it.each(['oversize', 'stalled'] as const)('preserves error status but drops %s e
   const result = await pending
   expect(result.status).toBe(403)
   expect(await result.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+  expect(cancel).toHaveBeenCalledOnce()
+})
+
+it('returns a known error status at the ten-second operation deadline when its body stalls', async () => {
+  vi.useFakeTimers()
+  const cancel = vi.fn(() => new Promise<void>(() => {}))
+  const transport = vi.fn(async () => {
+    await new Promise(resolve => setTimeout(resolve, 9_500))
+    return new Response(new ReadableStream({ cancel }), { status: 403 })
+  })
+  vi.stubGlobal('fetch', transport)
+  const pending = createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url)
+  const observed = pending.catch(error => error)
+  await vi.advanceTimersByTimeAsync(10_000)
+  const response = await observed
+  expect(response).toBeInstanceOf(Response)
+  expect(response.status).toBe(403)
+  expect(await response.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+  expect(transport).toHaveBeenCalledOnce()
+  expect(cancel).toHaveBeenCalledOnce()
+  expect(vi.getTimerCount()).toBe(0)
+})
+
+it('fails with a fixed error when owner aborts after error headers arrive', async () => {
+  const owner = new AbortController()
+  const cancel = vi.fn(() => new Promise<void>(() => {}))
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ cancel }), { status: 403 })))
+  const pending = createProfilePhotoAuthFetch(project, owner.signal)(url)
+  const observed = pending.catch(error => error)
+  await Promise.resolve()
+  await Promise.resolve()
+  owner.abort()
+  const result = await observed
+  expect(result).toBeInstanceOf(Error)
+  expect(result.message).toBe('Profile photo Auth unavailable')
   expect(cancel).toHaveBeenCalledOnce()
 })
 
