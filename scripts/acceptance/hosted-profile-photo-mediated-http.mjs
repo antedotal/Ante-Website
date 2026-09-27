@@ -97,7 +97,7 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
       }
       if(row.requestHeader==='range')headers.range='bytes=0-0';
       if(row.requestHeader==='if-none-match')headers['if-none-match']='"ante-acceptance"';
-      if(row.requestHeader==='if-modified-since')headers['if-modified-since']='Thu, 01 Jan 1970 00:00:00 GMT';
+      if(row.requestHeader==='if-modified-since')headers['if-modified-since']='Wed, 01 Jan 2020 00:00:00 GMT';
     }else if(d.kind==='preparation'){
       need(/^[0-9a-f]{64}$/.test(operatorToken),'operator_token');need(s.fixtures.every(f=>uuid.test(f.id))&&new Set(s.fixtures.map(f=>f.id)).size===3);
       category='preparation';url=origin;path='/__ante_acceptance/profile-read-digests-v1';method='POST';headers={Authorization:`Bearer ${operatorToken}`,'content-type':'application/json'};body=JSON.stringify({run_id:s.runId,fixture_ids:s.fixtures.map(f=>f.id)});successCap=1024;

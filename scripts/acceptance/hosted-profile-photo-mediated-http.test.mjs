@@ -79,7 +79,7 @@ test('website gets only selected same-origin jar, three optional variants, and a
   for(const caseId of [1,3,5,6,7,8,9])await http.dispatch({kind:'photo',caseId},'run');
   assert.equal(seen[3].headers.get('cookie'),null);assert.notEqual(seen[0].headers.get('cookie'),seen[1].headers.get('cookie'));
   for(const x of seen){assert.equal(x.url,`${origin}/api/profiles/${setup.journal.state.fixtures[0].id}/photo`);assert.equal(x.headers.get('apikey'),null);assert.equal(x.headers.get('authorization'),null);}
-  assert.equal(seen[4].headers.get('range'),'bytes=0-0');assert.equal(seen[5].headers.get('if-none-match'),'"ante-acceptance"');assert.equal(seen[6].headers.get('if-modified-since'),'Thu, 01 Jan 1970 00:00:00 GMT');
+  assert.equal(seen[4].headers.get('range'),'bytes=0-0');assert.equal(seen[5].headers.get('if-none-match'),'"ante-acceptance"');assert.equal(seen[6].headers.get('if-modified-since'),'Wed, 01 Jan 2020 00:00:00 GMT');
   assert.equal(setup.journal.state.counters.run.workerAuth,182);assert.equal(setup.journal.state.observed.run.workerAuth,0);
 });
 test('rejects arbitrary origin, credentials, path, headers, descriptors and duplicate attempts before network',async()=>{

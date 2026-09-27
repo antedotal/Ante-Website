@@ -1,12 +1,15 @@
 // Durable source-only protocol for mediated hosted acceptance. Imports perform no I/O.
 import { constants } from 'node:fs';
 import { open, mkdir, readdir, readFile, lstat, unlink } from 'node:fs/promises';
-import { randomUUID } from 'node:crypto';
-import { hostname } from 'node:os';
-import { join } from 'node:path';
-import { PROJECT } from './hosted-account-jwt.mjs';
+import { randomUUID, createHash } from 'node:crypto';
+import { hostname, homedir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import { PROJECT, validateCredentials } from './hosted-account-jwt.mjs';
 import { TABLES } from './hosted-account-jwt-sql.mjs';
-import { RUN_CAPS, CLEANUP_CAPS, DIRECT_VIEWS, MATRIX_KEYS, photoEnvelope } from './hosted-profile-photo-mediated-protocol.mjs';
+import { RUN_CAPS, CLEANUP_CAPS, DIRECT_VIEWS, MATRIX_KEYS, photoEnvelope, PHOTO_CASES } from './hosted-profile-photo-mediated-protocol.mjs';
 
 const UUID=/^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const SHA=/^[0-9a-f]{64}$/;
@@ -215,3 +218,128 @@ export async function reserveDispatch(j,phase,descriptor){
   });
   return sequence;
 }
+
+/** Fixed orchestration. Every failure enters cleanup; neither failure class hides the other. */
+export async function runMediatedAcceptance(j,port){
+ let assertionError=null,cleanupError=null;
+ try{
+  await port.preflight();await j.mutate(s=>{s.stage='run';});
+  for(const label of LABELS)await port.createIdentity(label);
+  await port.prepareDigests();await port.friend('insert');
+  await port.directMatrix(1);await port.exposure('absence');
+  await port.createGeneration('G1');await port.publish('G1');await port.exposure('G1');await port.directMatrix(2);
+  for(let id=1;id<=10;id++)await port.photoCase(id);
+  await port.createGeneration('G2');await port.photoCase(11);await port.photoCase(12);
+  await port.publish('G2');await port.exposure('G2');await port.directMatrix(3);await port.directMatrix(4);await port.directMatrix(5);
+  for(let id=13;id<=16;id++)await port.photoCase(id);
+  await port.friend('reject');await port.directMatrix(6);await port.directMatrix(7);
+  for(let id=17;id<=19;id++)await port.photoCase(id);
+  await port.friend('restore');await port.directMatrix(8);await port.directMatrix(9);await port.photoCase(20);
+  await port.clear();await port.directMatrix(10);await port.directMatrix(11);
+  for(let id=21;id<=24;id++)await port.photoCase(id);
+  await port.finish();
+  need(j.state.assertions.length===24&&j.state.scenarioIndex===24&&Object.entries(RUN_CAPS).every(([k,v])=>j.state.counters.run[k]===v),'scenario_incomplete');
+ }catch{assertionError='assertion_failed';await j.mutate(s=>{s.outcome='failed';s.failures.push(assertionError);});}
+ try{await port.cleanup();need(j.state.cleanupComplete&&j.state.baseline!==null&&JSON.stringify(j.state.baseline)===JSON.stringify(j.state.after),'cleanup_incomplete');}
+ catch{cleanupError='cleanup_blocked';await j.mutate(s=>{s.stage='cleanup_blocked';s.outcome='failed';if(!s.failures.includes(cleanupError))s.failures.push(cleanupError);});}
+ if(assertionError||cleanupError)throw new AggregateError([assertionError,cleanupError].filter(Boolean).map(code=>Error(code)),'mediated_acceptance_failed');
+ await j.mutate(s=>{s.outcome='phase_one_http_passed';});
+ return mediatedReceipt(j.state);
+}
+
+/** Public receipts contain no fixture IDs, tokens, provider bodies or implied stronger acceptance. */
+export function mediatedReceipt(s){
+ validateMediatedState(s);
+ return {version:1,execution:'not_attested',outcome:s.outcome,cleanup:s.cleanupComplete?'complete':'not_complete',preservation:s.baseline!==null&&JSON.stringify(s.after)===JSON.stringify(s.baseline)?'matched':'not_verified',pins:s.pins,
+  observedHttpCases:s.assertions.map(a=>({caseId:a.caseId,passed:a.passed,expected:PHOTO_CASES[a.caseId-1].expected,bytesAndCacheVerified:a.passed})),reserved:structuredClone(s.counters),observed:structuredClone(s.observed),failures:[...s.failures],
+  operatorAttestations:{cacheReceiptSha256:s.pins.cacheReceiptSha256,quiescenceReceiptSha256:s.pins.quiescenceReceiptSha256,settlementSha256:s.settlement?.sha256??null,verification:'operator_supplied'},
+  remainingGates:{phase_traces:'not_accepted',controlled_races:'not_accepted',real_browser:'not_accepted',runtime_resources:'not_accepted',profile_deletion_transitions:'not_accepted',overall_acceptance:'not_accepted'}};
+}
+
+/** Reconstruct the exact preparation body from once-bound durable identities, without duplicated authority. */
+export function mediatedPreparationIntent(s){
+ validateMediatedState(s);need(s.fixtures.every(f=>f.stage==='created'&&f.id)&&new Set(s.fixtures.map(f=>f.id)).size===3,'preparation_identities');
+ const body=JSON.stringify({run_id:s.runId,fixture_ids:s.fixtures.map(f=>f.id)});
+ return {body,sha256:createHash('sha256').update(body).digest('hex')};
+}
+
+// Operator input files are read only on explicit CLI invocation, using owner-only/no-follow checks.
+async function readPrivate(path){
+ need(typeof path==='string'&&path.length>0,'private_file');const file=await open(path,constants.O_RDONLY|constants.O_NOFOLLOW);
+ try{const st=await file.stat();need(st.isFile()&&(st.mode&0o077)===0&&st.uid===process.getuid()&&st.size<=65536,'private_file');return await file.readFile();}finally{await file.close();}
+}
+const digest=bytes=>createHash('sha256').update(bytes).digest('hex');
+const parsePrivate=async path=>{try{return JSON.parse((await readPrivate(path)).toString('utf8'));}catch{throw Error('private_json');}};
+const receiptBase=['run_id','origin','deployment_id','issued_at'];
+/** Validate and hash raw receipt bytes; pins alone never substitute for the supplied attestation. */
+export async function loadMediatedReceipt(path,kind,s,now=Date.now()){
+ const bytes=await readPrivate(path);let r;try{r=JSON.parse(bytes.toString('utf8'));}catch{throw Error('receipt_json');}
+ const extra=kind==='cache'?['website_commit','backend_commit','ordinary_bundle_sha256','acceptance_bundle_sha256','release_sha256','catalog','installed_configuration_verified','profile_photo_cache_bypass']:kind==='quiescence'?['exclusive_fixture_ingress','profile_admission_producers_stopped','other_admission_producers_stopped']:kind==='settlement'?['closed_to_test_traffic','website_calls_settled','admission_writes_settled']:null;
+ need(extra&&exact(r,[...receiptBase,...extra]),'receipt_shape');need(r.run_id===s.runId&&r.origin===s.pins.origin&&r.deployment_id===s.pins.deploymentId&&timestamp(r.issued_at)&&Date.parse(r.issued_at)<=now,'receipt_binding');
+ if(kind==='cache'){
+  for(const [field,pin] of [['website_commit','websiteCommit'],['backend_commit','backendCommit'],['ordinary_bundle_sha256','ordinaryBundleSha256'],['acceptance_bundle_sha256','acceptanceBundleSha256'],['release_sha256','releaseSha256'],['catalog','catalog']])need(r[field]===s.pins[pin],'receipt_binding');
+  need(r.installed_configuration_verified===true&&r.profile_photo_cache_bypass===true,'receipt_attestation');
+ }else for(const key of extra)need(r[key]===true,'receipt_attestation');
+ const sha256=digest(bytes);if(kind!=='settlement')need(sha256===s.pins[kind==='cache'?'cacheReceiptSha256':'quiescenceReceiptSha256'],'receipt_hash');
+ else need(s.uncertainWebsite&&Date.parse(r.issued_at)>Date.parse(s.uncertainAt),'receipt_settlement');
+ return {...r,sha256};
+}
+
+/** Strict CLI vocabulary. No fallback pins, ambient credentials, deployments or scenario continuation. */
+export function parseMediatedArgs(argv){
+ const [mode='preflight',...args]=argv;need(['preflight','run','cleanup'].includes(mode),'mode');const values={mode};
+ const booleans=['reviewed','recover-lock'],names=['pins','run-id','state-dir','public-key-file','secret-key-file','operator-token-file','cache-receipt','quiescence-receipt','settlement-receipt','ordinary-bundle','acceptance-bundle'];
+ for(let i=0;i<args.length;i++){need(args[i].startsWith('--'),'flag');const name=args[i].slice(2);need((booleans.includes(name)||names.includes(name))&&!Object.hasOwn(values,name),'flag');if(booleans.includes(name))values[name]=true;else{need(args[i+1]&&!args[i+1].startsWith('--'),'flag_value');values[name]=args[++i];}}
+ need(mode==='run'?values.reviewed===true:!values.reviewed,'reviewed');need(mode==='cleanup'||!values['recover-lock']&&!values['settlement-receipt'],'cleanup_flags');
+ for(const name of ['pins','run-id','public-key-file','secret-key-file','cache-receipt','quiescence-receipt','ordinary-bundle','acceptance-bundle'])need(typeof values[name]==='string','required_flag');
+ need(UUID.test(values['run-id'])&&(mode!=='run'||values['operator-token-file']),'run_id');return values;
+}
+
+/** Local source/file pins are verified before constructing any actual provider port. */
+export async function loadMediatedInputs(args,s){
+ const root=resolve(fileURLToPath(new URL('../..',import.meta.url))),backend=resolve(root,'../Ante');
+ const command=promisify(execFile),env={...process.env};delete env.GIT_DIR;delete env.GIT_WORK_TREE;
+ const head=(await command('git',['-C',root,'rev-parse','HEAD'],{timeout:5000,maxBuffer:4096,env})).stdout.trim();need(head===s.pins.websiteCommit,'website_pin');
+ const release=await readFile(join(backend,'supabase/releases/profile-photo-mediated-readers/postconditions.sql'));need(digest(release)===s.pins.releaseSha256,'release_pin');
+ for(const [flag,pin] of [['ordinary-bundle','ordinaryBundleSha256'],['acceptance-bundle','acceptanceBundleSha256']]){const st=await lstat(args[flag]);need(st.isFile()&&!st.isSymbolicLink(),'bundle_file');need(digest(await readFile(args[flag]))===s.pins[pin],'bundle_pin');}
+ const {importReviewedAdapter}=await import('./hosted-profile-photo-readers.mjs');
+ const adapter=await importReviewedAdapter({catalog:s.pins.catalog,backendCommit:s.pins.backendCommit,adapterSha256:s.pins.adapterSha256});
+ await loadMediatedReceipt(args['cache-receipt'],'cache',s);await loadMediatedReceipt(args['quiescence-receipt'],'quiescence',s);
+ const credentials=validateCredentials({publicKey:(await readPrivate(args['public-key-file'])).toString('utf8').trim(),secretKey:(await readPrivate(args['secret-key-file'])).toString('utf8').trim()});
+ const operatorToken=args.mode==='run'?(await readPrivate(args['operator-token-file'])).toString('utf8').trim():undefined;need(args.mode!=='run'||SHA.test(operatorToken),'operator_token');
+ const quiescenceReceipt=args['settlement-receipt']?await loadMediatedReceipt(args['settlement-receipt'],'settlement',s):null;
+ return {credentials,operatorToken,postconditions:release.toString('utf8'),adapter:async()=>adapter,quiescenceReceipt};
+}
+
+/** A crashed dispatch may have settled remotely; never infer rollback from an absent assertion. */
+async function markMediatedInterrupted(j,clock=Date.now){
+ need(!j.state.cleanupComplete&&j.state.counters.recoveries.length===0,'recovery_unavailable');
+ await j.mutate(s=>{s.stage='cleanup_blocked';s.outcome='failed';s.cleanupStartedAt??=new Date(clock()).toISOString();
+  if(s.intents.some(i=>i.phase==='run'&&i.descriptor.kind==='photo'&&!s.assertions.some(a=>a.caseId===i.descriptor.caseId))){s.uncertainWebsite=true;s.uncertainAt??=new Date(clock()).toISOString();}
+ });
+}
+/** Mint exactly one explicit recovery epoch, retaining every prior attempt and failure. */
+export async function prepareMediatedRecovery(j,clock=Date.now){
+ await markMediatedInterrupted(j,clock);
+ await j.mutate(s=>{s.counters.recoveries.push({id:randomUUID(),startedAt:new Date(clock()).toISOString(),counts:zero(CLEANUP_CAPS)});});
+}
+
+/** Explicit entry point: this is the only path that loads operator files and actual provider adapters. */
+export async function main(argv=process.argv.slice(2)){
+ const args=parseMediatedArgs(argv),pins=await parsePrivate(args.pins);validatePins(pins);
+ const {stateDirectory,dbQuery,inspectConfig}=await import('./hosted-account-jwt.mjs');
+ const base=await stateDirectory(args['state-dir']??join(homedir(),'.local/state/ante-acceptance/hosted-profile-photo-mediated'));
+ let j;
+ try{
+  if(args.mode==='cleanup'){j=await MediatedJournal.resume(base,args['run-id'],args['recover-lock']===true);need(JSON.stringify(j.state.pins)===JSON.stringify(pins),'pin_changed');need(!j.state.cleanupComplete&&j.state.counters.recoveries.length===0,'recovery_unavailable');await markMediatedInterrupted(j);}
+  const state=j?.state??newMediatedState(args['run-id'],pins),input=await loadMediatedInputs(args,state);
+  if(!j)j=await MediatedJournal.create(args.mode==='preflight'?join(base,'preflights',randomUUID()):base,state);
+  const {makeMediatedPort}=await import('./hosted-profile-photo-mediated-port.mjs');const port=makeMediatedPort(j,input.credentials,{...input,query:dbQuery,inspectConfig,recovery:args.mode==='cleanup'});
+  if(args.mode==='cleanup'){need(!j.state.uncertainWebsite||input.quiescenceReceipt!==null,'settlement_required');await prepareMediatedRecovery(j);await port.cleanup();}
+  else if(args.mode==='run')await runMediatedAcceptance(j,port);
+  else {await port.preflight();console.log(JSON.stringify({mode:'preflight',providerMutations:0,preflight:'passed',execution:'explicit_cli',reserved:j.state.counters.run,remainingGates:mediatedReceipt(j.state).remainingGates}));return;}
+  console.log(JSON.stringify({...mediatedReceipt(j.state),execution:'explicit_cli'}));
+ }catch{if(j)console.error(JSON.stringify({...mediatedReceipt(j.state),execution:'explicit_cli'}));throw Error('mediated_cli_failed');}
+ finally{if(j)await j.close();}
+}
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(()=>{console.error(JSON.stringify({outcome:'failed',reason:'mediated_cli_failed',overall_acceptance:'not_accepted'}));process.exitCode=1;});

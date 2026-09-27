@@ -11,8 +11,9 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
-    "test:acceptance:local": "node --test scripts/acceptance/hosted-account-jwt.test.mjs scripts/acceptance/hosted-account-jwt-sql.test.mjs scripts/acceptance/hosted-profile-photo-readers.test.mjs scripts/acceptance/hosted-profile-photo-readers-port.test.mjs scripts/acceptance/hosted-profile-photo-readers-sql.test.mjs",
-    "typecheck": "tsc --noEmit"
+    "test:acceptance:local": "node --test --test-concurrency=1 scripts/acceptance/hosted-account-jwt.test.mjs scripts/acceptance/hosted-account-jwt-sql.test.mjs scripts/acceptance/hosted-profile-photo-readers.test.mjs scripts/acceptance/hosted-profile-photo-readers-port.test.mjs scripts/acceptance/hosted-profile-photo-readers-sql.test.mjs scripts/acceptance/hosted-profile-photo-mediated.test.mjs scripts/acceptance/hosted-profile-photo-mediated-http.test.mjs scripts/acceptance/hosted-profile-photo-mediated-cleanup.test.mjs scripts/acceptance/hosted-profile-photo-mediated-sql.test.mjs scripts/acceptance/hosted-profile-photo-mediated-port.test.mjs",
+    "typecheck": "tsc --noEmit",
+    "test:acceptance:mediated": "node --test --test-concurrency=1 scripts/acceptance/hosted-profile-photo-mediated.test.mjs scripts/acceptance/hosted-profile-photo-mediated-http.test.mjs scripts/acceptance/hosted-profile-photo-mediated-cleanup.test.mjs scripts/acceptance/hosted-profile-photo-mediated-sql.test.mjs scripts/acceptance/hosted-profile-photo-mediated-port.test.mjs"
   },
   "dependencies": {
     "@fontsource/google-sans-flex": "^5.2.4",
