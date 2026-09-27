@@ -1,0 +1,26 @@
+{
+  "date": "2026-09-27",
+  "sourceCommit": "0c9f865",
+  "accountId": "5af41de7e4953ebc3d99f3ec07803736",
+  "worker": "ante-images-probe-20260926",
+  "preflight": {
+    "workerList": [],
+    "subdomain": "walihavish"
+  },
+  "upload": {
+    "success": false,
+    "error": "No access to the specified resource."
+  },
+  "postAttemptWorkerList": [],
+  "cli": {
+    "wranglerVersion": "4.139.0",
+    "authenticated": false,
+    "whoamiExitCode": 0,
+    "dryRun": "passed",
+    "bundleBytesReported": "7.85 KiB",
+    "gzipBytesReported": "2.83 KiB"
+  },
+  "hostedFixturesRun": 0,
+  "providerWritesConfirmed": 0,
+  "next": "Authenticate Wrangler with access to Havish account; generate fresh dedicated secret and expiry before deploy."
+}

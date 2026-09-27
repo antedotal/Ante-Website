@@ -37,6 +37,8 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ### Completion audit — current evidence, not a completion claim
 
+27 September: the Cloudflare image probe is implemented and reviewed, but connector upload was denied and local Wrangler is unauthenticated. No Worker exists and no hosted fixture ran. [Current probe status and resume steps](superpowers/audits/2026-09-27-cloudflare-images-probe-status.md).
+
 Current status: server-key access works, Workers Free is confirmed, and Stripe sandbox discovery works. Photo retention containment is deployed. The current hosted image codec failed the HEIC CPU test; replacement processing, immutable photo integration and cleanup remain unfinished. Earlier dated entries below are historical evidence, not a list of current blockers.
 
 | Goal requirement | Current evidence | Remaining requirement |

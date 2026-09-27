@@ -1,0 +1,15 @@
+# Cloudflare Images probe — prepared, hosted run blocked
+
+27 September 2026. Diagnostic source `0c9f865` is committed and independently reviewed. Local evidence:6/6 focused tests,236/236 repository tests, TypeScript and lint pass. A fresh Wrangler4.139.0 deployment dry run passed, reporting7.85KiB upload/2.83KiB gzip. These checks do not establish Images entitlement or hosted HEIC processing.
+
+Task and final reviewers approve only the temporary four-fixture operator diagnostic. One nonblocking minor remains: direct tests for streamed input overflow without Content-Length and stalled provider/output deadlines are absent. Source bounds were inspected; add those cases before broadening or making this a persistent service. [Task review](evidence/2026-09-26-cloudflare-images-probe/task-1-review.md), [final review](evidence/2026-09-26-cloudflare-images-probe/final-review.md).
+
+The connected Havish account returned an empty Worker list and subdomain `walihavish`. Uploading the reviewed standalone Worker through the connector failed with “No access to the specified resource.” A subsequent Worker list was still empty. No Worker or binding was created, no fixture was sent, and no Storage, database, live-site or billing change occurred. [Attempt receipt](evidence/2026-09-26-cloudflare-images-probe/deployment-attempt.json).
+
+Local `wrangler whoami` reported unauthenticated despite exit0. The user was asked to run `pnpm exec wrangler login` from Ante-Website with access to Havish's antedotal.com account. This is separate from the working Supabase CLI login. Do not use Wrangler's suggested temporary preview account or silently switch accounts. Existing connector read access does not imply upload authorization; the earlier Images stats failure likewise did not settle binding entitlement.
+
+## Resume
+
+The SDD ledger remains at `.superpowers/sdd/2026-09-26-cloudflare-images-probe/progress.md`; Task1 source/review is complete, hosted controller acceptance remains pending. Do not rebuild or re-review unchanged source. Freshly verify Wrangler identity/account access and the intended Worker name is absent. Generate a new random64-hex operator secret and a short future UTC expiry; the retained dry-run configuration deliberately expires in2000 and must not be deployed unchanged. CLI help confirms `--secrets-file` is available, allowing the operator token to stay out of command arguments. Keep deployment confined to this diagnostic, with Images binding, no custom-domain route and logging disabled.
+
+Send the exact four retained synthetic files only after confirming unauthorized requests are rejected. Record output hashes/dimensions/size and wall time separately from CPU/resource acceptance. Delete the temporary Worker after the bounded run and verify absence. No production normalization, alpha/still-image acceptance, retention cleanup, or photo serving follows automatically. The wider website objective remains unfinished; deployed profile metadata authority and retention/financial pauses remain intact.
