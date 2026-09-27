@@ -11,6 +11,7 @@ import { TABLES } from './hosted-account-jwt-sql.mjs';
 const pin='a'.repeat(64),runId='aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa';
 const ids=['bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb','cccccccc-cccc-4ccc-8ccc-cccccccccccc','dddddddd-dddd-4ddd-8ddd-dddddddddddd'];
 const assets=['eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','ffffffff-ffff-4fff-8fff-ffffffffffff','99999999-9999-4999-8999-999999999999'];
+const finalStateNames=['resolver_grant','private_helper','safe_function_shapes','operation_scoped_policy','storage_policy_inventory','operation_helper_shape','private_bucket','service_rpc_grants'];
 const state=()=>{
   const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
   s.baseline=TABLES.map(table=>({table,count:0,digest:pin}));s.stage='cleanup';s.revision=3;s.clear.stage='completed';s.friendship.status='accepted';
@@ -18,6 +19,59 @@ const state=()=>{
   for(let i=0;i<4;i++){const photo=syntheticReaderBytes(s.objects[i].label);Object.assign(s.objects[i],{key:`${ids[0]}/${i===0?'avatar':assets[i-1]}`,assetId:i===0?null:assets[i-1],leaseEpoch:i===0?null:1,sha256:createHash('sha256').update(photo).digest('hex'),byteCount:photo.length,stage:i===0?'verified':i===3?'verified':'published'});}
   return s;
 };
+
+test('real preflight accepts exactly eight passing final-state checks before fixture creation',async()=>{
+  const rows=finalStateNames.map(name=>({name,pass:true}));
+  const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
+  const statements=[],requests=[];
+  const port=makeReaderPort({state:s,save:async()=>{}},{publicKey:'sb_publishable_public_test_1234567890',secretKey:'sb_secret_private_test_1234567890'},{
+    config:async()=>true,
+    query:async(sql,{write=false}={})=>{
+      assert.equal(write,false);statements.push(sql);
+      if(sql.startsWith('WITH scoped'))return [{digest:pin}];
+      if(sql.includes("('resolver_grant'")||sql.includes("'resolver_grant'"))return rows;
+      if(sql.includes('FROM auth.users WHERE lower(email)'))return [{count:0},{count:0},{count:0}];
+      if(sql.includes('FROM storage.objects WHERE bucket_id'))return [{objects:0,heads:0,operations:0}];
+      if(sql.includes('ORDER BY 1'))return TABLES.map(table=>({table,count:0,digest:pin}));
+      throw Error('unexpected_sql');
+    },
+    fetchImpl:async(url,init)=>{requests.push({url,method:init.method});return Response.json({message:'not found'},{status:404});},
+  });
+  const result=await port.preflight();
+  assert.equal(result.catalog,pin);
+  assert.equal(result.baseline.length,22);
+  assert.equal(statements.length,5);
+  assert.ok(statements[1].includes("'operation_scoped_policy'"));
+  assert.deepEqual(requests.map(x=>x.method),['GET']);
+  assert.ok(s.fixtures.every(f=>f.id===null&&f.stage==='planned'));
+});
+
+test('real preflight rejects false, missing, duplicate and unknown final-state checks before fixture creation',async()=>{
+  const passing=finalStateNames.map(name=>({name,pass:true}));
+  const cases=[
+    ['false',passing.map(row=>row.name==='private_bucket'?{...row,pass:false}:row)],
+    ['missing',passing.slice(1)],
+    ['duplicate',[...passing.slice(0,-1),passing[0]]],
+    ['unknown',[...passing.slice(0,-1),{name:'unreviewed_check',pass:true}]],
+  ];
+  for(const [label,rows] of cases){
+    const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
+    const requests=[];let postconditionsRead=0;
+    const port=makeReaderPort({state:s,save:async()=>{}},{publicKey:'sb_publishable_public_test_1234567890',secretKey:'sb_secret_private_test_1234567890'},{
+      config:async()=>true,
+      query:async(sql,{write=false}={})=>{
+        assert.equal(write,false);
+        if(sql.startsWith('WITH scoped'))return [{digest:pin}];
+        postconditionsRead++;return rows;
+      },
+      fetchImpl:async(url,init)=>{requests.push({url,method:init.method});throw Error('unexpected_http');},
+    });
+    await assert.rejects(port.preflight(),/reader_postconditions/,label);
+    assert.equal(postconditionsRead,1,label);
+    assert.deepEqual(requests,[],label);
+    assert.ok(s.fixtures.every(f=>f.id===null&&f.stage==='planned'),label);
+  }
+});
 
 test('real port creates, reconciles, logs in and verifies three distinct caller JWTs',async()=>{
   const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin}),seen=[];

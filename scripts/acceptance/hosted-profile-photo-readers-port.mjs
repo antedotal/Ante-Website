@@ -8,6 +8,7 @@ import { readerRequest, assertOwnedInventory, cleanupDecision, reconcileAuthorit
 import { friendMutationSql, readerInventorySql, teardownSql } from './hosted-profile-photo-readers-sql.mjs';
 
 const BACKEND='/Users/daniel/.codex/worktrees/ante-web-first-foundation/Ante';
+const FINAL_STATE_CHECKS=new Set(['resolver_grant','private_helper','safe_function_shapes','operation_scoped_policy','storage_policy_inventory','operation_helper_shape','private_bucket','service_rpc_grants']);
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 const check=(v,code)=>{if(!v)throw Error(code);};
 const json=r=>{try{return JSON.parse(new TextDecoder().decode(r.bytes));}catch{throw Error('provider_json');}};
@@ -47,8 +48,8 @@ export function makeReaderPort(j,credentials,{fetchImpl=fetch,query=dbQuery,conf
     async preflight(){
       const digest=await catalog('run');
       check(s.counters.run.cli+2<=20,'cli_cap');s.counters.run.cli+=2;await save();check(await config()===true,'auth_config');
-      const checks=await sql((await readFile(join(BACKEND,'supabase/releases/profile-photo-readers/postconditions.sql'),'utf8')));
-      check(checks.length===6&&checks.every(row=>row.pass===true),'reader_postconditions');
+      const checks=await sql((await readFile(join(BACKEND,'supabase/releases/profile-reader-gateway-compatibility/postconditions.sql'),'utf8')));
+      check(checks.length===FINAL_STATE_CHECKS.size&&checks.every(row=>row?.pass===true&&FINAL_STATE_CHECKS.has(row.name))&&new Set(checks.map(row=>row.name)).size===FINAL_STATE_CHECKS.size,'reader_postconditions');
       const collisions=await sql(collisionSql(s.fixtures));check(collisions.length===3&&collisions.every(x=>Number(x.count)===0),'fixture_collision');
       const probe=await run({kind:'auth',action:'probe',method:'GET'});check(probe.status===404,'admin_probe');
       const empty=await sql("SELECT (SELECT count(*)::int FROM storage.objects WHERE bucket_id='profile-photos') AS objects,(SELECT count(*)::int FROM profile_asset_private.heads) AS heads,(SELECT count(*)::int FROM profile_asset_private.operations) AS operations");
