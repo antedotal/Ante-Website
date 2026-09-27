@@ -39,6 +39,7 @@
 - Create `lib/server/bounded-provider-request.ts`, `tests/bounded-provider-request.test.ts`.
 - Modify `lib/server/profile-photo-store.ts`, `lib/server/callback-limit-store.ts`, `lib/server/callback-admission.ts`.
 - Extend `tests/callback-limit-store.test.ts`, `tests/callback-admission.test.ts`, `tests/profile-photo-store.test.ts`.
+- Update `.guidelines/design.md` with this task's shared transport and admission changes, as required by repository instructions.
 
 **Interfaces:**
 - Extract the store's existing `providerRequest` into server-only `boundedProviderRequest(url: string, init: RequestInit, maxBytes: number, options?: { signal?: AbortSignal; timeoutMs?: number }): Promise<{ response: Response; bytes: Uint8Array } | null>`. Default timeout stays 10,000 ms; errors cap at 16,384 bytes. The store passes existing signals through options. This is transport plumbing, not an exported arbitrary-key photo download.
@@ -48,7 +49,7 @@
 
 - [ ] **Step 1: Add failing transport/admission assertions.** Use fake timers and controlled streams; include `ignores abort yet stops at 5000ms`, `stalled body shares fetch deadline`, `parent abort starts no fetch`, `late response body cancelled`, `never awaits cancellation`, `16384 bytes accepted / 16385 rejected`, `declared length mismatch rejected`, `redirect and partial reply denied`, `copied producer chunks cannot mutate buffered output`. For both limiter RPCs assert unchanged digest payload, service header variants, strict `{allowed,retry_after_seconds}` parsing and validated Retry-After. Verify omission of the new argument preserves existing callers' behavior and account/photo forwarding stops after request/parent abort.
 - [ ] **Step 2: Run red tests.** `pnpm exec vitest run tests/bounded-provider-request.test.ts tests/callback-limit-store.test.ts tests/callback-admission.test.ts tests/profile-photo-store.test.ts`. Observe behavioral deadline/body failures against the old adapter as well as the new helper contract; a missing import alone is insufficient evidence.
-- [ ] **Step 3: Implement the shared extraction and optional signal plumbing together.** Race fetch and every body read against abort/deadline, cancel late/rejected bodies without awaiting hostile cancel, copy chunks, clean timers/listeners and reject malformed/unsafe/mismatched Content-Length. Reject redirects/opaque redirects, 206, Content-Range and non-identity Content-Encoding. Keep all provider data out of errors/logs. Admission accepts only 200 JSON with the existing strict two-field shape. Dormant store writes/profile checks change only to call the extracted helper; retain their existing exact receipts and closed routing.
+- [ ] **Step 3: Implement the shared extraction and optional signal plumbing together.** Race fetch and every body read against abort/deadline, cancel late/rejected bodies without awaiting hostile cancel, copy chunks, clean timers/listeners and reject malformed/unsafe/mismatched Content-Length. Send `Accept-Encoding: identity` where the runtime permits it; fail closed on unexpected/non-identity Content-Encoding. Reject redirects/opaque redirects, 206 and Content-Range. This request header does not establish CDN behavior; actual encoding compatibility remains a hosted gate. Keep all provider data out of errors/logs. Admission accepts only 200 JSON with the existing strict two-field shape. Dormant store writes/profile checks change only to call the extracted helper; retain their existing exact receipts and closed routing.
 - [ ] **Step 4: Run the same focused tests green.** Include existing dormant mutation receipt tests to prove mechanical extraction compatibility. No quota SQL or unrelated authentication contract changes.
 - [ ] **Step 5: Commit only this task's files.** `git diff --check`, stage the listed files, then `git commit -m "fix: bound shared account admission transport"`.
 
@@ -57,6 +58,7 @@
 **Files:**
 - Modify `lib/server/profile-photo-store.ts`, `lib/server/profile-photo-session.ts`.
 - Extend `tests/profile-photo-store.test.ts`, `tests/profile-photo-session.test.ts`; retain `tests/profile-photo-auth-fetch.test.ts` as prerequisite regression coverage.
+- Update `.guidelines/design.md` with this task's selected-asset integrity and final Auth interfaces.
 
 **Interfaces:**
 - `CurrentPhotoSelection` is a readonly, internally branded `{ ownerId: string; assetId: string }`, constructed/frozen only after strict caller resolution. The brand is a misuse guard, not authorization. No route accepts this value from a client.
@@ -78,12 +80,12 @@
 
 **Files:**
 - Modify `lib/server/account-profile-photo.ts`, `lib/server/profile-photo-store.ts` (remove old reader), `app/api/profiles/[ownerId]/photo/route.ts`, `app/api/account/profile/photo/route.ts`.
-- Create `lib/server/profile-photo-response.ts`; modify `docs/contracts/profile-photos.md`.
+- Create `lib/server/profile-photo-response.ts`; modify `docs/contracts/profile-photos.md` and update `.guidelines/design.md` with the completed route ordering, deadline and cache behavior.
 - Extend `tests/account-profile-photo.test.ts`, `tests/profile-photo-store.test.ts`; use existing `tests/profile-photo-scope.test.ts` and `tests/profile-photo.test.ts` for real codec/scope regression.
 - Do not add an `.env.example` solely for this task (none exists), change `wrangler.jsonc`, or edit historical direct-reader acceptance scripts/receipts.
 
 **Interfaces:**
-- Change `handleProfilePhotoRead(request: NextRequest, params: Promise<{ownerId:string}>): Promise<NextResponse>`; GET immediately delegates with `context.params` instead of awaiting it. Start the 30,000 ms timer and request-abort relay as the handler's first work, race parameter resolution against that signal, and retain an absolute monotonic deadline check for delayed timer callbacks. On cleanup dispose the timer/listener. Early already-aborted requests retain 400; abort/deadline after admission starts returns fixed 503.
+- Change `handleProfilePhotoRead(request: NextRequest, params: Promise<{ownerId:string}>): Promise<NextResponse>`; GET immediately delegates with `context.params` instead of awaiting it. Start the 30,000 ms timer and request-abort relay as the handler's first work, race parameter resolution against that signal, and retain an absolute monotonic deadline check for delayed timer callbacks. On cleanup dispose the timer/listener. Only a request already aborted at handler entry retains 400; every later abort/deadline, including during async params resolution before admission, returns fixed 503.
 - `privateProfilePhotoResponse(response: NextResponse): NextResponse` applies all global cache headers, merges `Cookie` into Vary, strips prohibited validators/range/cache metadata, and preserves status/body, Allow, Retry-After and Set-Cookie. Use it on both photo routes' explicit method handlers and every handler return, including visitor/user admission and cheap write failures. `withVerifiedCookies` remains the copier of initial safe SSR cookies.
 - The route uses Task 1 admission signatures and Task 2 selected-read/reverify/confirm interfaces. The operation signal reaches both admissions, initial `verifyProfilePhotoSession`, every store call and final reverify; pass it into the validator's in-memory Request too. Check signal/deadline before each new phase, after hash/decode and immediately before response construction.
 
