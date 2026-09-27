@@ -2,10 +2,10 @@
 // Bounded hosted acceptance, never a provider mutation by default.
 import assert from 'node:assert/strict';
 import { constants } from 'node:fs';
-import { open, mkdir, readdir, readFile, lstat, unlink, mkdtemp, rm } from 'node:fs/promises';
+import { open, mkdir, readdir, readFile, lstat, unlink, mkdtemp, rm, realpath } from 'node:fs/promises';
 import { homedir, hostname, tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
+import { join, resolve, dirname, basename, sep } from 'node:path';
+import { pathToFileURL, fileURLToPath } from 'node:url';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
@@ -17,7 +17,28 @@ export const ORIGIN = `https://${PROJECT}.supabase.co`;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 const ANY_UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 const CODES = new Set(['42501','P0002','PGRST202','PGRST106','28000','22023','session_not_found','refresh_token_not_found','refresh_token_already_used','user_not_found','bad_jwt','invalid_credentials','unexpected_failure','over_request_rate_limit','request_timeout']);
-const fail = (code) => { throw new Error(code); };
+const FAILURE_REASONS=new Set([
+  'ownership_mismatch','protected_references','admin_credentials','admin_delete_failed','admin_endpoint','ambiguous_credentials','arguments',
+  'auth_config','auth_delete_guard','auth_endpoint','auth_retry_refused','catalog_drift','cleanup_blocked','cleanup_counts','cleanup_orphan','cleanup_recheck','cleanup_remaining',
+  'cli_failed','cli_version','collision','create_boundary','create_result','created_profile','credential_boundary','credential_probe_collision','credentials','data_endpoint','db_response','delete_boundary','distinct_sessions','grants',
+  'journal_assertion','journal_catalog','journal_counters','journal_directory','journal_failure','journal_fingerprint','journal_fixture','journal_fixture_stage','journal_fixtures','journal_identity','journal_lock','journal_outcome','journal_request_count','journal_run_id','journal_shape','journal_stage','journal_timestamp','journal_torn_tail',
+  'lock_live','lock_owner','login_failed','missing_profile_mutation','mode','name_boundary','origin','preservation_changed','preservation_incomplete','preset_boundary','private_file','private_filter','profile_body','profile_delete_result','profile_filter','request_cap','request_deadline','response_size','review_required','rpc_boundary','state_inside_checkout','state_path','checkout_root','test_deadline','uncertain_create_absence','unresolved_journal','assertion_failed','unclassified_failure',
+]);
+const FAILURE_PHASES=new Set(['preflight','setup','assertions','cleanup','runner']);
+class RunnerFailure extends Error {
+  constructor(reason,result) {super(reason);this.reason=reason;this.provider=safeResult(result);}
+}
+export function failure(reason,result) {return new RunnerFailure(FAILURE_REASONS.has(reason)?reason:'unclassified_failure',result);}
+const fail = (reason,result) => {throw failure(reason,result);};
+export function safeFailure(error,phase='runner',fixture=null) {
+  const trusted=error instanceof RunnerFailure&&FAILURE_REASONS.has(error.reason);
+  return {phase:FAILURE_PHASES.has(phase)?phase:'runner',fixture:['A','B'].includes(fixture)?fixture:null,reason:trusted?error.reason:'unclassified_failure',...(trusted?error.provider:{status:null,code:null})};
+}
+export async function recordFailure(j,error,phase,fixture=null) {
+  const entry=safeFailure(error,phase,fixture);const failures=j.state.failures??[];
+  if(!failures.some(f=>JSON.stringify(f)===JSON.stringify(entry)))await j.save({failures:[...failures,entry]});
+}
+
 export function validateCredentials({publicKey,secretKey,url=ORIGIN}) {
   if (url !== ORIGIN) fail('origin');
   if (!/^sb_publishable_[A-Za-z0-9_-]+$/.test(publicKey ?? '') || !/^sb_secret_[A-Za-z0-9_-]+$/.test(secretKey ?? '') || publicKey===secretKey) fail('credentials');
@@ -41,9 +62,9 @@ export function validatePresets(data, amounts) {
 }
 export function reconcileCreate(fixture, candidates, runId, startedAt) {
   if(candidates.length===0) fail('uncertain_create_absence');
-  if(candidates.length!==1) fail('ownership_candidates');
+  if(candidates.length!==1) fail('ownership_mismatch');
   const u=candidates[0];
-  if(u.email!==fixture.email||u.marker!==runId||!ANY_UUID.test(u.id)||!Number.isFinite(Date.parse(u.created_at))||Date.parse(u.created_at)<Date.parse(startedAt)||Date.parse(u.created_at)>Date.parse(startedAt)+300_000) fail('ownership');
+  if(u.email!==fixture.email||u.marker!==runId||!ANY_UUID.test(u.id)||!Number.isFinite(Date.parse(u.created_at))||Date.parse(u.created_at)<Date.parse(startedAt)||Date.parse(u.created_at)>Date.parse(startedAt)+300_000) fail('ownership_mismatch');
   return {...fixture,id:u.id,createdAt:u.created_at,stage:'created'};
 }
 export function assertPreflight({catalog,expected,collisions,configSafe}) {
@@ -51,7 +72,7 @@ export function assertPreflight({catalog,expected,collisions,configSafe}) {
   if(!Array.isArray(collisions)||collisions.length!==2||collisions.some(n=>n!==0)) fail('collision');
   if(configSafe!==true) fail('auth_config');
 }
-const STATE_KEYS=['version','project','runId','startedAt','method','stage','fixtures','counters','assertions','baseline','after','catalog','outcome','cleanupComplete'];
+const STATE_KEYS=['version','project','runId','startedAt','method','stage','fixtures','counters','assertions','baseline','after','catalog','outcome','cleanupComplete','failures'];
 function validateState(s) {
   if(Object.keys(s).some(k=>!STATE_KEYS.includes(k))||s.version!==1||s.project!==PROJECT||!UUID.test(s.runId)||s.method!=='confirmed-password'||!Number.isFinite(Date.parse(s.startedAt))) fail('journal_shape');
   if(!['prepared','create_pending','testing','cleanup','complete','blocked'].includes(s.stage)) fail('journal_stage');
@@ -67,6 +88,9 @@ function validateState(s) {
   for(const a of s.assertions) {
     keys(a,['check','status','code','passed']);
     if(!CHECKS.has(a.check)||typeof a.passed!=='boolean'||(a.code!==null&&a.code!=='unclassified'&&!CODES.has(a.code))||(a.status!==null&&(!Number.isInteger(a.status)||a.status<100||a.status>599))) fail('journal_assertion');
+  }
+  for(const f of s.failures??[]) {
+    if(!f||Object.keys(f).sort().join(',')!=='code,fixture,phase,reason,status'||!FAILURE_PHASES.has(f.phase)||![null,'A','B'].includes(f.fixture)||!FAILURE_REASONS.has(f.reason)||(f.code!==null&&f.code!=='unclassified'&&!CODES.has(f.code))||(f.status!==null&&(!Number.isInteger(f.status)||f.status<100||f.status>599)))fail('journal_failure');
   }
   for(const field of ['baseline','after']) if(s[field]!==null) for(const row of s[field]) {
     keys(row,['table','count','digest']); if(!TABLES.includes(row.table)||!Number.isSafeInteger(row.count)||row.count<0||!/^[a-f0-9]{64}$/.test(row.digest)) fail('journal_fingerprint');
@@ -102,7 +126,7 @@ export class Journal {
     try {
       for(const name of await readdir(dir)) if(name.endsWith('.jsonl')&&!(await loadState(join(dir,name))).cleanupComplete) fail('unresolved_journal');
       const path=join(dir,`${runId}.jsonl`); const file=await open(path,'wx',0o600);
-      const j=new Journal(dir,path,lock,file,{version:1,project:PROJECT,runId,startedAt:new Date().toISOString(),method:'confirmed-password',stage:'prepared',fixtures:['A','B'].map(label=>({label,email:`ante-jwt-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createRequests:0,deleteRequests:0})),counters:{data:0,auth:0,create:0,delete:0},assertions:[],baseline:null,after:null,catalog:null,outcome:'pending',cleanupComplete:false});
+      const j=new Journal(dir,path,lock,file,{version:1,project:PROJECT,runId,startedAt:new Date().toISOString(),method:'confirmed-password',stage:'prepared',fixtures:['A','B'].map(label=>({label,email:`ante-jwt-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createRequests:0,deleteRequests:0})),counters:{data:0,auth:0,create:0,delete:0},assertions:[],failures:[],baseline:null,after:null,catalog:null,outcome:'pending',cleanupComplete:false});
       await j.save({});await syncDir(dir);return j;
     } catch(e) {await unlink(lock);await syncDir(dir);throw e;}
   }
@@ -170,26 +194,35 @@ export function makeFetch({kind,key,secret,state,save,fetchImpl=fetch,deadlineMs
         const bytes=await response.arrayBuffer();
         if(bytes.byteLength>2*1024*1024)fail('response_size');
         return new Response([204,205,304].includes(response.status)?null:bytes,{status:response.status,statusText:response.statusText,headers:response.headers});
-      })(),new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(new Error('request_deadline'));},deadlineMs);})]);
+      })(),new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(failure('request_deadline'));},deadlineMs);})]);
     } finally {clearTimeout(timer);}
   };
 }
 export async function cleanupFixture(fixture,{inspect,removeProfile,deleteUser,save}) {
   let e=await inspect();
-  if(!e.owned||e.protected!==0) fail('cleanup_ownership_or_protected');
+  if(e.owned!==true)fail('ownership_mismatch');
+  if(e.protected!==0)fail('protected_references');
   if(e.auth===0) {if(e.profile!==0||e.privateRows!==0)fail('cleanup_orphan');await save('cleaned');return;}
   if(e.auth!==1||![0,1].includes(e.profile))fail('cleanup_counts');
   if(e.profile===1) await removeProfile();
   await save('profile_removed_auth_pending');
-  e=await inspect();if(!e.owned||e.protected!==0||e.auth!==1||e.profile!==0)fail('cleanup_recheck');
+  e=await inspect();if(e.owned!==true)fail('ownership_mismatch');
+  if(e.protected!==0)fail('protected_references');
+  if(e.auth!==1||e.profile!==0)fail('cleanup_recheck');
   await save('delete_pending');
-  try {await deleteUser();} catch { /* A timeout may follow a committed delete; reconcile exact existence. */ }
-  e=await inspect();if(e.auth!==0||e.profile!==0||e.protected!==0||e.privateRows!==0)fail('cleanup_remaining');
+  let deleteError;
+  try {await deleteUser();} catch(error) {deleteError=error;} // Reconcile a possibly committed delete.
+  e=await inspect();
+  if(e.auth!==0||e.profile!==0||e.protected!==0||e.privateRows!==0) {
+    if(deleteError)throw deleteError;
+    if(e.owned!==true)fail('ownership_mismatch');if(e.protected!==0)fail('protected_references');
+    fail('cleanup_remaining');
+  }
   await save('cleaned');
 }
-export async function runWithCleanup(run,cleanup) {
-  let error;try {await run();}catch(e){error=e;}
-  try {await cleanup();}catch(e){error??=e;}
+export async function runWithCleanup(run,cleanup,onFailure=async()=>{}) {
+  let error;try {await run();}catch(e){error=e;try {await onFailure(e,'run');}catch { /* Still attempt cleanup if reporting fails. */ }}
+  try {await cleanup();}catch(e){error??=e;await onFailure(e,'cleanup');}
   if(error)throw error;
 }
 const RPCS=['get_my_profile_name','set_my_profile_name','get_my_ante_presets','set_my_ante_presets','profile_photo_state_v1'];
@@ -246,13 +279,13 @@ async function preflight(credentials,state,save=async()=>{}) {
   const [{count}]=await dbQuery("SELECT count(*)::int AS count FROM auth.users WHERE id='00000000-0000-0000-0000-000000000000'::uuid");
   if(count!==0)fail('credential_probe_collision');
   const c=clients(credentials,state,save);const adminProbe=await c.admin.auth.admin.getUserById('00000000-0000-0000-0000-000000000000');
-  if(adminProbe.error?.status!==404||adminProbe.error?.code!=='user_not_found')fail('admin_credentials');
+  if(adminProbe.error?.status!==404||adminProbe.error?.code!=='user_not_found')fail('admin_credentials',adminProbe);
   const baseline=await dbQuery(preservationSql());if(baseline.length!==TABLES.length)fail('preservation_incomplete');
   return {catalog,baseline};
 }
 async function record(j,check,result,validate) {
   let error;try {validate(result);}catch(e){error=e;}
-  j.state.assertions.push({check,...safeResult(result),passed:!error});await j.save({});if(error)fail(`assertion_${check}`);return result.data;
+  j.state.assertions.push({check,...safeResult(result),passed:!error});await j.save({});if(error)fail('assertion_failed',result);return result.data;
 }
 const success=r=>assert.equal(r.error,null,'provider_error');
 const denied=(codes,statuses=[401,403,404])=>r=>{assert.ok(r.error,'denial_required');assert.ok(statuses.includes(r.status??r.error.status),'denial_status');assert.ok(codes.includes(r.error.code),'denial_code');};
@@ -307,12 +340,13 @@ async function cleanup(j,c) {
         inspect:()=>inspectFixture(j,f),removeProfile:()=>removeProfile(j,f),
         deleteUser:async()=>{
           await catalogCheck();const fresh=await inspectFixture(j,f);
-          if(!fresh.owned||fresh.auth!==1||fresh.profile!==0||fresh.protected!==0)fail('auth_delete_guard');
-          const r=await c.admin.auth.admin.deleteUser(f.id,false);if(r.error)fail('admin_delete_failed');
+          if(fresh.owned!==true)fail('ownership_mismatch');if(fresh.protected!==0)fail('protected_references');
+          if(fresh.auth!==1||fresh.profile!==0)fail('auth_delete_guard');
+          const r=await c.admin.auth.admin.deleteUser(f.id,false);if(r.error)fail('admin_delete_failed',r);
         },
         save:async stage=>{f.stage=stage;await j.save({});},
       });
-    } catch {blocked=true;}
+    } catch(error) {blocked=true;await recordFailure(j,error,'cleanup',f.label);}
   }
   if(blocked){await j.save({stage:'blocked',outcome:'failed'});fail('cleanup_blocked');}
   const after=await dbQuery(preservationSql());await j.save({after});
@@ -321,12 +355,15 @@ async function cleanup(j,c) {
 }
 async function executeRun(j,credentials) {
   const c=clients(credentials,j.state,()=>j.save({}));const sessions={};
+  let phase='preflight';let fixture=null;
   await runWithCleanup(async()=>{
     const pre=await preflight(credentials,j.state,()=>j.save({}));await j.save({...pre,stage:'testing'});
+    phase='setup';
     for(let i=0;i<2;i++) {
-      let f=j.state.fixtures[i];f.stage='create_pending';await j.save({stage:'create_pending'});
+      let f=j.state.fixtures[i];fixture=f.label;f.stage='create_pending';await j.save({stage:'create_pending'});
       const password=randomBytes(36).toString('base64url');
       const r=await c.admin.auth.admin.createUser({email:f.email,password,email_confirm:true,app_metadata:{acceptance_run:j.state.runId}});
+      if(r.error)await recordFailure(j,failure('create_result',r),'setup',f.label);
       // Persist a successful create acknowledgement before any subsequent network operation.
       if(!r.error&&r.data.user) {
         const u=r.data.user;
@@ -336,28 +373,46 @@ async function executeRun(j,credentials) {
       // Reconcile even an error/timeout; never make another create request.
       const candidates=await dbQuery(reconcileSql(f));
       f=reconcileCreate(f,candidates,j.state.runId,j.state.startedAt);j.state.fixtures[i]=f;await j.save({stage:'testing'});
-      if(r.error||r.data.user?.id!==f.id)fail('create_result');
-      const e=await inspectFixture(j,f);if(!e.owned||e.auth!==1||e.profile!==1||e.protected!==0)fail('created_profile');
+      if(r.error||r.data.user?.id!==f.id)fail('create_result',r);
+      const e=await inspectFixture(j,f);if(e.owned!==true)fail('ownership_mismatch');if(e.protected!==0)fail('protected_references');
+      if(e.auth!==1||e.profile!==1)fail('created_profile');
       const login=await c[f.label].auth.signInWithPassword({email:f.email,password});
-      if(login.error||!login.data.session)fail('login_failed');
+      if(login.error||!login.data.session)fail('login_failed',login);
       const session=login.data.session;sessions[f.label]=session;
       const verified=await c[f.label].auth.getUser(session.access_token);
       await record(j,`identity-${f.label}`,verified,result=>{success(result);assert.equal(result.data.user?.id,f.id);assert.equal(result.data.user?.role,'authenticated');assert.equal(session.user.id,f.id);});
     }
     if(j.state.fixtures[0].id===j.state.fixtures[1].id||sessions.A.access_token===sessions.B.access_token)fail('distinct_sessions');
-    await assertions(j,c);
+    phase='assertions';fixture=null;await assertions(j,c);
     const [a]=j.state.fixtures;
-    await removeProfile(j,a);
+    fixture='A';await removeProfile(j,a);
     const quotaSql=fixtureSql(a,j.state.runId,j.state.startedAt).quota;const before=await dbQuery(quotaSql);
     await record(j,'missing-profile-get',await c.A.rpc('get_my_profile_name'),denied(['P0002'],[404]));
     await record(j,'missing-profile-set',await c.A.rpc('set_my_profile_name',{p_full_name:'Fixture Missing'}),denied(['P0002'],[404]));
     if(JSON.stringify(before)!==JSON.stringify(await dbQuery(quotaSql))||(await inspectFixture(j,a)).profile!==0)fail('missing_profile_mutation');
-    await record(j,'signout-B',await c.B.auth.signOut({scope:'local'}),success);
+    fixture='B';await record(j,'signout-B',await c.B.auth.signOut({scope:'local'}),success);
     // getUser may still accept an access JWT until expiry. Preserve the actual provider classification.
     await record(j,'revoked-getUser-B',await c.B.auth.getUser(sessions.B.access_token),()=>{});
     await record(j,'revoked-refresh-B',await c.B.auth.refreshSession({refresh_token:sessions.B.refresh_token}),r=>{assert.ok(r.error,'revoked_refresh_must_fail');assert.ok([400,401,403].includes(r.error.status),'revoked_refresh_auth_denial');assert.equal(r.data.session,null);});
-  },()=>cleanup(j,c));
+  },()=>cleanup(j,c),(error,source)=>recordFailure(j,error,source==='cleanup'?'cleanup':phase,source==='cleanup'?null:fixture));
   await j.save({outcome:'passed'});
+}
+async function canonicalPath(path) {
+  const missing=[];let current=resolve(path);
+  for(;;) {
+    try {return join(await realpath(current),...missing.reverse());}
+    catch(error) {if(error.code!=='ENOENT'||dirname(current)===current)fail('state_path');missing.push(basename(current));current=dirname(current);}
+  }
+}
+export async function stateDirectory(path) {
+  let root;
+  try {
+    const scriptDir=dirname(fileURLToPath(import.meta.url));
+    const env={...process.env};delete env.GIT_DIR;delete env.GIT_WORK_TREE;
+    root=await realpath((await exec('git',['-C',scriptDir,'rev-parse','--show-toplevel'],{timeout:5000,maxBuffer:4096,env})).stdout.trim());
+  } catch {fail('checkout_root');}
+  const dir=await canonicalPath(path);
+  if(dir===root||dir.startsWith(`${root}${sep}`))fail('state_inside_checkout');return dir;
 }
 export async function main(argv=process.argv.slice(2)) {
   const [mode='preflight',...flags]=argv;
@@ -368,9 +423,7 @@ export async function main(argv=process.argv.slice(2)) {
   if(known.some(x=>!['--reviewed','--recover-lock','--run-id'].includes(x)))fail('arguments');
   if(mode==='run'&&!reviewed)fail('review_required');if(mode!=='cleanup'&&(runId||recover))fail('arguments');
   const credentials=validateCredentials({publicKey:await readCredential('ANTE_ACCEPTANCE_PUBLIC_KEY'),secretKey:await readCredential('ANTE_ACCEPTANCE_SECRET_KEY')});
-  const dir=resolve(process.env.ANTE_ACCEPTANCE_STATE_DIR??join(homedir(),'.local/state/ante-acceptance/hosted-account-jwt'));
-  // State must be outside the checkout, even when explicitly configured.
-  if(dir===process.cwd()||dir.startsWith(`${process.cwd()}/`))fail('state_inside_checkout');
+  const dir=await stateDirectory(process.env.ANTE_ACCEPTANCE_STATE_DIR??join(homedir(),'.local/state/ante-acceptance/hosted-account-jwt'));
   if(mode==='preflight') {
     const probeId=randomUUID();const state={startedAt:new Date().toISOString(),fixtures:['a','b'].map(x=>({email:`ante-jwt-${probeId}-${x}@example.invalid`})),counters:{data:0,auth:0,create:0,delete:0}};
     const pre=await preflight(credentials,state);console.log(JSON.stringify({project:PROJECT,mode,passed:true,catalog:pre.catalog,preservationTables:pre.baseline.length,mutations:0}));return;
@@ -385,9 +438,9 @@ export async function main(argv=process.argv.slice(2)) {
       j.state.counters.delete=0;await j.save({});
       await cleanup(j,clients(credentials,j.state,()=>j.save({})));await j.save({outcome:'recovered'});
     }
-  } catch {await j.save({outcome:'failed'});process.exitCode=1;}
+  } catch(error) {await recordFailure(j,error,mode==='cleanup'?'cleanup':'runner');await j.save({outcome:'failed'});process.exitCode=1;}
   finally {
-    console.log(JSON.stringify({project:PROJECT,runId:j.state.runId,outcome:j.state.outcome,cleanupComplete:j.state.cleanupComplete,fixtures:j.state.fixtures.map(({label,email,id,stage})=>({label,email,id,stage})),counters:j.state.counters,assertions:j.state.assertions,journal:j.path}));await j.close();
+    console.log(JSON.stringify({project:PROJECT,runId:j.state.runId,outcome:j.state.outcome,cleanupComplete:j.state.cleanupComplete,fixtures:j.state.fixtures.map(({label,email,id,stage})=>({label,email,id,stage})),counters:j.state.counters,assertions:j.state.assertions,failures:j.state.failures??[],journal:j.path}));await j.close();
   }
 }
-if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(()=>{console.error(JSON.stringify({project:PROJECT,outcome:'failed',reason:'runner_preflight_or_journal_failure'}));process.exitCode=1;});
+if(process.argv[1]&&import.meta.url===pathToFileURL(resolve(process.argv[1])).href)main().catch(error=>{console.error(JSON.stringify({project:PROJECT,outcome:'failed',reason:'runner_preflight_or_journal_failure',failure:safeFailure(error,'preflight')}));process.exitCode=1;});

@@ -148,3 +148,43 @@ test('default CLI invocation cannot start a hosted run, and run requires review 
     });
   }
 });
+
+test('failure receipts persist fixed reason, fixture and sanitized provider classification',async()=>{
+  assert.equal(typeof mod.failure,'function');assert.equal(typeof mod.recordFailure,'function');
+  const dir=await mkdtemp(join(tmpdir(),'ante-failure-'));const j=await mod.Journal.create(dir,runId);
+  try {
+    await mod.recordFailure(j,mod.failure('admin_delete_failed',{error:{status:500,code:'unexpected_failure',message:'sb_secret_hidden',details:{token:'hidden'}}}),'cleanup','A');
+    assert.deepEqual(j.state.failures,[{phase:'cleanup',fixture:'A',reason:'admin_delete_failed',status:500,code:'unexpected_failure'}]);
+    const disk=await readFile(j.path,'utf8');assert.doesNotMatch(disk,/sb_secret_hidden|details|hidden/);
+    await mod.recordFailure(j,Error('sb_secret_hidden'),'setup','B');
+    assert.equal(j.state.failures.at(-1).reason,'unclassified_failure');
+    await assert.rejects(j.save({failures:[{phase:'cleanup',fixture:'A',reason:'sb_secret_hidden',status:null,code:null}]}),/journal_failure/);
+  } finally {await j.close();await rm(dir,{recursive:true,force:true});}
+});
+test('cleanup identifies ownership and protected references separately, retaining delete errors',async()=>{
+  assert.equal(typeof mod.safeFailure,'function');
+  for(const [e,reason] of [[{owned:false,protected:0},'ownership_mismatch'],[{owned:true,protected:1},'protected_references']]) {
+    await assert.rejects(mod.cleanupFixture(fixture,{inspect:async()=>e,save:async()=>{}}),error=>{assert.equal(mod.safeFailure(error,'cleanup','A').reason,reason);return true;});
+  }
+  const error=mod.failure('admin_delete_failed',{error:{status:403,code:'bad_jwt',message:'hidden'}});
+  await assert.rejects(mod.cleanupFixture(fixture,{inspect:async()=>({owned:true,protected:0,auth:1,profile:0,privateRows:0}),save:async()=>{},deleteUser:async()=>{throw error;}}),e=>e===error);
+});
+test('both setup and cleanup failures are reported even when the setup error remains primary',async()=>{
+  const seen=[];const setup=Error('setup');const cleanup=Error('cleanup');
+  await assert.rejects(mod.runWithCleanup(async()=>{throw setup;},async()=>{throw cleanup;},async(e,phase)=>seen.push([e,phase])),e=>e===setup);
+  assert.deepEqual(seen,[[setup,'run'],[cleanup,'cleanup']]);
+});
+test('state directory rejects checkout paths from another cwd and through ancestor symlinks',async()=>{
+  assert.equal(typeof mod.stateDirectory,'function');
+  const {fileURLToPath}=await import('node:url');const {symlink}=await import('node:fs/promises');
+  const root=fileURLToPath(new URL('../../',import.meta.url));
+  const dir=await mkdtemp(join(tmpdir(),'ante-state-boundary-'));
+  try {
+    await assert.rejects(mod.stateDirectory(join(root,'not-created','journal')),/state_inside_checkout/);
+    await symlink(root,join(dir,'alias'));
+    await assert.rejects(mod.stateDirectory(join(dir,'alias','not-created','journal')),/state_inside_checkout/);
+    assert.ok((await mod.stateDirectory(join(dir,'outside','journal'))).endsWith('/outside/journal'));
+    const {execFile}=await import('node:child_process');const {promisify}=await import('node:util');
+    await assert.rejects(promisify(execFile)(process.execPath,[fileURLToPath(new URL('./hosted-account-jwt.mjs',import.meta.url))],{cwd:dir,env:{PATH:process.env.PATH,ANTE_ACCEPTANCE_PUBLIC_KEY:credentials.publicKey,ANTE_ACCEPTANCE_SECRET_KEY:credentials.secretKey,ANTE_ACCEPTANCE_STATE_DIR:join(root,'not-created','journal')},timeout:3000}),e=>{assert.match(e.stderr,/state_inside_checkout/);return true;});
+  } finally {await rm(dir,{recursive:true,force:true});}
+});

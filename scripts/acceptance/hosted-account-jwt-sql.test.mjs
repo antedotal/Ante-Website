@@ -47,4 +47,13 @@ test('real PostgreSQL guards exact profile deletion, cascades, ownership, and pr
   assert.equal(await psql(c,'SELECT count(*) FROM auth.users'),'2');
   assert.equal(await psql(c,`SELECT email FROM profiles`),'real@example.invalid');
   await psql(c,`BEGIN; ${sql.remove}; COMMIT;`); // Idempotent exact profile absence.
+  // The profile is absent: the read-only ownership gate must still reject SQL UNKNOWN.
+  for(const assignment of ["raw_app_meta_data='{}'", "raw_app_meta_data='{\"acceptance_run\":null}'", 'raw_app_meta_data=NULL', 'email=NULL']) {
+    await psql(c,`UPDATE auth.users SET email=${literal(f.email)},raw_app_meta_data='{\"acceptance_run\":\"${runId}\"}' WHERE id='${f.id}'; UPDATE auth.users SET ${assignment} WHERE id='${f.id}'`);
+    const evidence=JSON.parse(await psql(c,`SELECT row_to_json(e) FROM (${sql.inspect}) e`));
+    assert.equal(evidence.auth,1);assert.equal(evidence.profile,0);assert.equal(evidence.owned,false,assignment);
+    const {cleanupFixture}=await import('./hosted-account-jwt.mjs');let deletes=0;
+    await assert.rejects(cleanupFixture(f,{inspect:async()=>evidence,removeProfile:async()=>{deletes++;},deleteUser:async()=>{deletes++;},save:async()=>{}}));
+    assert.equal(deletes,0);
+  }
 });

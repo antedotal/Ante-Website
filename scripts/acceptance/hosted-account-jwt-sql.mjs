@@ -45,7 +45,7 @@ export function fixtureSql(f,runId,startedAt,expectedCatalog=null) {
   const protectedCount=protectedChecks.map(([t,where])=>`(SELECT count(*) FROM ${table(t)} WHERE ${where})`).join('+');
   const privateRows=`(SELECT count(*) FROM profile_name_private.owner_limits WHERE owner_id=${id})+(SELECT count(*) FROM ante_presets_private.owner_presets WHERE owner_id=${id})`;
   const profileOk=`NOT EXISTS(SELECT 1 FROM public.profiles WHERE id=${id} AND (email IS DISTINCT FROM ${literal(f.email)} OR waitlist_status IS DISTINCT FROM 'standard' OR stripe_customer_id IS NOT NULL OR avatar_url IS NOT NULL))`;
-  return {inspect:`SELECT (NOT EXISTS(SELECT 1 FROM auth.users WHERE id=${id} AND NOT (${ownership})) AND ${profileOk}) AS owned, (SELECT count(*)::int FROM auth.users WHERE id=${id}) AS auth, (SELECT count(*)::int FROM public.profiles WHERE id=${id}) AS profile, (${protectedCount})::int AS protected, (${privateRows})::int AS "privateRows"`,
+  return {inspect:`SELECT (NOT EXISTS(SELECT 1 FROM auth.users WHERE id=${id} AND (${ownership}) IS NOT TRUE) AND ${profileOk}) AS owned, (SELECT count(*)::int FROM auth.users WHERE id=${id}) AS auth, (SELECT count(*)::int FROM public.profiles WHERE id=${id}) AS profile, (${protectedCount})::int AS protected, (${privateRows})::int AS "privateRows"`,
     remove:`DO $guarded_cleanup$ BEGIN
       IF ${(expectedCatalog&&/^[a-f0-9]{64}$/.test(expectedCatalog))?`(SELECT digest FROM (${catalogSql}) pinned) IS DISTINCT FROM ${literal(expectedCatalog)}`:'true'} THEN RAISE EXCEPTION 'catalog drift or missing pin'; END IF;
       PERFORM 1 FROM auth.users WHERE id=${id} FOR UPDATE;
