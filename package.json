@@ -11,6 +11,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "vitest run",
+    "test:acceptance:local": "node --test scripts/acceptance/hosted-account-jwt.test.mjs scripts/acceptance/hosted-account-jwt-sql.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
