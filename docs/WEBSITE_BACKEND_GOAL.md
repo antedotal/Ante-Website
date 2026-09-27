@@ -35,6 +35,14 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ## Current handoff — 27 September 2026
 
+### Latest: bounded photo Auth prerequisite accepted locally
+
+Website `4b93406`/`d5a8018` add bounded photo Auth transport and SDK waits while preserving exact-token identity, SSR refresh cookies and existing shared sanitizer behavior. Independent task/re-review and final integration review approved. Final validation:268tests, typecheck/scoped lint and production Worker build pass. [Evidence and remaining work](superpowers/audits/2026-09-27-profile-photo-auth-bounds-acceptance.md).
+
+Next source slice is the separately planned server-mediated reader: service-only manifest, direct Storage denial before fresh keys, bounded admission, immutable-byte validation and final authorization checks. The [reviewed design](../../Ante/docs/superpowers/audits/2026-09-27-server-mediated-profile-read-design.md) explicitly incorporates the admission timeout gap. No provider changes occurred in this Auth slice. Photo gates remain closed; Cloudflare CLI login and hosted cache/runtime acceptance remain pending. The overall goal is active and incomplete.
+
+The sections below retain historical evidence; the latest status above and the cache-transition failure below supersede earlier next-step statements. In particular the server-key location, Workers Free selection and Stripe reconnection were resolved later in the history; they are not current missing decisions.
+
 ### Generation-aware profile readers — source and disposable acceptance
 
 Latest: gateway compatibility is deployed as `20260927054952`; all eight final-state checks pass, all 22 table fingerprints are unchanged, and exactly one policy changed. Backend `a6ad9d1` and runner `34795a6` passed independent reviews. The hosted retry passed Auth and initial owner/friend downloads, then returned cached legacy bytes after G1 publication. Cleanup removed all fixtures and preserved the baseline. [Rollout evidence](../../Ante/docs/superpowers/audits/2026-09-27-profile-reader-gateway-rollout.md) and [failed cache-transition receipt](../../Ante/docs/superpowers/audits/2026-09-27-profile-reader-cache-attempt.md) are retained. Resolve this cache boundary before claiming hosted privacy acceptance or enabling photo serving; no blind retry or weakened assertion.
