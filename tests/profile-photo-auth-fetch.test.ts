@@ -16,7 +16,7 @@ const deferred = <T>() => {
   return { promise, resolve }
 }
 
-afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals() })
+afterEach(() => { vi.useRealTimers(); vi.unstubAllGlobals(); vi.restoreAllMocks() })
 
 it('accepts exactly 65536 complete JSON bytes', async () => {
   const body = JSON.stringify({ value: 'x'.repeat(65524) })
@@ -188,4 +188,96 @@ it('keeps raw network error text out of the SDK-facing error', async () => {
   const error = await createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url).catch(error => error)
   expect(error.message).toBe('Auth transport unavailable')
   expect(String(error)).not.toContain(secret)
+})
+
+// A Worker clock can stay frozen during ready microtasks; a finite producer ceiling keeps regressions safe.
+it.each([200, 403])('bounds ready empty Auth chunks at status %s without clock progress or timer callbacks', async status => {
+  vi.useFakeTimers()
+  vi.spyOn(performance, 'now').mockReturnValue(0)
+  let reads = 0
+  const cancel = vi.fn()
+  const body = new ReadableStream<Uint8Array>({ pull(controller) {
+    if (++reads > 80) { controller.close(); return }
+    controller.enqueue(new Uint8Array())
+  }, cancel }, { highWaterMark: 0 })
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status })))
+  const observed = await createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url).catch(error => error)
+  expect(reads).toBe(33)
+  expect(cancel).toHaveBeenCalledOnce()
+  if (status === 200) expect(observed).toBeInstanceOf(Error)
+  else {
+    expect(observed.status).toBe(403)
+    expect(await observed.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+  }
+  expect(vi.getTimerCount()).toBe(0)
+  vi.restoreAllMocks()
+})
+
+it('resets empty progress counts and copies mutable Auth producer chunks', async () => {
+  vi.useFakeTimers()
+  vi.spyOn(performance, 'now').mockReturnValue(0)
+  const pieces = ['{"a":', 'true}']; const shared = new Uint8Array(5)
+  let reads = 0
+  const body = new ReadableStream<Uint8Array>({ pull(controller) {
+    reads++
+    if (reads === 33 || reads === 66) { shared.set(new TextEncoder().encode(pieces.shift()!)); controller.enqueue(shared) }
+    else if (reads > 66) controller.close()
+    else controller.enqueue(new Uint8Array())
+  } }, { highWaterMark: 0 })
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(body)))
+  const result = await createProfilePhotoAuthFetch(project, new AbortController().signal)(url)
+  expect(await result.json()).toEqual({ a: true })
+  expect(reads).toBe(67)
+  vi.restoreAllMocks()
+})
+
+it.each([200, 403])('checks the operation deadline after settled fetch/read without timer dispatch at %s', async status => {
+  vi.useFakeTimers()
+  let now = 0
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  const cancel = vi.fn()
+  let reads = 0
+  const body = new ReadableStream<Uint8Array>({ pull(controller) {
+    if (++reads > 80) { controller.close(); return }
+    now = 10000; controller.enqueue(new TextEncoder().encode('{"ok":true}'))
+  }, cancel }, { highWaterMark: 0 })
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status })))
+  const result = await createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url).catch(error => error)
+  if (status === 200) expect(result).toBeInstanceOf(Error)
+  else { expect(result.status).toBe(403); expect(await result.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' }) }
+  expect(reads).toBe(1)
+  expect(cancel).toHaveBeenCalledOnce()
+  vi.restoreAllMocks()
+})
+
+it('checks the shorter received-error body deadline even when timers cannot run', async () => {
+  vi.useFakeTimers()
+  let now = 0
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  let reads = 0
+  const cancel = vi.fn()
+  const body = new ReadableStream<Uint8Array>({ pull(controller) {
+    if (++reads === 1) { now = 1000; controller.enqueue(new TextEncoder().encode('{"error_code":"session_not_found"}')) }
+    else controller.close()
+  }, cancel }, { highWaterMark: 0 })
+  vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { status: 403 })))
+  const result = await createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url)
+  expect(await result.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' })
+  expect(reads).toBe(1); expect(cancel).toHaveBeenCalledOnce()
+  vi.restoreAllMocks()
+})
+
+it.each([200, 403])('checks the monotonic bound after late fetch headers at status %s', async status => {
+  vi.useFakeTimers()
+  let now = 0
+  vi.spyOn(performance, 'now').mockImplementation(() => now)
+  const cancel = vi.fn()
+  vi.stubGlobal('fetch', vi.fn(async () => {
+    now = 10000
+    return new Response(new ReadableStream({ cancel }), { status })
+  }))
+  const result = await createAuthFetch(project, createProfilePhotoAuthFetch(project, new AbortController().signal))(url).catch(error => error)
+  if (status === 200) expect(result).toBeInstanceOf(Error)
+  else { expect(result.status).toBe(403); expect(await result.json()).toEqual({ code: 'auth_error', msg: 'Authentication request failed' }) }
+  expect(cancel).toHaveBeenCalledOnce()
 })

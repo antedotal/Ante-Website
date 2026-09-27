@@ -6,6 +6,7 @@ const successLimit = 65_536
 const errorLimit = 2_048
 const operationMs = 10_000
 const errorBodyMs = 1_000
+const maxConsecutiveEmptyChunks = 32
 
 const unavailable = () => new Error('Profile photo Auth unavailable')
 const cancel = (body: ReadableStream<Uint8Array> | null) => {
@@ -28,6 +29,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
     if (target.protocol !== 'https:' || target.origin !== origin || target.username || target.password ||
       (target.pathname !== '/auth/v1' && !target.pathname.startsWith('/auth/v1/'))) throw unavailable()
 
+    const deadlineAt = performance.now() + operationMs
     const controller = new AbortController()
     const signals = [ownerSignal, input instanceof Request ? input.signal : undefined, init?.signal].filter((signal): signal is AbortSignal => !!signal)
     let stopped = false
@@ -50,16 +52,22 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
     const timer = setTimeout(() => {
       if (!stopped) { deadlineExpired = true; stop() }
     }, operationMs)
+    // Timers remain necessary for stalls, while monotonic checks cover ready continuations.
+    const checkDeadline = () => {
+      if (performance.now() >= deadlineAt) { deadlineExpired = true; stop() }
+      if (stopped) throw unavailable()
+    }
     let response: Response | undefined
     try {
       const raw = Promise.resolve().then(() => {
-        if (stopped) throw unavailable()
+        checkDeadline()
         return fetch(input, { ...init, signal: controller.signal, redirect: 'manual' })
       })
       // A transport can ignore abort and settle after the caller has returned.
       // Its body must still be disposed, without waiting for cancel to settle.
       void raw.then(late => { if (stopped) cancel(late.body) }, () => {})
       response = await Promise.race([raw, stoppedPromise])
+      checkDeadline()
       if (stopped || response.redirected || response.type === 'opaqueredirect' ||
         response.status < 200 || response.status >= 300 && response.status < 400 && response.status !== 304) throw unavailable()
 
@@ -85,6 +93,8 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
       const reader = response.body?.getReader()
       const chunks: Uint8Array[] = []
       let size = 0
+      let consecutiveEmptyChunks = 0
+      const errorDeadlineAt = performance.now() + errorBodyMs
       let complete = !reader
       let errorTimer: ReturnType<typeof setTimeout> | undefined
       const errorDeadline = success ? undefined : new Promise<null>(resolve => {
@@ -93,11 +103,19 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
       try {
         while (reader && !complete) {
           const part = await Promise.race([reader.read(), stoppedPromise, ...(errorDeadline ? [errorDeadline] : [])])
-          if (part === null) break
+          checkDeadline()
+          if (part === null || !success && performance.now() >= errorDeadlineAt) break
           if (part.done) { complete = true; break }
+          if (!(part.value instanceof Uint8Array)) break
+          // Bound no-progress work even if the clock and timer never advance.
+          if (part.value.byteLength === 0) {
+            if (++consecutiveEmptyChunks > maxConsecutiveEmptyChunks) break
+            continue
+          }
+          consecutiveEmptyChunks = 0
           size += part.value.byteLength
           if (size > (success ? successLimit : errorLimit)) break
-          chunks.push(part.value)
+          chunks.push(part.value.slice())
         }
       } finally {
         if (errorTimer) clearTimeout(errorTimer)
@@ -105,7 +123,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
           try { void reader?.cancel().catch(() => {}) } catch { /* Best effort. */ }
         }
       }
-      if (stopped) throw unavailable()
+      checkDeadline()
       if (!complete || advertised !== null && advertised !== size) {
         if (success) throw unavailable()
         return emptyError(response.status)
@@ -119,6 +137,8 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
           if (parsed === null || typeof parsed !== 'object' || Array.isArray(parsed)) throw unavailable()
         } catch { throw unavailable() }
       }
+      checkDeadline()
+      if (!success && performance.now() >= errorDeadlineAt) return emptyError(response.status)
       // Keep only a safe content type. The sanitizer strips the error body and
       // retains its one allowed revoked-session classification.
       return new Response(response.status === 204 || response.status === 205 || response.status === 304 ? null : bytes, {
@@ -128,7 +148,7 @@ export function createProfilePhotoAuthFetch(projectUrl: string, ownerSignal: Abo
       })
     } catch {
       cancel(response?.body ?? null)
-      if (deadlineExpired && response && !response.ok) return emptyError(response.status)
+      if (deadlineExpired && !signals.some(signal => signal.aborted) && response && !response.ok) return emptyError(response.status)
       throw unavailable()
     } finally {
       clearTimeout(timer)

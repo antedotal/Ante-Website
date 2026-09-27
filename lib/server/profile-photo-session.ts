@@ -1,6 +1,8 @@
 // Establish one verified photo identity and exact bearer token before any owner or Storage action.
 import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
+import { createClient } from '@supabase/supabase-js'
+import { createAuthFetch } from '../supabase/auth-fetch'
 import { createCallbackClient } from '../supabase/server'
 import { providerStatus } from './account-session'
 import { profilePhotoKey } from './profile-photo-store'
@@ -62,4 +64,54 @@ function authFailure(error: unknown): 401 | 429 | 503 {
   const status = providerStatus(error)
   if (status === 429) return 429
   return status !== null && status >= 400 && status < 500 && status !== 408 ? 401 : 503
+}
+
+// Recheck only the original token in a fresh nonpersistent client. It has no SSR cookie adapter,
+// so a final revocation can never replace or clear the initial verified refresh cookies.
+export async function reverifyProfilePhotoSession(session: VerifiedPhotoSession, signal: AbortSignal): Promise<{ kind: 'verified' } | { kind: 'failed'; status: 401 | 503 }> {
+  const controller = new AbortController()
+  const deadlineAt = performance.now() + 10000
+  let providerUncertain = false
+  const interrupted = Symbol('Final photo Auth interrupted')
+  let wake!: (value: typeof interrupted) => void
+  const interruption = new Promise<typeof interrupted>(resolve => { wake = resolve })
+  const abort = () => { controller.abort(); wake(interrupted) }
+  signal.addEventListener('abort', abort, { once: true })
+  const timer = setTimeout(abort, 10000)
+  try {
+    if (signal.aborted) abort()
+    if (controller.signal.aborted) return { kind: 'failed', status: 503 }
+    // Client initialization and SDK settlement both belong to the same local cap.
+    const operation = Promise.resolve().then(async () => {
+      if (controller.signal.aborted || performance.now() >= deadlineAt) return interrupted
+      const { url, key } = accountConfig()
+      const transport = createAuthFetch(url, createProfilePhotoAuthFetch(url, controller.signal))
+      // The SDK can rewrite a 429 carrying session_not_found to a status-400
+      // AuthSessionMissingError. Preserve transport uncertainty before that mapping.
+      const finalFetch: typeof fetch = async (input, init) => {
+        try {
+          const response = await transport(input, init)
+          if (!response.ok && (response.status === 408 || response.status === 429 || response.status < 400 || response.status >= 500)) providerUncertain = true
+          return response
+        } catch (error) { providerUncertain = true; throw error }
+      }
+      const client = createClient(url, key, {
+        auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false },
+        global: { fetch: finalFetch },
+      })
+      return await client.auth.getUser(session.token)
+    })
+    const result = await Promise.race([operation, interruption])
+    if (result === interrupted || providerUncertain || controller.signal.aborted || performance.now() >= deadlineAt) return { kind: 'failed', status: 503 }
+    if (result.error) return { kind: 'failed', status: authFailure(result.error) === 401 ? 401 : 503 }
+    const ownerId = result.data?.user?.id
+    if (typeof ownerId !== 'string' || !profilePhotoKey(ownerId)) return { kind: 'failed', status: 503 }
+    return ownerId === session.ownerId ? { kind: 'verified' } : { kind: 'failed', status: 401 }
+  } catch { return { kind: 'failed', status: 503 } }
+  finally {
+    clearTimeout(timer)
+    signal.removeEventListener('abort', abort)
+    // Prevent any late SDK continuation from opening another transport operation.
+    controller.abort()
+  }
 }
