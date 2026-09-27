@@ -37,11 +37,13 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ### Generation-aware profile readers — source and disposable acceptance
 
+Hosted follow-through: paired backend `28f7c31` and `e200965` corrected the owner-role and retention-policy fixture mismatches. Migration `20260927040130_profile_photo_readers` is now applied. All six postconditions pass; all 22 table fingerprints and every catalog entry except the three expected reader functions are unchanged. The new authenticated-definer advisor notice is intentional and documented. See [SQL rollout evidence](../../Ante/docs/superpowers/audits/2026-09-27-profile-reader-rollout.md). Real-user Data API/Storage privacy tests are being prepared; they have not run, and website gates remain unset.
+
 Backend `9b3d93a`/`1e6dde1` and website `7878848`/`523635e` now resolve the current private avatar with the exact verified caller JWT, then download with that same token. Owners and accepted friends can resolve only the current completed generation. Revision-zero reservations retain the legacy avatar; replacement or clear permanently removes legacy fallback. Pending and replaced keys remain unreadable. The new `generation-read-v1` mode permits only GET; `private-v1` is retired and PUT/DELETE remain closed. No deployment mode was set.
 
 Independent task and final integrated reviews approved. Verification:22 focused backend SQL/real Storage tests,237 website Vitest tests,24 local Node acceptance tests, scoped/backend and website type/lint checks. The canonical test-runner mismatch was corrected: `pnpm test` runs Vitest; `pnpm test:acceptance:local` runs the Node acceptance files. See [reader acceptance](../../Ante/docs/superpowers/audits/2026-09-27-profile-photo-readers-source-acceptance.md).
 
-Next reader release work: fresh hosted preflight/preservation baseline, atomic standalone SQL rollout, postconditions and genuine caller-token Data API/Storage privacy/race acceptance. Applying SQL changes direct Storage authorization even while the website gate is closed. Rollback closes reads; never restore the old avatar policy after a committed revision. HEIC/runtime acceptance, upload publication orchestration and safe cleanup remain separate prerequisites; keep photo serving gated. The broader backend goal remains active.
+Next reader release work: genuine caller-token Data API/Storage privacy/race acceptance using the reviewed bounded runner. The guarded SQL rollout and preservation checks are complete as recorded above. Applying SQL changes direct Storage authorization even while the website gate is closed. Rollback closes reads; never restore the old avatar policy after a committed revision. HEIC/runtime acceptance, upload publication orchestration and safe cleanup remain separate prerequisites; keep photo serving gated. The broader backend goal remains active.
 
 ### Completion audit — current evidence, not a completion claim
 
