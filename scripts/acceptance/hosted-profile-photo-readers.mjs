@@ -22,6 +22,9 @@ const CLEANUP_CAPS={auth:6,data:8,storage:16,cli:16};
 const TOTAL_CAPS={auth:18,data:60,storage:56,cli:36};
 const MIME='image/png';
 const VERSION='synthetic-reader-fixture-v1';
+const PNG_A=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==','base64'));
+const PNG_B=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/5ncLrgAAAABJRU5ErkJggg==','base64'));
+export const syntheticReaderBytes=label=>new Uint8Array(label==='G2'?PNG_B:PNG_A);
 const BACKEND_ROOT='/Users/daniel/.codex/worktrees/ante-web-first-foundation/Ante';
 const ADAPTER='supabase/functions/_shared/profilePhotoAssetStore.ts';
 const photoPath=key=>`/storage/v1/object/authenticated/profile-photos/${key}`;
@@ -42,7 +45,7 @@ export function newReaderState(runId,pins) {
     fixtures:LABELS.map(label=>({label,email:`ante-reader-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createAttempts:0,deleteAttempts:0})),
     objects:OBJECTS.map(label=>({label,key:null,assetId:null,operationId:label==='legacy'?null:randomUUID(),leaseEpoch:null,sha256:null,byteCount:null,mime:MIME,stage:'planned',uploadAttempts:0,deleteAttempts:0})),
     friendship:{id:randomUUID(),status:'planned'},clear:{operationId:randomUUID(),stage:'planned'},teardown:'planned',revision:0,
-    counters:{run:{auth:0,data:0,storage:0,cli:0},cleanup:{auth:0,data:0,storage:0,cli:0}},
+    counters:{run:{auth:0,data:0,storage:0,cli:0},cleanup:{auth:0,data:0,storage:0,cli:0},recoveries:[]},
     baseline:null,after:null,checks:[],failures:[]};
 }
 
@@ -59,10 +62,11 @@ export function validateReaderState(s) {
   ensure(Array.isArray(s.objects)&&s.objects.length===4,'journal_objects');
   for(let i=0;i<4;i++) {
     const o=s.objects[i];
-    ensure(exact(o,['label','key','assetId','operationId','leaseEpoch','sha256','byteCount','mime','stage','uploadAttempts','deleteAttempts'])&&o.label===OBJECTS[i]&&(o.key===null||o.key===`${s.fixtures[0].id}/${i===0?'avatar':o.assetId}`)&&(i===0?o.assetId===null&&o.operationId===null&&o.leaseEpoch===null:(o.assetId===null||UUID.test(o.assetId))&&UUID.test(o.operationId)&&(o.leaseEpoch===null||Number.isSafeInteger(o.leaseEpoch)&&o.leaseEpoch>0))&&(o.sha256===null||SHA.test(o.sha256))&&(o.byteCount===null||Number.isInteger(o.byteCount)&&o.byteCount>=1&&o.byteCount<=4096)&&o.mime===MIME&&['planned','reserve_intent','reserved','bind_intent','bound','prepare_intent','prepared','upload_intent','upload_uncertain','verified','publish_intent','published','delete_intent','deleted'].includes(o.stage)&&Number.isInteger(o.uploadAttempts)&&o.uploadAttempts>=0&&o.uploadAttempts<=1&&Number.isInteger(o.deleteAttempts)&&o.deleteAttempts>=0&&o.deleteAttempts<=2,'journal_object');
+    const expected=syntheticReaderBytes(o.label);
+    ensure(exact(o,['label','key','assetId','operationId','leaseEpoch','sha256','byteCount','mime','stage','uploadAttempts','deleteAttempts'])&&o.label===OBJECTS[i]&&(o.key===null||o.key===`${s.fixtures[0].id}/${i===0?'avatar':o.assetId}`)&&(i===0?o.assetId===null&&o.operationId===null&&o.leaseEpoch===null:(o.assetId===null||UUID.test(o.assetId))&&UUID.test(o.operationId)&&(o.leaseEpoch===null||Number.isSafeInteger(o.leaseEpoch)&&o.leaseEpoch>0))&&(o.sha256===null||o.sha256===sha(expected))&&(o.byteCount===null||o.byteCount===expected.byteLength)&&o.mime===MIME&&['planned','reserve_intent','reserved','bind_intent','bound','prepare_intent','prepared','upload_intent','upload_uncertain','verified','publish_intent','published','delete_intent','deleted'].includes(o.stage)&&Number.isInteger(o.uploadAttempts)&&o.uploadAttempts>=0&&o.uploadAttempts<=1&&Number.isInteger(o.deleteAttempts)&&o.deleteAttempts>=0&&o.deleteAttempts<=2,'journal_object');
   }
   ensure(exact(s.friendship,['id','status'])&&UUID.test(s.friendship.id)&&['planned','insert_intent','accepted','reject_intent','rejected','restore_intent','delete_intent','deleted'].includes(s.friendship.status)&&exact(s.clear,['operationId','stage'])&&UUID.test(s.clear.operationId)&&['planned','intent','completed'].includes(s.clear.stage)&&['planned','intent','done'].includes(s.teardown)&&Number.isInteger(s.revision)&&s.revision>=0&&s.revision<=3,'journal_authority');
-  ensure(exact(s.counters,['run','cleanup']),'journal_counters');
+  ensure(exact(s.counters,['run','cleanup','recoveries'])&&Array.isArray(s.counters.recoveries),'journal_counters');
   for(const phase of ['run','cleanup']) {
     ensure(exact(s.counters[phase],['auth','data','storage','cli']),'journal_counters');
     for(const kind of ['auth','data','storage','cli']) {
@@ -70,6 +74,11 @@ export function validateReaderState(s) {
       ensure(Number.isInteger(n)&&n>=0&&n<=({run:RUN_CAPS,cleanup:CLEANUP_CAPS}[phase][kind])&&n+s.counters[phase==='run'?'cleanup':'run'][kind]<=TOTAL_CAPS[kind],'journal_counters');
     }
   }
+  for(const epoch of s.counters.recoveries){
+    ensure(exact(epoch,['id','counts'])&&UUID.test(epoch.id)&&exact(epoch.counts,['auth','data','storage','cli']),'journal_counters');
+    for(const kind of ['auth','data','storage','cli'])ensure(Number.isInteger(epoch.counts[kind])&&epoch.counts[kind]>=0&&epoch.counts[kind]<=CLEANUP_CAPS[kind],'journal_counters');
+  }
+  ensure(new Set(s.counters.recoveries.map(x=>x.id)).size===s.counters.recoveries.length,'journal_counters');
   for(const rows of [s.baseline,s.after]) if(rows!==null) {
     ensure(Array.isArray(rows)&&rows.length===TABLES.length,'journal_fingerprint');
     for(const r of rows) ensure(exact(r,['table','count','digest'])&&TABLES.includes(r.table)&&Number.isSafeInteger(r.count)&&r.count>=0&&SHA.test(r.digest),'journal_fingerprint');
@@ -78,9 +87,43 @@ export function validateReaderState(s) {
   ensure(Array.isArray(s.failures)&&s.failures.length<=30&&s.failures.every(f=>typeof f==='string'&&/^[a-z0-9_]{1,80}$/.test(f)),'journal_failures');
 }
 
+const transitions={
+  run:{prepared:['testing','cleanup'],testing:['cleanup'],cleanup:['blocked','complete'],blocked:['cleanup'],complete:[]},
+  fixture:{planned:['create_intent'],create_intent:['created'],created:['profile_removed'],profile_removed:['auth_delete_intent'],auth_delete_intent:['cleaned'],cleaned:[]},
+  object:{planned:['reserve_intent','upload_intent'],reserve_intent:['reserved'],reserved:['bind_intent','delete_intent','deleted'],bind_intent:['bound','reserved','delete_intent','deleted'],bound:['prepare_intent','delete_intent','deleted'],prepare_intent:['prepared','bound','reserved','delete_intent','deleted'],prepared:['upload_intent','delete_intent','deleted'],upload_intent:['verified','upload_uncertain','deleted'],upload_uncertain:['verified'],verified:['publish_intent','delete_intent'],publish_intent:['published','delete_intent'],published:['delete_intent'],delete_intent:['deleted'],deleted:[]},
+  friend:{planned:['insert_intent','delete_intent'],insert_intent:['accepted','delete_intent'],accepted:['reject_intent','delete_intent'],reject_intent:['rejected','delete_intent'],rejected:['restore_intent','delete_intent'],restore_intent:['accepted','delete_intent'],delete_intent:['deleted'],deleted:[]},
+  clear:{planned:['intent'],intent:['completed'],completed:[]},teardown:{planned:['intent'],intent:['done'],done:[]},
+};
+const advances=(from,to,graph)=>from===to||graph[from]?.includes(to);
+const bound=(old,next)=>old===null||old===next;
+const prefix=(old,next)=>old.length<=next.length&&old.every((v,i)=>JSON.stringify(v)===JSON.stringify(next[i]));
+
+// A valid last snapshot is insufficient: previous identities, attempts and evidence must also survive.
+export function validateReaderHistory(old,next){
+  validateReaderState(old);validateReaderState(next);
+  ensure(old.runId===next.runId&&old.startedAt===next.startedAt&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advances(old.stage,next.stage,transitions.run)&&(!old.cleanupComplete||next.cleanupComplete)&&next.revision>=old.revision&&(old.baseline===null||JSON.stringify(old.baseline)===JSON.stringify(next.baseline))&&(old.after===null||JSON.stringify(old.after)===JSON.stringify(next.after))&&prefix(old.checks,next.checks)&&prefix(old.failures,next.failures),'journal_history');
+  for(let i=0;i<3;i++){
+    const a=old.fixtures[i],b=next.fixtures[i];
+    ensure(bound(a.id,b.id)&&bound(a.createdAt,b.createdAt)&&advances(a.stage,b.stage,transitions.fixture)&&b.createAttempts>=a.createAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');
+  }
+  for(let i=0;i<4;i++){
+    const a=old.objects[i],b=next.objects[i];
+    ensure(a.operationId===b.operationId&&bound(a.key,b.key)&&bound(a.assetId,b.assetId)&&bound(a.leaseEpoch,b.leaseEpoch)&&bound(a.sha256,b.sha256)&&bound(a.byteCount,b.byteCount)&&advances(a.stage,b.stage,transitions.object)&&!(a.stage==='upload_intent'&&b.stage==='deleted'&&a.uploadAttempts!==0)&&b.uploadAttempts>=a.uploadAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');
+  }
+  ensure(old.friendship.id===next.friendship.id&&old.clear.operationId===next.clear.operationId&&advances(old.friendship.status,next.friendship.status,transitions.friend)&&advances(old.clear.stage,next.clear.stage,transitions.clear)&&advances(old.teardown,next.teardown,transitions.teardown),'journal_history');
+  for(const phase of ['run','cleanup'])for(const kind of ['auth','data','storage','cli'])ensure(next.counters[phase][kind]>=old.counters[phase][kind],'journal_history');
+  const before=old.counters.recoveries,after=next.counters.recoveries;
+  ensure(after.length>=before.length&&after.length<=before.length+1,'journal_history');
+  for(let i=0;i<before.length;i++){
+    ensure(before[i].id===after[i].id,'journal_history');
+    for(const kind of ['auth','data','storage','cli'])ensure(after[i].counts[kind]>=before[i].counts[kind]&&(i===before.length-1&&after.length===before.length||after[i].counts[kind]===before[i].counts[kind]),'journal_history');
+  }
+  if(after.length>before.length)ensure(Object.values(after.at(-1).counts).every(n=>n===0),'journal_history');
+}
+
 async function syncDir(dir) {const h=await open(dir,'r');try{await h.sync();}finally{await h.close();}}
 async function privateFile(path){const st=await lstat(path);ensure(st.isFile()&&!st.isSymbolicLink()&&(st.mode&0o077)===0&&st.uid===process.getuid(),'private_file');}
-async function load(dir,runId){const path=join(dir,`${runId}.jsonl`);await privateFile(path);const raw=await readFile(path,'utf8');ensure(raw.endsWith('\n'),'journal_torn_tail');const snapshots=raw.trim().split('\n').map(JSON.parse);snapshots.forEach(validateReaderState);ensure(snapshots.every(s=>s.runId===runId),'journal_identity');return {path,state:snapshots.at(-1)};}
+async function load(dir,runId){const path=join(dir,`${runId}.jsonl`);await privateFile(path);const raw=await readFile(path,'utf8');ensure(raw.endsWith('\n'),'journal_torn_tail');const snapshots=raw.trim().split('\n').map(JSON.parse);snapshots.forEach(validateReaderState);for(let i=1;i<snapshots.length;i++)validateReaderHistory(snapshots[i-1],snapshots[i]);ensure(snapshots.every(s=>s.runId===runId),'journal_identity');return {path,state:snapshots.at(-1)};}
 
 // A new run cannot coexist with any unresolved journal; every mutation is an fsynced snapshot.
 export class ReaderJournal {
@@ -107,8 +150,8 @@ export class ReaderJournal {
     ensure(UUID.test(runId),'run_id');const lock=await this.lock(dir,recover);
     try{const {path,state}=await load(dir,runId);return new ReaderJournal(dir,path,lock,await open(path,constants.O_APPEND|constants.O_WRONLY|constants.O_NOFOLLOW),state);}catch(e){await unlink(lock);throw e;}
   }
-  constructor(dir,path,lock,file,state){Object.assign(this,{dir,path,lock,file,state});}
-  async save(patch){const next={...this.state,...patch};validateReaderState(next);await this.file.write(`${JSON.stringify(next)}\n`);await this.file.sync();Object.assign(this.state,next);}
+  constructor(dir,path,lock,file,state){Object.assign(this,{dir,path,lock,file,state,persistedState:structuredClone(state)});}
+  async save(patch){const next={...this.state,...patch};validateReaderState(next);if(this.persistedState)validateReaderHistory(this.persistedState,next);await this.file.write(`${JSON.stringify(next)}\n`);await this.file.sync();Object.assign(this.state,next);this.persistedState=structuredClone(next);}
   async mutate(change){const next=structuredClone(this.state);change(next);await this.save(next);}
   async close(){if(!this.file)return;await this.file.close();this.file=null;await unlink(this.lock);await syncDir(this.dir);}
 }
@@ -117,6 +160,49 @@ export async function unresolvedJournals(dir){
   let names;try{names=await readdir(dir);}catch(error){if(error.code==='ENOENT')return [];throw error;}
   const st=await lstat(dir);ensure(st.isDirectory()&&!st.isSymbolicLink()&&(st.mode&0o077)===0&&st.uid===process.getuid(),'journal_directory');
   const unresolved=[];for(const name of names)if(name.endsWith('.jsonl')){const old=await load(dir,name.slice(0,-6));if(!old.state.cleanupComplete)unresolved.push(old.state.runId);}return unresolved;
+}
+
+// Interpret only journaled operation IDs; a timed-out RPC is never resent to discover its result.
+export function reconcileAuthority(s,inventory){
+  ensure(Array.isArray(inventory.operations)&&Array.isArray(inventory.heads),'authority_inventory');
+  const owner=s.fixtures[0].id,seen=new Set();let revision=0,current=null;
+  for(const op of inventory.operations){
+    ensure(!seen.has(op.operation_id)&&op.owner_id===owner,'authority_mismatch');seen.add(op.operation_id);
+    if(op.operation_id===s.clear.operationId){
+      ensure(s.clear.stage!=='planned'&&op.kind==='delete'&&Number(op.expected_revision)===2&&op.state==='completed'&&Number(op.result_revision)===3&&op.asset_id===null&&op.object_key===null,'authority_mismatch');
+      s.clear.stage='completed';continue;
+    }
+    const index=s.objects.findIndex((o,i)=>i>0&&o.operationId===op.operation_id),o=s.objects[index];
+    ensure(index>0&&o&&op.kind==='upload'&&Number(op.expected_revision)===index-1&&UUID.test(op.asset_id??'')&&op.object_key===`${owner}/${op.asset_id}`&&Number.isSafeInteger(Number(op.lease_epoch))&&Number(op.lease_epoch)>0,'authority_mismatch');
+    const expected=syntheticReaderBytes(o.label),hash=sha(expected);
+    if(o.assetId===null){
+      ensure(o.stage==='reserve_intent','authority_mismatch');
+      Object.assign(o,{assetId:op.asset_id,key:op.object_key,leaseEpoch:Number(op.lease_epoch),sha256:hash,byteCount:expected.byteLength});
+    }else ensure(o.assetId===op.asset_id&&o.key===op.object_key&&o.leaseEpoch===Number(op.lease_epoch)&&o.sha256===hash&&o.byteCount===expected.byteLength,'authority_mismatch');
+    ensure(['reserved','prepared','completed'].includes(op.state),'authority_mismatch');
+    const bound=op.input_sha256!==null;
+    ensure((!bound||op.input_sha256===hash&&op.transform_version===VERSION)&&(!bound||op.state!=='reserved'||op.normalized_sha256===null),'authority_mismatch');
+    if(op.state==='reserved'){
+      ensure(op.normalized_sha256===null&&op.mime===null&&op.byte_count===null&&['reserve_intent','reserved','bind_intent','bound','prepare_intent'].includes(o.stage),'authority_mismatch');
+      o.stage=bound?'bound':'reserved';
+    }else{
+      ensure(bound&&op.normalized_sha256===hash&&op.mime===MIME&&Number(op.byte_count)===expected.byteLength&&Number(op.width)===1&&Number(op.height)===1,'authority_mismatch');
+      if(op.state==='prepared'){
+        ensure(['prepare_intent','prepared','upload_intent','upload_uncertain','verified','publish_intent'].includes(o.stage),'authority_mismatch');
+        if(o.stage==='prepare_intent')o.stage='prepared';
+      }else{
+        ensure(['publish_intent','published'].includes(o.stage)&&Number(op.result_revision)===index,'authority_mismatch');
+        o.stage='published';
+      }
+    }
+    if(op.state==='completed'&&index>revision){revision=index;current=o.assetId;}
+  }
+  for(const o of s.objects.slice(1))if(o.stage!=='planned'&&!seen.has(o.operationId))throw reason('authority_uncertain');
+  if(s.clear.stage==='intent'&&!seen.has(s.clear.operationId))throw reason('authority_uncertain');
+  if(s.clear.stage==='completed'){revision=3;current=null;}
+  ensure(inventory.heads.length===(seen.size?1:0),'authority_head');
+  if(inventory.heads.length){const h=inventory.heads[0];ensure(h.owner_id===owner&&Number(h.revision)===revision&&(h.current_asset_id??null)===current,'authority_head');}
+  ensure(s.revision<=revision,'authority_revision');s.revision=revision;
 }
 
 // Cleanup accepts only exact owned identities and manifests; unknown rows are preservation failures.
@@ -129,26 +215,27 @@ export function assertOwnedInventory(s,inventory) {
   const current=s.clear.stage==='completed'?null:[...s.objects.slice(1)].reverse().find(o=>o.stage==='published')?.assetId??null;
   for(const h of inventory.heads)ensure(h.owner_id===s.fixtures[0].id&&Number(h.revision)===s.revision&&(h.current_asset_id??null)===current,'ownership_mismatch');
   for(const op of inventory.operations){const index=s.objects.findIndex(x=>x.operationId===op.operation_id),isClear=op.operation_id===s.clear.operationId,o=index>0?s.objects[index]:isClear?{assetId:null,key:null,sha256:null,byteCount:null,mime:null}:null;
-    ensure(o&&op.owner_id===s.fixtures[0].id&&(op.asset_id??null)===o.assetId&&(op.object_key??null)===o.key&&op.kind===(isClear?'delete':'upload')&&Number(op.expected_revision)===(isClear?2:index-1)&&['prepared','completed'].includes(op.state)&&Number(op.result_revision??-1)===(op.state==='completed'?(isClear?3:index):-1),'ownership_mismatch');
-    if(!isClear)ensure(op.normalized_sha256===o.sha256&&op.mime===o.mime&&Number(op.byte_count)===o.byteCount,'manifest_mismatch');
+    ensure(o&&op.owner_id===s.fixtures[0].id&&(op.asset_id??null)===o.assetId&&(op.object_key??null)===o.key&&op.kind===(isClear?'delete':'upload')&&Number(op.expected_revision)===(isClear?2:index-1)&&['reserved','prepared','completed'].includes(op.state)&&Number(op.result_revision??-1)===(op.state==='completed'?(isClear?3:index):-1),'ownership_mismatch');
+    if(!isClear&&op.state==='reserved')ensure(op.normalized_sha256===null&&op.mime===null&&op.byte_count===null,'manifest_mismatch');
+    if(!isClear&&op.state!=='reserved')ensure(op.normalized_sha256===o.sha256&&op.mime===o.mime&&Number(op.byte_count)===o.byteCount,'manifest_mismatch');
   }
   for(const obj of inventory.objects){const o=s.objects.find(x=>x.key===obj.name);ensure(o,'ownership_mismatch');ensure(obj.sha256===o.sha256&&obj.byte_count===o.byteCount&&obj.mime===o.mime,'manifest_mismatch');}
   return true;
 }
 export function cleanupDecision(s,inventory) {
-  if(s.fixtures.some(f=>f.stage==='create_intent'&&f.id===null)||s.objects.some(o=>o.stage==='upload_uncertain'&&o.key&&!inventory.objects.some(x=>x.name===o.key)))return 'blocked';
+  if(s.fixtures.some(f=>f.stage==='create_intent'&&f.id===null)||s.objects.some(o=>['upload_intent','upload_uncertain'].includes(o.stage)&&o.uploadAttempts>0&&o.key&&!inventory.objects.some(x=>x.name===o.key)))return 'blocked';
   assertOwnedInventory(s,inventory);return 'ready';
 }
 
 // The request descriptor, not a caller-supplied URL, chooses every provider endpoint and budget.
 export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetch,phase='run',deadlineMs=10_000}) {
   validateCredentials(credentials);
-  ensure(['run','cleanup'].includes(phase),'phase_boundary');
+  ensure(['run','cleanup','recovery'].includes(phase)&& (phase!=='recovery'||state.counters.recoveries.length>0),'phase_boundary');
   const seen=new Set();
   return async spec=>{
     ensure(simple(spec)&&Object.keys(spec).every(k=>['kind','method','key','body','mime','intent','caller','rpc','args','action','label','password','service','view','table'].includes(k)),'request_boundary');
     let path,category,headers={apikey:credentials.publicKey},payload=null,cap=16_384;
-    const caller=spec.caller;
+    const caller=spec.caller??(spec.kind==='auth'&&spec.action==='user'?spec.label:undefined);
     const publicCaller=()=>{
       const token=sessions[caller]?.token;
       ensure(LABELS.includes(caller)&&typeof token==='string'&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(token),'caller_boundary');
@@ -200,7 +287,7 @@ export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetc
         ensure(spec.method==='POST'&&f?.stage==='created'&&typeof spec.password==='string'&&spec.password.length>=32,'auth_boundary');
         path='/auth/v1/token?grant_type=password';headers={apikey:credentials.publicKey,'content-type':'application/json'};payload=JSON.stringify({email:f.email,password:spec.password});
       } else if(spec.action==='user'){
-        ensure(spec.method==='GET'&&f?.stage==='created'&&sessions[f.label]?.token,'auth_boundary');
+        ensure(spec.method==='GET'&&f?.stage==='created'&&spec.caller===undefined&&sessions[f.label]?.token,'auth_boundary');
         path='/auth/v1/user';headers=publicCaller();
       } else if(spec.action==='delete'){
         ensure(spec.method==='DELETE'&&f?.id&&f.stage==='auth_delete_intent'&&f.deleteAttempts<2,'auth_delete_boundary');
@@ -209,12 +296,13 @@ export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetc
         ensure(spec.method==='GET'&&spec.label===undefined,'auth_boundary');path='/auth/v1/admin/users/00000000-0000-0000-0000-000000000000';headers={apikey:credentials.secretKey,Authorization:`Bearer ${credentials.secretKey}`};
       } else throw reason('auth_boundary');
     } else throw reason('request_boundary');
-    ensure(phase==='cleanup'||Date.now()-Date.parse(state.startedAt)<=360_000,'test_deadline');
+    ensure(phase!=='run'||Date.now()-Date.parse(state.startedAt)<=360_000,'test_deadline');
     const mutating=spec.kind==='auth'&&['create','delete'].includes(spec.action)||spec.kind==='storage'&&['POST','DELETE'].includes(spec.method)&&spec.view!=='sign'&&spec.view!=='list'||spec.kind==='data'&&!['resolve_profile_photo_v1','profile_photo_state_v1'].includes(spec.rpc);
-    const marker=`${spec.kind}:${spec.method}:${spec.intent??spec.rpc??spec.action??spec.key}:${spec.args?.p_operation_id??''}`;
+    const marker=`${spec.kind}:${spec.method}:${spec.intent??spec.rpc??spec.action??spec.key}:${spec.args?.p_operation_id??''}:${spec.kind==='auth'?spec.label??'':''}`;
     if(mutating&&seen.has(marker))throw reason('retry_refused');if(mutating)seen.add(marker);
-    ensure(state.counters[phase][category]<({run:RUN_CAPS,cleanup:CLEANUP_CAPS}[phase][category])&&state.counters.run[category]+state.counters.cleanup[category]<TOTAL_CAPS[category],'request_cap');
-    state.counters[phase][category]++;await save();
+    const counts=phase==='recovery'?state.counters.recoveries.at(-1).counts:state.counters[phase];
+    ensure(counts[category]<(phase==='run'?RUN_CAPS:CLEANUP_CAPS)[category]&&(phase==='recovery'||state.counters.run[category]+state.counters.cleanup[category]<TOTAL_CAPS[category]),'request_cap');
+    counts[category]++;await save();
     const controller=new AbortController();let timer,reader,response;
     const deadline=new Promise((_,reject)=>{timer=setTimeout(()=>{controller.abort();reject(reason('request_deadline'));},deadlineMs);});
     try {
@@ -243,8 +331,6 @@ export async function importReviewedAdapter(pins) {
   return import(pathToFileURL(path).href);
 }
 
-const PNG_A=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGP4z8DwHwAFAAH/iZk9HQAAAABJRU5ErkJggg==','base64'));
-const PNG_B=Uint8Array.from(Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYPj/HwADAgH/5ncLrgAAAABJRU5ErkJggg==','base64'));
 const equalBytes=(a,b)=>a instanceof Uint8Array&&b instanceof Uint8Array&&a.byteLength===b.byteLength&&a.every((v,i)=>v===b[i]);
 
 // Check a complete image or explicit denial with the saved caller JWT; no read fallback is attempted.
@@ -352,7 +438,7 @@ export async function main(argv=process.argv.slice(2)){
   const pins=environmentPins();await importReviewedAdapter(pins);
   const credentials=validateCredentials({publicKey:await readCredential('ANTE_ACCEPTANCE_PUBLIC_KEY'),secretKey:await readCredential('ANTE_ACCEPTANCE_SECRET_KEY')});
   const dir=await stateDirectory(process.env.ANTE_ACCEPTANCE_STATE_DIR??join(homedir(),'.local/state/ante-acceptance/hosted-profile-photo-readers'));
-  ensure((await unresolvedJournals(dir)).length===(mode==='cleanup'?1:0),'unresolved_journal');
+  const unresolved=await unresolvedJournals(dir);ensure(mode==='cleanup'?unresolved.length===1&&unresolved[0]===runId:unresolved.length===0,'unresolved_journal');
   const {makeReaderPort}=await import('./hosted-profile-photo-readers-port.mjs');
   if(mode==='preflight'){
     const state=newReaderState(randomUUID(),pins),stub={state,save:async()=>{}};
@@ -362,7 +448,8 @@ export async function main(argv=process.argv.slice(2)){
   const j=mode==='run'?await ReaderJournal.create(dir,newReaderState(randomUUID(),pins)):await ReaderJournal.resume(dir,runId,recover);
   try{
     ensure(JSON.stringify(j.state.pins)===JSON.stringify(pins),'pin_changed');
-    const port=makeReaderPort(j,credentials);
+    if(mode==='cleanup')await j.mutate(s=>{s.counters.recoveries.push({id:randomUUID(),counts:{auth:0,data:0,storage:0,cli:0}});});
+    const port=makeReaderPort(j,credentials,{recovery:mode==='cleanup'});
     if(mode==='run')await runAcceptance(j,port);
     else {await j.mutate(s=>{s.stage='cleanup';});await port.cleanup();await j.mutate(s=>{s.cleanupComplete=true;s.stage='complete';s.outcome=s.failures.length===0?'recovered':'failed';});}
   }catch{process.exitCode=1;await j.mutate(s=>{s.outcome='failed';s.failures.push(mode==='run'?'run_failed':'cleanup_failed');});}

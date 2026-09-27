@@ -4,7 +4,7 @@ import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { ORIGIN, inspectConfig, dbQuery, reconcileCreate } from './hosted-account-jwt.mjs';
 import { TABLES, catalogSql, preservationSql, collisionSql, reconcileSql, fixtureSql } from './hosted-account-jwt-sql.mjs';
-import { readerRequest, assertOwnedInventory, cleanupDecision, importReviewedAdapter } from './hosted-profile-photo-readers.mjs';
+import { readerRequest, assertOwnedInventory, cleanupDecision, reconcileAuthority, importReviewedAdapter } from './hosted-profile-photo-readers.mjs';
 import { friendMutationSql, readerInventorySql, teardownSql } from './hosted-profile-photo-readers-sql.mjs';
 
 const BACKEND='/Users/daniel/.codex/worktrees/ante-web-first-foundation/Ante';
@@ -14,15 +14,16 @@ const json=r=>{try{return JSON.parse(new TextDecoder().decode(r.bytes));}catch{t
 const ok=r=>{check(r.status>=200&&r.status<300,'provider_status');return json(r);};
 const deny=r=>check([400,401,403,404,406].includes(r.status),'exposure');
 
-export function makeReaderPort(j,credentials,{fetchImpl=fetch,query=dbQuery,config=inspectConfig,adapter=importReviewedAdapter}={}) {
+export function makeReaderPort(j,credentials,{fetchImpl=fetch,query=dbQuery,config=inspectConfig,adapter=importReviewedAdapter,recovery=false}={}) {
   const s=j.state,sessions={};
   const save=()=>j.save({});
   const run=readerRequest({state:s,credentials,sessions,save,fetchImpl,phase:'run'});
-  const clean=readerRequest({state:s,credentials,sessions,save,fetchImpl,phase:'cleanup'});
+  const clean=readerRequest({state:s,credentials,sessions,save,fetchImpl,phase:recovery?'recovery':'cleanup'});
   async function sql(statement,{write=false,phase='run'}={}){
-    const counters=s.counters[phase];check(counters.cli<({run:20,cleanup:16})[phase]&&s.counters.run.cli+s.counters.cleanup.cli<36,'cli_cap');
+    const counts=phase==='cleanup'&&recovery?s.counters.recoveries.at(-1).counts:s.counters[phase];
+    check(counts.cli<(phase==='run'?20:16)&&(recovery||s.counters.run.cli+s.counters.cleanup.cli<36),'cli_cap');
     if(phase==='run')check(Date.now()-Date.parse(s.startedAt)<=360_000,'test_deadline');
-    counters.cli++;await save();return query(statement,{write});
+    counts.cli++;await save();return query(statement,{write});
   }
   const catalog=async phase=>{const rows=await sql(catalogSql,{phase});check(rows.length===1&&rows[0].digest===s.pins.catalog,'catalog_drift');return rows[0].digest;};
   const baseline=async phase=>{const rows=await sql(preservationSql(),{phase});check(rows.length===TABLES.length,'preservation_incomplete');return rows;};
@@ -112,6 +113,8 @@ export async function cleanupReader(j,{sql,readback,clean,catalog,baseline}){
       const candidates=await sql(reconcileSql(f),{phase:'cleanup'});
       if(candidates.length===0&&f.stage==='auth_delete_intent'){await j.mutate(next=>{next.fixtures[i].stage='cleaned';});continue;}
       check(candidates.length===1,'auth_ownership');reconcileCreate(f,candidates,s.runId,s.startedAt);
+      const [proof]=await sql(fixtureSql(f,s.runId,s.startedAt).inspect,{phase:'cleanup'});
+      check(proof?.owned===true&&Number(proof.auth)===1&&Number(proof.profile)===0&&Number(proof.protected)===0&&Number(proof.privateRows)===0,'auth_protected_references');
       await j.mutate(next=>{next.fixtures[i].stage='auth_delete_intent';});
       const r=await clean({kind:'auth',action:'delete',method:'DELETE',label:f.label});check(r.status>=200&&r.status<300,'auth_delete');
       check((await sql(reconcileSql(f),{phase:'cleanup'})).length===0,'auth_delete_unconfirmed');
@@ -146,8 +149,13 @@ export async function cleanupReader(j,{sql,readback,clean,catalog,baseline}){
     return row;
   };
   if(s.teardown!=='done'){
-    const found=await inventory();check(cleanupDecision(s,found)==='ready','cleanup_uncertain');
+    const found=await inventory();check(found.protected===0,'protected_references');
     const metadataAbsent=found.profiles.length===0&&found.friends.length===0&&found.heads.length===0&&found.operations.length===0;
+    if(!metadataAbsent)await j.mutate(next=>{
+      reconcileAuthority(next,found);
+      for(const o of next.objects)if(['upload_intent','upload_uncertain'].includes(o.stage)&&o.uploadAttempts>0&&found.objects.some(x=>x.name===o.key))o.stage='verified';
+    });
+    check(cleanupDecision(s,found)==='ready','cleanup_uncertain');
     if(s.teardown==='intent'&&metadataAbsent){
       check(found.auth.length===3,'teardown_reconcile');
     }else{
@@ -170,6 +178,9 @@ export async function cleanupReader(j,{sql,readback,clean,catalog,baseline}){
     const o=s.objects[i];if(!o.key)continue;
     const rb=verified.get(o.key)??(o.stage==='deleted'||o.stage==='delete_intent'?await readback(o,'cleanup'):null);
     if(o.stage==='deleted'){check(rb===null&&!metadata.objects.some(x=>x.name===o.key),'deleted_object_reappeared');continue;}
+    if(!rb&&o.uploadAttempts===0&&!metadata.objects.some(x=>x.name===o.key)){
+      await j.mutate(next=>{next.objects[i].stage='deleted';});continue;
+    }
     if(!rb&&o.stage==='delete_intent'&&o.deleteAttempts>0&&!metadata.objects.some(x=>x.name===o.key)){
       await j.mutate(next=>{next.objects[i].stage='deleted';});continue;
     }

@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { withDisposablePostgres, psql } from '../../../Ante/scripts/backend/integration/disposable-postgres.mjs';
-import { newReaderState } from './hosted-profile-photo-readers.mjs';
+import { newReaderState, syntheticReaderBytes } from './hosted-profile-photo-readers.mjs';
 import { friendMutationSql, teardownSql } from './hosted-profile-photo-readers-sql.mjs';
 import { catalogSql } from './hosted-account-jwt-sql.mjs';
 
@@ -13,16 +14,19 @@ test('disposable SQL friendship and teardown reject foreign ownership, refs and 
   const c=await withDisposablePostgres(t,'reader-sql');
   const s=newReaderState(runId,pins);s.startedAt='2026-09-27T00:00:00Z';
   for(let i=0;i<3;i++){s.fixtures[i].id=ids[i];s.fixtures[i].createdAt='2026-09-27T00:00:01Z';s.fixtures[i].stage='created';}
-  await psql(c,`CREATE SCHEMA auth;CREATE SCHEMA profile_asset_private;CREATE SCHEMA storage;
+  await psql(c,`CREATE SCHEMA auth;CREATE SCHEMA profile_asset_private;CREATE SCHEMA storage;CREATE SCHEMA profile_name_private;CREATE SCHEMA ante_presets_private;
     CREATE TABLE auth.users(id uuid PRIMARY KEY,email text,raw_app_meta_data jsonb,created_at timestamptz);
     CREATE TABLE public.profiles(id uuid PRIMARY KEY,email text,waitlist_status text,stripe_customer_id text,avatar_url text);
     CREATE TABLE public."friend pairs"(id uuid PRIMARY KEY,friend_1 uuid,friend_2 uuid,status text);
     CREATE TABLE profile_asset_private.heads(owner_id uuid,revision bigint,current_asset_id uuid);
-    CREATE TABLE profile_asset_private.operations(owner_id uuid,operation_id uuid,kind text,asset_id uuid,object_key text,normalized_sha256 bytea,mime text,byte_count int,state text,expected_revision bigint,result_revision bigint);
+    CREATE TABLE profile_asset_private.operations(owner_id uuid,operation_id uuid,kind text,asset_id uuid,object_key text,lease_epoch bigint,input_sha256 bytea,normalized_sha256 bytea,transform_version text,mime text,width int,height int,byte_count int,state text,expected_revision bigint,result_revision bigint);
     CREATE TABLE storage.objects(bucket_id text,name text);
     CREATE TABLE public.tasks(user_id uuid);CREATE TABLE public."tasks to verify"("sent by" uuid);
     CREATE TABLE public.payment_methods(user_id uuid);CREATE TABLE public.payment_holds(user_id uuid);
     CREATE TABLE public.notifications(user_id uuid,related_user_id uuid);`);
+  await psql(c,`CREATE TABLE profile_name_private.owner_limits(owner_id uuid);CREATE TABLE ante_presets_private.owner_presets(owner_id uuid);
+    CREATE TABLE storage.s3_multipart_uploads(owner_id text,key text);CREATE TABLE storage.s3_multipart_uploads_parts(owner_id text,key text);
+    CREATE TABLE storage.buckets(id text,owner uuid,owner_id text);ALTER TABLE storage.objects ADD COLUMN owner uuid;ALTER TABLE storage.objects ADD COLUMN owner_id text;`);
   for(let i=0;i<3;i++) await psql(c,`INSERT INTO auth.users VALUES ('${ids[i]}','${s.fixtures[i].email}','{"acceptance_run":"${runId}"}','${s.fixtures[i].createdAt}');INSERT INTO profiles VALUES ('${ids[i]}','${s.fixtures[i].email}','standard',null,null);`);
   s.pins.catalog=await psql(c,catalogSql);
   const friend=friendMutationSql(s,'insert');
@@ -31,6 +35,14 @@ test('disposable SQL friendship and teardown reject foreign ownership, refs and 
   await psql(c,`INSERT INTO public.payment_holds VALUES ('${ids[0]}')`);
   await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/protected/i);
   await psql(c,'DELETE FROM public.payment_holds');
+  await psql(c,`INSERT INTO ante_presets_private.owner_presets VALUES ('${ids[0]}')`);
+  await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/protected/i);
+  assert.equal(await psql(c,'SELECT count(*) FROM ante_presets_private.owner_presets'),'1');
+  assert.equal(await psql(c,'SELECT count(*) FROM profiles'),'3');
+  await psql(c,'DELETE FROM ante_presets_private.owner_presets');
+  await psql(c,`INSERT INTO profile_name_private.owner_limits VALUES ('${ids[0]}')`);
+  await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/protected/i);
+  await psql(c,'DELETE FROM profile_name_private.owner_limits');
   await psql(c,`INSERT INTO profile_asset_private.operations(owner_id,operation_id,kind) VALUES ('${ids[0]}','eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','upload')`);
   await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/unexpected operation/i);
   await psql(c,'DELETE FROM profile_asset_private.operations');
@@ -50,9 +62,9 @@ test('disposable SQL friendship and teardown reject foreign ownership, refs and 
   await psql(c,`INSERT INTO public."friend pairs" VALUES ('eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee','${ids[0]}','${ids[2]}','accepted')`);
   await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/foreign friendship/i);
   await psql(c,`DELETE FROM public."friend pairs" WHERE id='eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee'`);
-  const g=s.objects[1];Object.assign(g,{assetId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',key:`${ids[0]}/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee`,sha256:'a'.repeat(64),byteCount:4,stage:'prepared'});
+  const g=s.objects[1],photo=syntheticReaderBytes('G1');Object.assign(g,{assetId:'eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee',key:`${ids[0]}/eeeeeeee-eeee-4eee-8eee-eeeeeeeeeeee`,leaseEpoch:1,sha256:createHash('sha256').update(photo).digest('hex'),byteCount:photo.length,stage:'prepared'});
   await psql(c,`INSERT INTO profile_asset_private.heads VALUES ('${ids[0]}',0,null)`);
-  await psql(c,`INSERT INTO profile_asset_private.operations(owner_id,operation_id,kind,asset_id,object_key,normalized_sha256,mime,byte_count,state,expected_revision) VALUES ('${ids[0]}','${g.operationId}','upload','${g.assetId}','${g.key}',decode('${'b'.repeat(64)}','hex'),'image/png',4,'prepared',0)`);
+  await psql(c,`INSERT INTO profile_asset_private.operations(owner_id,operation_id,kind,asset_id,object_key,lease_epoch,input_sha256,normalized_sha256,transform_version,mime,width,height,byte_count,state,expected_revision) VALUES ('${ids[0]}','${g.operationId}','upload','${g.assetId}','${g.key}',1,decode('${g.sha256}','hex'),decode('${'b'.repeat(64)}','hex'),'synthetic-reader-fixture-v1','image/png',1,1,${photo.length},'prepared',0)`);
   await assert.rejects(psql(c,`BEGIN; ${teardownSql(s)}; COMMIT;`),/operation mismatch/i);
   await psql(c,`UPDATE profile_asset_private.operations SET normalized_sha256=decode('${g.sha256}','hex') WHERE operation_id='${g.operationId}'`);
   await psql(c,`INSERT INTO storage.objects VALUES ('profile-photos','${ids[0]}/foreign')`);
