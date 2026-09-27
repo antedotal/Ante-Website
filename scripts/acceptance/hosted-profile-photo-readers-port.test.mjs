@@ -46,6 +46,46 @@ test('real port creates, reconciles, logs in and verifies three distinct caller 
   assert.deepEqual(seen.filter(x=>x.url.endsWith('/auth/v1/user')).map(x=>x.headers.Authorization),['Bearer A.checked.jwt','Bearer B.checked.jwt','Bearer C.checked.jwt']);
 });
 
+test('real-port cleanup accepts only explicit missing-object bodies and resumes after unrelated Storage errors',async()=>{
+  for(const bad of [null,{status:400,body:{code:'AccessDenied'}},{status:404,body:{message:'other error'}}]){
+    const dir=await mkdtemp(join(tmpdir(),'ante-reader-storage-missing-'));
+    const s=state();s.teardown='done';s.friendship.status='deleted';for(const f of s.fixtures)f.stage='profile_removed';
+    for(const o of s.objects)o.stage='deleted';s.objects[0].stage='delete_intent';
+    const j=await ReaderJournal.create(dir,s);const auth=new Set(ids),stored=new Set([s.objects[0].key]);let badPending=bad!==null,storageDeletes=0,authDeletes=0;
+    const inventory=()=>({auth:s.fixtures.filter(f=>auth.has(f.id)).map(f=>({id:f.id,email:f.email,marker:runId,created_at:f.createdAt})),profiles:[],friends:[],heads:[],operations:[],objects:[...stored].map(name=>({name})),protected:0});
+    const query=async sql=>{
+      if(sql.startsWith('WITH scoped'))return [{digest:pin}];
+      if(sql.includes('AS auth,')&&sql.includes('AS profiles,'))return [inventory()];
+      if(sql.includes('FROM auth.users WHERE lower(email)')){const f=s.fixtures.find(x=>sql.includes(x.email));return auth.has(f.id)?[{id:f.id,email:f.email,marker:runId,created_at:f.createdAt}]:[];}
+      if(sql.includes('AS owned'))return [{owned:true,auth:1,profile:0,protected:0,privateRows:0}];
+      if(sql.includes('ORDER BY 1'))return s.baseline;
+      throw Error('unexpected_sql');
+    };
+    const missing=()=>Response.json({statusCode:'404',error:'not_found',message:'Object not found'},{status:400});
+    const fetchImpl=async(url,init)=>{
+      const path=new URL(url).pathname;
+      if(path.startsWith('/storage/v1/object/authenticated/profile-photos/')){
+        if(stored.has(s.objects[0].key)&&path.endsWith(s.objects[0].key))return new Response(syntheticReaderBytes('legacy'),{status:200,headers:{'content-type':'image/png'}});
+        if(badPending){badPending=false;return Response.json(bad.body,{status:bad.status});}
+        return missing();
+      }
+      if(path.startsWith('/storage/v1/object/profile-photos/')&&init.method==='DELETE'){storageDeletes++;stored.delete(s.objects[0].key);return new Response(null,{status:204});}
+      if(path.startsWith('/auth/v1/admin/users/')&&init.method==='DELETE'){authDeletes++;auth.delete(path.split('/').at(-1));return new Response(null,{status:204});}
+      throw Error('unexpected_fetch');
+    };
+    const credentials={publicKey:'sb_publishable_public_test_1234567890',secretKey:'sb_secret_private_test_1234567890'};
+    try{
+      await j.mutate(next=>{next.counters.recoveries.push({id:randomUUID(),counts:{auth:0,data:0,storage:0,cli:0}});});
+      const port=makeReaderPort(j,credentials,{query,fetchImpl,recovery:true});
+      if(bad){await assert.rejects(port.cleanup(),/storage_readback/);assert.equal(authDeletes,0);assert.equal(s.objects[0].stage,'delete_intent');
+        await j.mutate(next=>{next.counters.recoveries.push({id:randomUUID(),counts:{auth:0,data:0,storage:0,cli:0}});});
+        await makeReaderPort(j,credentials,{query,fetchImpl,recovery:true}).cleanup();
+      }else await port.cleanup();
+      assert.equal(storageDeletes,1);assert.equal(authDeletes,3);assert.equal(stored.size,0);assert.equal(auth.size,0);assert.equal(s.objects[0].stage,'deleted');
+    }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+  }
+});
+
 test('CLI refuses unreviewed run and arbitrary cleanup flags before credential access',async()=>{
   await assert.rejects(main(['run']),/arguments/);
   await assert.rejects(main(['cleanup','--run-id',runId,'--force']),/arguments/);
@@ -129,6 +169,44 @@ test('partial Auth cleanup preserves delete intent across failed acknowledgement
       assert.equal(s.fixtures[0].stage,epoch<2?'auth_delete_intent':'cleaned');
     }
     assert.equal(s.fixtures[0].deleteAttempts,3);assert.equal(auth,false);
+  }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('partial cleanup reconciles a successful Auth delete with lost acknowledgement before inventory cardinality',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'ante-reader-absent-auth-'));
+  const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
+  Object.assign(s.fixtures[0],{id:ids[0],createdAt:s.startedAt,stage:'auth_delete_intent',deleteAttempts:1});
+  const j=await ReaderJournal.create(dir,s);let deletes=0,inspections=0;
+  const sql=async query=>{
+    if(query.includes('AS auth,')&&query.includes('AS profiles,'))return [{auth:[],profiles:[],friends:[],heads:[],operations:[],objects:[],protected:0}];
+    if(query.includes('FROM auth.users WHERE lower(email)'))return [];
+    if(query.includes('AS owned')){inspections++;return [{owned:false,auth:0,profile:0,protected:0,privateRows:0}];}
+    throw Error('unexpected_sql');
+  };
+  try{
+    await cleanupReader(j,{sql,readback:async()=>{throw Error('unexpected_storage');},clean:async()=>{deletes++;throw Error('unexpected_delete');},catalog:async()=>pin,baseline:async()=>{throw Error('unexpected_baseline');}});
+    assert.equal(s.fixtures[0].stage,'cleaned');assert.equal(deletes,0);assert.equal(inspections,0);
+  }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('partial cleanup keeps a cleaned A absent while deleting remaining B, and rejects reappearing A',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'ante-reader-mixed-auth-'));
+  const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
+  Object.assign(s.fixtures[0],{id:ids[0],createdAt:s.startedAt,stage:'cleaned',deleteAttempts:1});
+  Object.assign(s.fixtures[1],{id:ids[1],createdAt:s.startedAt,stage:'auth_delete_intent',deleteAttempts:1});
+  const j=await ReaderJournal.create(dir,s);let aPresent=false,bPresent=true,deletes=0;
+  const candidate=f=>({id:f.id,email:f.email,marker:runId,created_at:f.createdAt});
+  const sql=async query=>{
+    if(query.includes('AS auth,')&&query.includes('AS profiles,'))return [{auth:s.fixtures.slice(0,2).filter(f=>f.label==='A'?aPresent:bPresent).map(candidate),profiles:[],friends:[],heads:[],operations:[],objects:[],protected:0}];
+    if(query.includes('FROM auth.users WHERE lower(email)')){const f=s.fixtures.find(x=>query.includes(x.email));return f.label==='A'?(aPresent?[candidate(f)]:[]):bPresent?[candidate(f)]:[];}
+    if(query.includes('AS owned'))return [{owned:true,auth:1,profile:0,protected:0,privateRows:0}];
+    throw Error('unexpected_sql');
+  };
+  const dependencies={sql,readback:async()=>{throw Error('unexpected_storage');},clean:async spec=>{assert.equal(spec.label,'B');deletes++;bPresent=false;return {status:200};},catalog:async()=>pin,baseline:async()=>{throw Error('unexpected_baseline');}};
+  try{
+    aPresent=true;await assert.rejects(cleanupReader(j,dependencies),/partial_references/);assert.equal(deletes,0);
+    aPresent=false;await cleanupReader(j,dependencies);
+    assert.equal(s.fixtures[0].stage,'cleaned');assert.equal(s.fixtures[1].stage,'cleaned');assert.equal(deletes,1);
   }finally{await j.close();await rm(dir,{recursive:true,force:true});}
 });
 

@@ -13,6 +13,11 @@ const check=(v,code)=>{if(!v)throw Error(code);};
 const json=r=>{try{return JSON.parse(new TextDecoder().decode(r.bytes));}catch{throw Error('provider_json');}};
 const ok=r=>{check(r.status>=200&&r.status<300,'provider_status');return json(r);};
 const deny=r=>check([400,401,403,404,406].includes(r.status),'exposure');
+const missingObject=r=>{
+  if(r.status!==400&&r.status!==404)return false;
+  let body;try{body=json(r);}catch{return false;}
+  return body!==null&&typeof body==='object'&&!Array.isArray(body)&&(body.code==='NoSuchKey'||String(body.statusCode)==='404'&&body.message==='Object not found');
+};
 
 export function makeReaderPort(j,credentials,{fetchImpl=fetch,query=dbQuery,config=inspectConfig,adapter=importReviewedAdapter,recovery=false}={}) {
   const s=j.state,sessions={};
@@ -32,7 +37,7 @@ export function makeReaderPort(j,credentials,{fetchImpl=fetch,query=dbQuery,conf
   const owner=()=>{check(s.fixtures[0].id,'missing_owner');return s.fixtures[0].id;};
   async function readback(o,phase='run'){
     const r=await (phase==='run'?run:clean)(photo(o));
-    if(r.status===404)return null;
+    if(missingObject(r))return null;
     check(r.status===200,'storage_readback');
     const mime=r.headers.get('content-type')?.split(';',1)[0].trim().toLowerCase();
     check(mime===o.mime&&r.bytes.length===o.byteCount&&hash(r.bytes)===o.sha256,'storage_manifest');
@@ -125,9 +130,11 @@ export async function cleanupReader(j,{sql,readback,clean,catalog,baseline}){
     check(s.objects.every(o=>o.key===null)&&s.friendship.status==='planned'&&s.clear.stage==='planned'&&s.revision===0,'partial_creation_unresolved');
     if(ids.length){
       const [found]=await sql(readerInventorySql(s),{phase:'cleanup'});
-      check(found.auth.length===ids.length&&found.friends.length===0&&found.heads.length===0&&found.operations.length===0&&found.objects.length===0&&found.protected===0,'partial_references');
       assertOwnedInventory(s,found);
-      for(const f of ids){
+      const present=new Set(found.auth.map(row=>row.id));
+      check(found.auth.length===present.size&&found.friends.length===0&&found.heads.length===0&&found.operations.length===0&&found.objects.length===0&&found.protected===0&&found.profiles.every(p=>present.has(p.id)),'partial_references');
+      for(const f of ids)check(present.has(f.id)?f.stage!=='cleaned':f.stage==='cleaned'||f.stage==='auth_delete_intent'&&f.deleteAttempts>0,'partial_references');
+      for(const f of ids.filter(f=>present.has(f.id))){
         const [proof]=await sql(fixtureSql(f,s.runId,s.startedAt).inspect,{phase:'cleanup'});
         check(proof.owned===true&&Number(proof.auth)===1&&Number(proof.protected)===0&&Number(proof.privateRows)===0,'partial_ownership');
         if(Number(proof.profile)===1){await j.mutate(next=>{next.teardown='intent';});await sql(fixtureSql(f,s.runId,s.startedAt,s.pins.catalog).remove,{phase:'cleanup',write:true});}
