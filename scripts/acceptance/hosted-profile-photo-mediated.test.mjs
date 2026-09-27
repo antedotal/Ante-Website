@@ -87,6 +87,7 @@ test('recovery_adds_epoch_without_reset',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'ante-mediated-'));await import('node:fs/promises').then(x=>x.chmod(dir,0o700));
   const j=await MediatedJournal.create(dir,make());
   try{
+    await j.mutate(s=>{s.cleanupStartedAt??=s.startedAt;});
     await reserveDispatch(j,'cleanup',{kind:'authDelete',label:'A'});
     await j.mutate(s=>{s.stage='cleanup_blocked';s.uncertainWebsite=true;s.uncertainAt=new Date().toISOString();});
     const before=copy(j.state);
@@ -191,6 +192,7 @@ test('one_attempt_operations_and_cleanup_phase_reject_replay',async()=>{
     await reserveDispatch(j,'run',{kind:'authCreate',label:'A'});
     await assert.rejects(reserveDispatch(j,'run',{kind:'authCreate',label:'A',slot:2}),/descriptor/);
     await assert.rejects(reserveDispatch(j,'cleanup',{kind:'authCreate',label:'B'}),/phase_descriptor/);
+    await j.mutate(s=>{s.cleanupStartedAt??=s.startedAt;});
     await reserveDispatch(j,'cleanup',{kind:'authDelete',label:'A'});
     await assert.rejects(reserveDispatch(j,'cleanup',{kind:'authDelete',label:'A',slot:2}),/descriptor/);
     assert.equal(j.state.counters.run.directAuth,1);
@@ -201,6 +203,7 @@ test('cleanup_reserves_29_without_borrowing_from_run',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'ante-mediated-'));await chmod(dir,0o700);
   const j=await MediatedJournal.create(dir,make());
   try{
+    await j.mutate(s=>{s.cleanupStartedAt??=s.startedAt;});
     for(const label of ['A','B','C'])await reserveDispatch(j,'cleanup',{kind:'authDelete',label});
     for(const label of ['G1','G2'])for(const kind of ['storageOwnership','storageDelete','storageAbsence'])await reserveDispatch(j,'cleanup',{kind,label});
     for(let slot=1;slot<=20;slot++)await reserveDispatch(j,'cleanup',{kind:'cli',slot});
@@ -234,4 +237,14 @@ await import('./scripts/acceptance/hosted-profile-photo-mediated-protocol.mjs');
 await import('./scripts/acceptance/hosted-profile-photo-mediated.mjs');`;
   const result=spawnSync(process.execPath,['--input-type=module','--eval',script],{cwd:process.cwd(),env:{PATH:process.env.PATH,HOME:'/nonexistent'},encoding:'utf8',timeout:3000});
   assert.equal(result.status,0,result.stderr);
+});
+
+test('cleanup clock must be durably bound once before any cleanup reservation',async()=>{
+  const state=make();const j={state,async mutate(fn){const next=copy(this.state);fn(next);validateMediatedHistory(this.state,next);this.state=next;}};
+  await assert.rejects(reserveDispatch(j,'cleanup',{kind:'cli',slot:1}),/cleanup_start/);
+  const started=copy(state);started.cleanupStartedAt=state.startedAt;validateMediatedHistory(state,started);
+  const moved=copy(started);moved.cleanupStartedAt=new Date(Date.parse(state.startedAt)+1).toISOString();assert.throws(()=>validateMediatedHistory(started,moved));
+  const removed=copy(started);removed.cleanupStartedAt=null;assert.throws(()=>validateMediatedHistory(started,removed));
+  const early=copy(state);early.cleanupStartedAt=new Date(Date.parse(state.startedAt)-1).toISOString();assert.throws(()=>validateMediatedState(early));
+  j.state=started;await reserveDispatch(j,'cleanup',{kind:'cli',slot:1});const missing=copy(j.state);missing.cleanupStartedAt=null;assert.throws(()=>validateMediatedState(missing));
 });

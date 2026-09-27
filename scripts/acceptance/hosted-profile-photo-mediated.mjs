@@ -13,7 +13,7 @@ const SHA=/^[0-9a-f]{64}$/;
 const COMMIT=/^[0-9a-f]{40}$/;
 const LABELS=['A','B','C'];
 const PIN_KEYS=['websiteCommit','backendCommit','adapterSha256','releaseSha256','catalog','ordinaryBundleSha256','acceptanceBundleSha256','origin','deploymentId','cacheReceiptSha256','quiescenceReceiptSha256'];
-const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','uncertainWebsite','uncertainAt','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','failures','counters','observed','intents','settlement'];
+const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','cleanupStartedAt','uncertainWebsite','uncertainAt','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','failures','counters','observed','intents','settlement'];
 const exact=(o,keys)=>o!==null&&typeof o==='object'&&!Array.isArray(o)&&Object.keys(o).sort().join(',')===[...keys].sort().join(',');
 const need=(ok,code)=>{if(!ok)throw Error(code);};
 const timestamp=x=>typeof x==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|[+-]\d\d:\d\d)$/.test(x)&&Number.isFinite(Date.parse(x));
@@ -34,7 +34,7 @@ const advance=(a,b,graph)=>a===b||graph[a]?.includes(b);
 /** @typedef {{label:'G1'|'G2',operationId:string,assetId:string|null,key:string|null,leaseEpoch:number|null,sha256:string|null,byteCount:number|null,mime:'image/png',stage:string,uploadAttempts:number,deleteAttempts:number}} MediatedObject */
 /** @typedef {{visitorDigest:string|null,userDigests:(string|null)[],intentId:string,stage:'planned'|'intent'|'complete'|'uncertain'}} MediatedPreparation */
 /** @typedef {{seq:number,phase:'run'|'cleanup'|'recovery',epochId:string|null,descriptor:import('./hosted-profile-photo-mediated-protocol.mjs').DispatchDescriptor,delta:Record<string,number>}} MediatedIntent */
-/** @typedef {{version:2,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,uncertainWebsite:boolean,uncertainAt:string|null,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,run_id:string,origin:string,deployment_id:string,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:string}} MediatedState */
+/** @typedef {{version:2,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,cleanupStartedAt:string|null,uncertainWebsite:boolean,uncertainAt:string|null,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,run_id:string,origin:string,deployment_id:string,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:string}} MediatedState */
 
 function validatePins(p){
   need(exact(p,PIN_KEYS),'pin_shape');
@@ -47,7 +47,7 @@ function validatePins(p){
 /** Construct fixed identities and operation UUIDs before any provider call. */
 export function newMediatedState(runId,pins){
   need(UUID.test(runId),'run_id');validatePins(pins);
-  const state={version:2,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,uncertainWebsite:false,uncertainAt:null,
+  const state={version:2,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,cleanupStartedAt:null,uncertainWebsite:false,uncertainAt:null,
     fixtures:LABELS.map(label=>({label,email:`ante-mediated-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createAttempts:0,deleteAttempts:0})),
     objects:['G1','G2'].map(label=>({label,operationId:randomUUID(),assetId:null,key:null,leaseEpoch:null,sha256:null,byteCount:null,mime:'image/png',stage:'planned',uploadAttempts:0,deleteAttempts:0})),
     absenceProbeAssetId:randomUUID(),friendship:{id:randomUUID(),stage:'planned'},clear:{operationId:randomUUID(),stage:'planned'},revision:0,
@@ -95,6 +95,8 @@ export function validateMediatedState(s){
   need(exact(s,STATE_KEYS)&&s.version===2&&s.project===PROJECT&&UUID.test(s.runId)&&timestamp(s.startedAt),'journal_shape');validatePins(s.pins);
   need(Object.hasOwn(stages,s.stage)&&['pending','phase_one_http_passed','failed'].includes(s.outcome)&&typeof s.cleanupComplete==='boolean'&&typeof s.uncertainWebsite==='boolean','journal_stage');
   need(s.cleanupComplete===(s.stage==='complete'),'journal_completion');
+  need(s.cleanupStartedAt===null||timestamp(s.cleanupStartedAt)&&new Date(s.cleanupStartedAt).toISOString()===s.cleanupStartedAt&&Date.parse(s.cleanupStartedAt)>=Date.parse(s.startedAt),'cleanup_start');
+  need(s.cleanupStartedAt!==null||Object.values(s.counters.cleanup).every(n=>n===0),'cleanup_start');
   need(s.uncertainWebsite?timestamp(s.uncertainAt)&&Date.parse(s.uncertainAt)>=Date.parse(s.startedAt):s.uncertainAt===null,'journal_uncertainty');
   need(Array.isArray(s.fixtures)&&s.fixtures.length===3,'journal_fixtures');
   for(let i=0;i<3;i++){
@@ -148,7 +150,7 @@ export function validateMediatedState(s){
 /** Compare consecutive fsynced snapshots; successful reconciliation may bind null once only. */
 export function validateMediatedHistory(old,next){
   validateMediatedState(old);validateMediatedState(next);
-  need(old.runId===next.runId&&old.startedAt===next.startedAt&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&bound(old.uncertainAt,next.uncertainAt)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
+  need(old.runId===next.runId&&old.startedAt===next.startedAt&&bound(old.cleanupStartedAt,next.cleanupStartedAt)&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&bound(old.uncertainAt,next.uncertainAt)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
   for(let n=0;n<3;n++){const a=old.fixtures[n],b=next.fixtures[n];need(bound(a.id,b.id)&&bound(a.createdAt,b.createdAt)&&advance(a.stage,b.stage,fixtureStages)&&b.createAttempts>=a.createAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   for(let n=0;n<2;n++){const a=old.objects[n],b=next.objects[n];need(a.operationId===b.operationId&&bound(a.assetId,b.assetId)&&bound(a.key,b.key)&&bound(a.leaseEpoch,b.leaseEpoch)&&bound(a.sha256,b.sha256)&&bound(a.byteCount,b.byteCount)&&advance(a.stage,b.stage,objectStages)&&b.uploadAttempts>=a.uploadAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   need(old.absenceProbeAssetId===next.absenceProbeAssetId&&old.friendship.id===next.friendship.id&&advance(old.friendship.stage,next.friendship.stage,friendStages)&&old.clear.operationId===next.clear.operationId&&advance(old.clear.stage,next.clear.stage,clearStages)&&old.preparation.intentId===next.preparation.intentId&&advance(old.preparation.stage,next.preparation.stage,preparationStages)&&bound(old.preparation.visitorDigest,next.preparation.visitorDigest)&&old.preparation.userDigests.every((d,i)=>bound(d,next.preparation.userDigests[i])),'journal_history');
@@ -201,6 +203,7 @@ export async function reserveDispatch(j,phase,descriptor){
   const cleanupKinds=['authDelete','storageOwnership','storageDelete','storageAbsence','cli'];
   need((phase==='run'?runKinds:cleanupKinds).includes(descriptor.kind),'phase_descriptor');
   need(phase==='run'||descriptor.kind!=='cli'||descriptor.slot<=20,'phase_descriptor');
+  need(phase!=='cleanup'||j.state.cleanupStartedAt!==null,'cleanup_start');
   const d=delta(descriptor),caps=phase==='run'?RUN_CAPS:CLEANUP_CAPS;
   need(Object.keys(d).every(k=>Object.hasOwn(caps,k)),'phase_descriptor');
   const epoch=phase==='recovery'?j.state.counters.recoveries[0]:null;need(phase!=='recovery'||epoch,'recovery_epoch');
