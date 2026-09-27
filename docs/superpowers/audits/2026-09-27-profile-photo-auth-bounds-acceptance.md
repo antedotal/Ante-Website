@@ -12,13 +12,13 @@ One thirty-second deadline bounds initial photo verification, including SDK init
 
 Initial tests reproduced four session stall/abort failures before implementation; the missing transport module was a suite-loading error, not claimed as a behavior assertion. Subsequent targeted regressions reproduced configuration error leakage and malformed error-length status loss before correction.
 
-Independent task review found two additional issues: valid JSON in a partial response was accepted, and HTTP403 headers arriving at9.5seconds with a stalled body lost their status at the ten-second deadline. Three intended assertions failed before their fixes. Scoped re-review approved both corrections; explicit abort, body cancellation and timer cleanup are covered. Final independent integration review inspected transport, session, shared defaults, route/SSR and installed SDK retry/cookie behavior and found no actionable important issue.
+Independent task review found two additional issues: valid JSON in a partial response was accepted, and HTTP 403 headers arriving at 9.5 seconds with a stalled body lost their status at the ten-second deadline. Three intended assertions failed before their fixes. Scoped re-review approved both corrections; explicit abort, body cancellation and timer cleanup are covered. Final independent integration review inspected transport, session, shared defaults, route/SSR and installed SDK retry/cookie behavior and found no actionable important issue.
 
 Final verification on `d5a8018`:
 
 - 70 focused tests passed; TypeScript and scoped ESLint passed.
-- Controller canonical `pnpm test`:29files,268tests passed, exit0.
-- Controller `pnpm build:worker`:exit0, including Next production build/typecheck and the OpenNext Worker bundle. Earlier standalone `pnpm build` also passed before review fixes.
+- Controller canonical `pnpm test`: 29 files, 268 tests passed, exit 0.
+- Controller `pnpm build:worker`: exit 0, including Next production build/typecheck and the OpenNext Worker bundle. Earlier standalone `pnpm build` also passed before review fixes.
 - `git diff --check` passed. Expected denial test logs contain fixed messages, not provider details. Builds retain the existing Node DEP0205 deprecation warning and OpenNext experimental Node middleware warning; those are runtime/deployment caveats, not hosted acceptance.
 
 No browser, real-session payload compatibility, deployed Worker, CPU/memory or CDN acceptance is implied by these checks.

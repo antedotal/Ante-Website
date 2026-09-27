@@ -37,7 +37,7 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ### Latest: bounded photo Auth prerequisite accepted locally
 
-Website `4b93406`/`d5a8018` add bounded photo Auth transport and SDK waits while preserving exact-token identity, SSR refresh cookies and existing shared sanitizer behavior. Independent task/re-review and final integration review approved. Final validation:268tests, typecheck/scoped lint and production Worker build pass. [Evidence and remaining work](superpowers/audits/2026-09-27-profile-photo-auth-bounds-acceptance.md).
+Website `4b93406`/`d5a8018` add bounded photo Auth transport and SDK waits while preserving exact-token identity, SSR refresh cookies and existing shared sanitizer behavior. Independent task/re-review and final integration review approved. Final validation: 268 tests, typecheck/scoped lint and production Worker build pass. [Evidence and remaining work](superpowers/audits/2026-09-27-profile-photo-auth-bounds-acceptance.md).
 
 Next source slice is the separately planned server-mediated reader: service-only manifest, direct Storage denial before fresh keys, bounded admission, immutable-byte validation and final authorization checks. The [reviewed design](../../Ante/docs/superpowers/audits/2026-09-27-server-mediated-profile-read-design.md) explicitly incorporates the admission timeout gap. No provider changes occurred in this Auth slice. Photo gates remain closed; Cloudflare CLI login and hosted cache/runtime acceptance remain pending. The overall goal is active and incomplete.
 
