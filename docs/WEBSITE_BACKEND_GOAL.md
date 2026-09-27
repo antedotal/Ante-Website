@@ -1,6 +1,6 @@
 # Website backend goal
 
-Updated 27 September 2026. Requested scope: Ante-Website backend only.
+Updated 28 September 2026. Requested scope: Ante-Website backend only.
 
 ## Objective
 
@@ -47,9 +47,13 @@ Wrangler4.139.0 again returned `loggedIn:false` on27September. The Cloudflare co
 
 The sections below retain historical evidence; the latest status above and the cache-transition failure below supersede earlier next-step statements. In particular the server-key location, Workers Free selection and Stripe reconnection were resolved later in the history; they are not current missing decisions.
 
-### Latest task prerequisite: hosted-compatible guards accepted locally
+### Latest task foundation — complete and accepted locally
 
-The 27 September metadata refresh confirms that the four authority mutation RPCs remain absent, while current retention containment already denies service-role TRUNCATE on task/proof/review tables. The old authority file cannot be replayed: it targets an obsolete vote signature, restores destructive purge code and grants mutations immediately. The paired backend captured current metadata without reading application rows (`810aa27`) and implemented the six-routine compatibility candidate at `5bea623`. Task and fresh whole-package reviews approve with no findings. **14/14 focused PostgreSQL tests pass**, including five real lock races, with legacy behavior, enrollment exclusion and atomic rollback checked. [Durable acceptance, review and logs](../../Ante/docs/superpowers/audits/2026-09-27-task-authority-hosted-compatibility-acceptance.md). This is a local candidate, not a deployable migration or activation of website task/proof routes. Full authority, proof lifecycle and legacy cutover remain separate dependencies.
+The paired backend's distinct closed package is complete through `0abad41`, with independent task and whole-package review approved on 28 September. It includes all four task mutation RPCs, permanent UUID-only reservations, guarded task/child writes, the six accepted current legacy replacements, and exact installation/postcondition/unknown-outcome acceptance. Final tests: **26/26 foundation and 30/30 installer**. The final fix retained the functional SQL byte identities and independently confirmed cleanup of 62 owned containers and 11 logged installer children. [Durable review, rulings and pickup](../../Ante/docs/superpowers/audits/2026-09-27-closed-task-authority-foundation-review.md) and [acceptance](../../Ante/docs/superpowers/audits/2026-09-27-closed-task-authority-foundation-acceptance.md).
+
+This is a local source milestone, not hosted deployment or activation of website task/proof routes. All four RPCs remain denied in the candidate. Literal hosted-owner execution/current privileges, legacy-client cutover, complete proof/readers/immutable Storage/deadline behavior, actual paused-handler/provider snapshots and drain remain separate gates. The older enabled SQL/manifest and retained recovery target remain untouched. The unchanged adjacent compatibility suite's latest full 13/14 result plus isolated R9 pass remains qualified evidence, not a claimed green full run.
+
+Next source work is to reconcile the later friend-attempt/proof plan with the current captured predecessor and shared photo contract before implementing it. Do not bypass the remaining authority/lifecycle gates with legacy writes or redispatch the completed foundation plan. The overall backend goal stays active and incomplete; Cloudflare access/photo processing, SMTP/browser acceptance and Stripe consent/customer-ownership gates remain as recorded below.
 
 ### Generation-aware profile readers — source and disposable acceptance
 
