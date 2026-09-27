@@ -119,6 +119,41 @@ describe('bounded provider request', () => {
     expect(cancelled).toBe(1)
   })
 
+  it('denies the 33rd consecutive empty chunk when clock and timers do not advance', async () => {
+    vi.useFakeTimers()
+    let pulls = 0
+    let cancelled = 0
+    vi.stubGlobal('performance', { now: () => 0 })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        // Finite red safety ceiling: the old loop eventually accepts this byte.
+        if (pulls === 100) { controller.enqueue(new Uint8Array([9])); controller.close() }
+        else controller.enqueue(new Uint8Array())
+      },
+      cancel() { cancelled++ },
+    }, { highWaterMark: 0 }))))
+    expect(await request(16384, { timeoutMs: 5000 })).toBeNull()
+    expect(pulls).toBe(33)
+    expect(cancelled).toBe(1)
+  })
+
+  it('resets the empty-chunk allowance after nonempty progress', async () => {
+    vi.useFakeTimers()
+    let pulls = 0
+    vi.stubGlobal('performance', { now: () => 0 })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        if (pulls <= 32 || pulls >= 34 && pulls <= 65) controller.enqueue(new Uint8Array())
+        else if (pulls === 33) controller.enqueue(new Uint8Array([7]))
+        else { controller.enqueue(new Uint8Array([8])); controller.close() }
+      },
+    }, { highWaterMark: 0 }))))
+    expect((await request())?.bytes).toEqual(new Uint8Array([7, 8]))
+    expect(pulls).toBe(66)
+  })
+
   it('ignores finite empty chunks before real content without corrupting bytes', async () => {
     let pulls = 0
     vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({

@@ -2,6 +2,7 @@
 import 'server-only'
 
 const errorCap = 16384
+const maxConsecutiveEmptyChunks = 32
 
 // Cancellation is deliberately fire-and-forget because a hostile stream may never settle it.
 function cancelResponse(response: Response): void {
@@ -23,7 +24,7 @@ export async function boundedProviderRequest(
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 ||
       options.signal?.aborted || init.signal?.aborted) return null
 
-  // A monotonic boundary also works when a ready stream starves timer callbacks.
+  // Check elapsed time independently of timer dispatch when the runtime clock advances.
   const deadlineAt = performance.now() + timeoutMs
   const pastDeadline = () => performance.now() >= deadlineAt
   const controller = new AbortController()
@@ -83,12 +84,18 @@ export async function boundedProviderRequest(
     reader = response.body.getReader()
     const chunks: Uint8Array[] = []
     let size = 0
+    let consecutiveEmptyChunks = 0
     while (true) {
       const part = await Promise.race([reader.read(), stopped])
       if (!part || expired || pastDeadline()) { stopRequest(); return null }
       if (part.done) break
       if (!(part.value instanceof Uint8Array) || part.value.length > cap - size) return null
-      if (part.value.length === 0) continue
+      // A frozen worker clock and ready stream must still have finite no-progress work.
+      if (part.value.length === 0) {
+        if (++consecutiveEmptyChunks > maxConsecutiveEmptyChunks) return null
+        continue
+      }
+      consecutiveEmptyChunks = 0
       size += part.value.length
       chunks.push(part.value.slice())
     }
