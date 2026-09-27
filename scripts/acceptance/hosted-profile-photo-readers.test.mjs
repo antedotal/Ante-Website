@@ -83,6 +83,24 @@ test('explicit recovery has a fresh bounded request epoch without erasing prior 
   assert.equal(s.counters.cleanup.storage,16);assert.equal(s.counters.recoveries[0].counts.storage,1);
 });
 
+test('a fresh recovery epoch permits one exact Storage and Auth delete after two durable prior attempts',async()=>{
+  const s=state();s.fixtures[0].id=owner;s.fixtures[0].createdAt=s.startedAt;s.fixtures[0].stage='auth_delete_intent';s.fixtures[0].deleteAttempts=2;
+  const o=s.objects[0];o.key=`${owner}/avatar`;o.stage='delete_intent';o.deleteAttempts=2;
+  s.counters.recoveries.push({id:randomUUID(),counts:{auth:0,data:0,storage:0,cli:0}});
+  const calls=[];
+  const request=readerRequest({state:s,credentials:{publicKey,secretKey:secret},save:async()=>{},phase:'recovery',fetchImpl:async(url,init)=>{calls.push({url,method:init.method});return new Response(null,{status:204});}});
+  await request({kind:'storage',method:'DELETE',key:o.key,intent:'legacy-delete',service:true});
+  await request({kind:'auth',action:'delete',method:'DELETE',label:'A'});
+  assert.equal(o.deleteAttempts,3);assert.equal(s.fixtures[0].deleteAttempts,3);
+  assert.deepEqual(calls,[
+    {url:`https://yxilmwxptfnebnjsikwo.supabase.co/storage/v1/object/profile-photos/${owner}/avatar`,method:'DELETE'},
+    {url:`https://yxilmwxptfnebnjsikwo.supabase.co/auth/v1/admin/users/${owner}`,method:'DELETE'},
+  ]);
+  await assert.rejects(request({kind:'storage',method:'DELETE',key:o.key,intent:'legacy-delete',service:true}),/retry_refused|delete_boundary/);
+  await assert.rejects(request({kind:'auth',action:'delete',method:'DELETE',label:'A'}),/retry_refused|auth_delete_boundary/);
+  assert.equal(calls.length,2);assert.equal(o.deleteAttempts,3);assert.equal(s.fixtures[0].deleteAttempts,3);
+});
+
 test('request boundary allows only exact owner and generated object, counts before dispatch, and never retries an uncertain upload',async()=>{
   const s=state();s.fixtures[0].id=owner;s.fixtures[0].createdAt=s.startedAt;s.fixtures[0].stage='created';
   s.objects[0].key=`${owner}/avatar`;

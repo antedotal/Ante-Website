@@ -3,8 +3,8 @@ import assert from 'node:assert/strict';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createHash } from 'node:crypto';
-import { newReaderState, ReaderJournal, main, syntheticReaderBytes, reconcileAuthority } from './hosted-profile-photo-readers.mjs';
+import { createHash, randomUUID } from 'node:crypto';
+import { newReaderState, ReaderJournal, main, syntheticReaderBytes, reconcileAuthority, readerRequest } from './hosted-profile-photo-readers.mjs';
 import { cleanupReader, makeReaderPort } from './hosted-profile-photo-readers-port.mjs';
 import { TABLES } from './hosted-account-jwt-sql.mjs';
 
@@ -103,6 +103,32 @@ test('partial creation reconciles one Auth marker and removes its trigger profil
     await cleanupReader(j,{sql,readback:async()=>{throw Error('unexpected_storage');},clean:async spec=>{assert.equal(spec.action,'delete');assert.equal(profile,false);auth=false;return {status:200};},catalog:async()=>pin,baseline:async()=>{creates++;return [];}});
     assert.equal(s.fixtures[0].id,ids[0]);assert.equal(s.fixtures[0].stage,'cleaned');assert.equal(creates,0);
     assert.equal(profile,false);assert.equal(auth,false);
+  }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+
+test('partial Auth cleanup preserves delete intent across failed acknowledgements and a later successful recovery',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'ante-reader-partial-recovery-'));
+  const s=newReaderState(runId,{catalog:pin,backendCommit:'b'.repeat(40),adapterSha256:pin});
+  Object.assign(s.fixtures[0],{id:ids[0],createdAt:s.startedAt,stage:'created'});
+  const j=await ReaderJournal.create(dir,s);let auth=true,dispatches=0;
+  const candidate=()=>({id:ids[0],email:s.fixtures[0].email,marker:runId,created_at:s.startedAt});
+  const sql=async query=>{
+    if(query.includes('FROM auth.users WHERE lower(email)'))return auth?[candidate()]:[];
+    if(query.includes('AS auth,')&&query.includes('AS profiles,'))return [{auth:auth?[candidate()]:[],profiles:[],friends:[],heads:[],operations:[],objects:[],protected:0}];
+    if(query.includes('AS owned'))return [{owned:true,auth:1,profile:0,protected:0,privateRows:0}];
+    throw Error('unexpected_sql');
+  };
+  const dependencies={sql,readback:async()=>{throw Error('unexpected_storage');},catalog:async()=>pin,baseline:async()=>{throw Error('unexpected_baseline');}};
+  try{
+    for(let epoch=0;epoch<3;epoch++){
+      await j.mutate(next=>{next.counters.recoveries.push({id:randomUUID(),counts:{auth:0,data:0,storage:0,cli:0}});});
+      const request=readerRequest({state:s,credentials:{publicKey:'sb_publishable_public_test_1234567890',secretKey:'sb_secret_private_test_1234567890'},save:async()=>j.save({}),phase:'recovery',fetchImpl:async()=>{dispatches++;if(dispatches<3)throw Error('lost_ack');auth=false;return new Response(null,{status:204});}});
+      const run=cleanupReader(j,{...dependencies,clean:async spec=>{const response=await request(spec);return {status:response.status};}});
+      if(epoch<2)await assert.rejects(run,/unavailable/);else await run;
+      assert.equal(dispatches,epoch+1);
+      assert.equal(s.fixtures[0].stage,epoch<2?'auth_delete_intent':'cleaned');
+    }
+    assert.equal(s.fixtures[0].deleteAttempts,3);assert.equal(auth,false);
   }finally{await j.close();await rm(dir,{recursive:true,force:true});}
 });
 

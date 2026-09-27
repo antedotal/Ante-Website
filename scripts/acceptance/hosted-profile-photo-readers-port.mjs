@@ -131,7 +131,7 @@ export async function cleanupReader(j,{sql,readback,clean,catalog,baseline}){
         const [proof]=await sql(fixtureSql(f,s.runId,s.startedAt).inspect,{phase:'cleanup'});
         check(proof.owned===true&&Number(proof.auth)===1&&Number(proof.protected)===0&&Number(proof.privateRows)===0,'partial_ownership');
         if(Number(proof.profile)===1){await j.mutate(next=>{next.teardown='intent';});await sql(fixtureSql(f,s.runId,s.startedAt,s.pins.catalog).remove,{phase:'cleanup',write:true});}
-        await j.mutate(next=>{next.fixtures.find(x=>x.label===f.label).stage='profile_removed';});
+        if(f.stage==='created')await j.mutate(next=>{next.fixtures.find(x=>x.label===f.label).stage='profile_removed';});
       }
       await deleteAuth();
     }

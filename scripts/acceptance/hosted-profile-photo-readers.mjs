@@ -57,13 +57,13 @@ export function validateReaderState(s) {
   ensure(Array.isArray(s.fixtures)&&s.fixtures.length===3,'journal_fixtures');
   for(let i=0;i<3;i++) {
     const f=s.fixtures[i],label=LABELS[i];
-    ensure(exact(f,['label','email','id','createdAt','stage','createAttempts','deleteAttempts'])&&f.label===label&&f.email===`ante-reader-${s.runId}-${label.toLowerCase()}@example.invalid`&&(f.id===null||UUID.test(f.id))&&(f.createdAt===null||Number.isFinite(Date.parse(f.createdAt)))&&['planned','create_intent','created','profile_removed','auth_delete_intent','cleaned'].includes(f.stage)&&Number.isInteger(f.createAttempts)&&f.createAttempts>=0&&f.createAttempts<=1&&Number.isInteger(f.deleteAttempts)&&f.deleteAttempts>=0&&f.deleteAttempts<=2,'journal_fixture');
+    ensure(exact(f,['label','email','id','createdAt','stage','createAttempts','deleteAttempts'])&&f.label===label&&f.email===`ante-reader-${s.runId}-${label.toLowerCase()}@example.invalid`&&(f.id===null||UUID.test(f.id))&&(f.createdAt===null||Number.isFinite(Date.parse(f.createdAt)))&&['planned','create_intent','created','profile_removed','auth_delete_intent','cleaned'].includes(f.stage)&&Number.isInteger(f.createAttempts)&&f.createAttempts>=0&&f.createAttempts<=1&&Number.isSafeInteger(f.deleteAttempts)&&f.deleteAttempts>=0,'journal_fixture');
   }
   ensure(Array.isArray(s.objects)&&s.objects.length===4,'journal_objects');
   for(let i=0;i<4;i++) {
     const o=s.objects[i];
     const expected=syntheticReaderBytes(o.label);
-    ensure(exact(o,['label','key','assetId','operationId','leaseEpoch','sha256','byteCount','mime','stage','uploadAttempts','deleteAttempts'])&&o.label===OBJECTS[i]&&(o.key===null||o.key===`${s.fixtures[0].id}/${i===0?'avatar':o.assetId}`)&&(i===0?o.assetId===null&&o.operationId===null&&o.leaseEpoch===null:(o.assetId===null||UUID.test(o.assetId))&&UUID.test(o.operationId)&&(o.leaseEpoch===null||Number.isSafeInteger(o.leaseEpoch)&&o.leaseEpoch>0))&&(o.sha256===null||o.sha256===sha(expected))&&(o.byteCount===null||o.byteCount===expected.byteLength)&&o.mime===MIME&&['planned','reserve_intent','reserved','bind_intent','bound','prepare_intent','prepared','upload_intent','upload_uncertain','verified','publish_intent','published','delete_intent','deleted'].includes(o.stage)&&Number.isInteger(o.uploadAttempts)&&o.uploadAttempts>=0&&o.uploadAttempts<=1&&Number.isInteger(o.deleteAttempts)&&o.deleteAttempts>=0&&o.deleteAttempts<=2,'journal_object');
+    ensure(exact(o,['label','key','assetId','operationId','leaseEpoch','sha256','byteCount','mime','stage','uploadAttempts','deleteAttempts'])&&o.label===OBJECTS[i]&&(o.key===null||o.key===`${s.fixtures[0].id}/${i===0?'avatar':o.assetId}`)&&(i===0?o.assetId===null&&o.operationId===null&&o.leaseEpoch===null:(o.assetId===null||UUID.test(o.assetId))&&UUID.test(o.operationId)&&(o.leaseEpoch===null||Number.isSafeInteger(o.leaseEpoch)&&o.leaseEpoch>0))&&(o.sha256===null||o.sha256===sha(expected))&&(o.byteCount===null||o.byteCount===expected.byteLength)&&o.mime===MIME&&['planned','reserve_intent','reserved','bind_intent','bound','prepare_intent','prepared','upload_intent','upload_uncertain','verified','publish_intent','published','delete_intent','deleted'].includes(o.stage)&&Number.isInteger(o.uploadAttempts)&&o.uploadAttempts>=0&&o.uploadAttempts<=1&&Number.isSafeInteger(o.deleteAttempts)&&o.deleteAttempts>=0,'journal_object');
   }
   ensure(exact(s.friendship,['id','status'])&&UUID.test(s.friendship.id)&&['planned','insert_intent','accepted','reject_intent','rejected','restore_intent','delete_intent','deleted'].includes(s.friendship.status)&&exact(s.clear,['operationId','stage'])&&UUID.test(s.clear.operationId)&&['planned','intent','completed'].includes(s.clear.stage)&&['planned','intent','done'].includes(s.teardown)&&Number.isInteger(s.revision)&&s.revision>=0&&s.revision<=3,'journal_authority');
   ensure(exact(s.counters,['run','cleanup','recoveries'])&&Array.isArray(s.counters.recoveries),'journal_counters');
@@ -252,7 +252,7 @@ export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetc
         ensure(spec.intent===`${o.label}-upload`&&o.stage==='upload_intent'&&o.uploadAttempts===0&&spec.mime===MIME&&spec.body instanceof Uint8Array&&spec.body.byteLength===o.byteCount&&sha(spec.body)===o.sha256&&spec.service===true,'upload_boundary');
         o.uploadAttempts++;headers={apikey:credentials.secretKey,'content-type':MIME,'x-upsert':'false','cache-control':'private, no-store'};payload=spec.body;
       } else if(view==='authenticated'&&spec.method==='DELETE'){
-        ensure(spec.intent===`${o.label}-delete`&&o.stage==='delete_intent'&&o.deleteAttempts<2&&spec.service===true,'delete_boundary');o.deleteAttempts++;headers={apikey:credentials.secretKey};
+        ensure(spec.intent===`${o.label}-delete`&&o.stage==='delete_intent'&&spec.service===true,'delete_boundary');headers={apikey:credentials.secretKey};
       } else if(view==='authenticated'&&spec.method==='GET'){
         ensure(spec.intent===undefined,'storage_boundary');headers=spec.service===true?{apikey:credentials.secretKey}:caller==='anon'?{apikey:credentials.publicKey}:publicCaller();cap=4096;
       } else if(view==='sign'&&spec.method==='POST'){
@@ -290,8 +290,8 @@ export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetc
         ensure(spec.method==='GET'&&f?.stage==='created'&&spec.caller===undefined&&sessions[f.label]?.token,'auth_boundary');
         path='/auth/v1/user';headers=publicCaller();
       } else if(spec.action==='delete'){
-        ensure(spec.method==='DELETE'&&f?.id&&f.stage==='auth_delete_intent'&&f.deleteAttempts<2,'auth_delete_boundary');
-        f.deleteAttempts++;path=`/auth/v1/admin/users/${f.id}`;headers={apikey:credentials.secretKey,Authorization:`Bearer ${credentials.secretKey}`,'content-type':'application/json'};payload=JSON.stringify({should_soft_delete:false});
+        ensure(spec.method==='DELETE'&&f?.id&&f.stage==='auth_delete_intent','auth_delete_boundary');
+        path=`/auth/v1/admin/users/${f.id}`;headers={apikey:credentials.secretKey,Authorization:`Bearer ${credentials.secretKey}`,'content-type':'application/json'};payload=JSON.stringify({should_soft_delete:false});
       } else if(spec.action==='probe'){
         ensure(spec.method==='GET'&&spec.label===undefined,'auth_boundary');path='/auth/v1/admin/users/00000000-0000-0000-0000-000000000000';headers={apikey:credentials.secretKey,Authorization:`Bearer ${credentials.secretKey}`};
       } else throw reason('auth_boundary');
@@ -300,6 +300,8 @@ export function readerRequest({state,credentials,sessions={},save,fetchImpl=fetc
     const mutating=spec.kind==='auth'&&['create','delete'].includes(spec.action)||spec.kind==='storage'&&['POST','DELETE'].includes(spec.method)&&spec.view!=='sign'&&spec.view!=='list'||spec.kind==='data'&&!['resolve_profile_photo_v1','profile_photo_state_v1'].includes(spec.rpc);
     const marker=`${spec.kind}:${spec.method}:${spec.intent??spec.rpc??spec.action??spec.key}:${spec.args?.p_operation_id??''}:${spec.kind==='auth'?spec.label??'':''}`;
     if(mutating&&seen.has(marker))throw reason('retry_refused');if(mutating)seen.add(marker);
+    if(spec.kind==='storage'&&spec.method==='DELETE')state.objects.find(x=>x.key===spec.key).deleteAttempts++;
+    if(spec.kind==='auth'&&spec.action==='delete')state.fixtures.find(x=>x.label===spec.label).deleteAttempts++;
     const counts=phase==='recovery'?state.counters.recoveries.at(-1).counts:state.counters[phase];
     ensure(counts[category]<(phase==='run'?RUN_CAPS:CLEANUP_CAPS)[category]&&(phase==='recovery'||state.counters.run[category]+state.counters.cleanup[category]<TOTAL_CAPS[category]),'request_cap');
     counts[category]++;await save();
