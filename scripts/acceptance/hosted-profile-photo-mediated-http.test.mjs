@@ -182,3 +182,35 @@ test('default HTTPS stalled socket is destroyed on deadline without retry',async
   const {createMediatedHttp}=await transportModule();const work=assert.rejects(createMediatedHttp(fixture()).dispatch({kind:'authProbe'},'run'),/request_deadline|unavailable/);
   await new Promise(resolve=>setImmediate(resolve));t.mock.timers.tick(10000);await work;assert.equal(started,1);assert.equal(destroyed,1);t.mock.timers.reset();
 });
+
+// The dispatch boundary must check the supplied jar before cloning or inducing expiry.
+for(const descriptor of [{kind:'photo',caseId:1},{kind:'photo',caseId:10},{kind:'authGetUser',label:'A',slot:2}])test(`foreign jar cannot be repinned by ${JSON.stringify(descriptor)}`,async()=>{
+  const {createMediatedHttp}=await transportModule(),{sessionCookies,cookieHeader,sessionFromCookies}=await cookies();const setup=fixture(),foreign='https://foreign.test';
+  const original=sessionCookies(setup.sessions.A.session,foreign),before=cookieHeader(original,foreign),cookieJars={A:original};let called=0;
+  const http=createMediatedHttp({...setup,cookieJars,fetchImpl:async()=>{called++;return json({id:setup.sessions.A.session.user.id});}});
+  await assert.rejects(http.dispatch(descriptor,'run'),/cookie_boundary/);
+  assert.equal(called,0);assert.equal(setup.journal.state.intents.length,0);assert.strictEqual(cookieJars.A,original);assert.equal(cookieHeader(original,foreign),before);assert.deepEqual(await sessionFromCookies(original),setup.sessions.A.session);
+});
+
+// Null-body Response objects cannot hide a still-live incoming Node stream behind a cleared deadline.
+for(const nonempty of [false,true])test(`private HTTPS rejects and destroys ${nonempty?'nonempty':'unterminated'} chunked 205 without draining`,async t=>{
+  const {default:https}=await import('node:https'),{EventEmitter}=await import('node:events'),{Readable}=await import('node:stream');let started=0,reads=0,resumes=0,incoming;
+  t.mock.timers.enable({apis:['setTimeout']});
+  t.mock.method(https,'request',(_url,_options,callback)=>{
+    started++;const req=new EventEmitter();req.destroy=()=>{req.emit('close');};req.end=()=>{
+      incoming=new Readable({read(){reads++;}});if(nonempty)incoming.push(Buffer.from('prohibited'));incoming.statusCode=205;incoming.rawHeaders=['Transfer-Encoding','chunked'];
+      const resume=incoming.resume.bind(incoming);incoming.resume=()=>{resumes++;return resume();};queueMicrotask(()=>callback(incoming));
+    };return req;
+  });
+  const {createMediatedHttp}=await transportModule();await assert.rejects(createMediatedHttp(fixture()).dispatch({kind:'authProbe'},'run'));
+  assert.equal(incoming.destroyed,true);assert.equal(resumes,0);const settledReads=reads;t.mock.timers.tick(60000);await new Promise(resolve=>setImmediate(resolve));assert.equal(reads,settledReads);assert.equal(started,1);t.mock.timers.reset();
+});
+
+test('private HTTPS legitimate 204 cleanup deletion releases its stream without background drain',async t=>{
+  const {default:https}=await import('node:https'),{EventEmitter}=await import('node:events'),{Readable}=await import('node:stream');let incoming,started=0,resumes=0;
+  t.mock.method(https,'request',(_url,options,callback)=>{
+    started++;assert.equal(options.method,'DELETE');const req=new EventEmitter();req.destroy=()=>{req.emit('close');};req.end=()=>{incoming=Readable.from([]);incoming.statusCode=204;incoming.rawHeaders=[];const resume=incoming.resume.bind(incoming);incoming.resume=()=>{resumes++;return resume();};queueMicrotask(()=>callback(incoming));};return req;
+  });
+  const {createMediatedHttp}=await transportModule(),setup=fixture();await setup.journal.mutate(s=>{s.cleanupStartedAt=s.startedAt;});
+  const result=await createMediatedHttp(setup).dispatch({kind:'authDelete',label:'A'},'cleanup');assert.equal(result.status,204);assert.equal(result.bytes.length,0);assert.equal(incoming.destroyed,true);assert.equal(resumes,0);assert.equal(started,1);
+});

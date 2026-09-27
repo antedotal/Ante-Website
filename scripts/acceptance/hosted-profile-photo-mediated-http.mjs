@@ -22,7 +22,13 @@ function directHttpsFetch(){
       for(let i=0;i<incoming.rawHeaders.length;i+=2)headers.append(incoming.rawHeaders[i],incoming.rawHeaders[i+1]);
       const status=incoming.statusCode;
       try{
-        if([204,205,304].includes(status)){incoming.resume();resolve(new Response(null,{status,headers}));}
+        if([204,205,304].includes(status)){
+          // A bodyless Fetch Response must never conceal a draining Node socket. Close it
+          // immediately; only an unframed empty 204 is needed for confirmed cleanup deletes.
+          incoming.destroy();req.destroy();
+          need(status===204&&!headers.has('transfer-encoding')&&(!headers.has('content-length')||headers.get('content-length')==='0'),'response_protocol');
+          resolve(new Response(null,{status,headers}));
+        }
         else resolve(new Response(Readable.toWeb(incoming),{status,headers}));
       }catch{incoming.destroy();reject(Error('unavailable'));}
     });
@@ -74,6 +80,8 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
     const owner=()=>{need(uuid.test(s.fixtures[0].id));return s.fixtures[0].id;};
     const object=label=>{const o=s.objects.find(o=>o.label===label);need(o);return o;};
     const fixture=label=>{const f=s.fixtures.find(f=>f.label===label);need(f);return f;};
+    // Check the supplied jar's origin before decoding; serializing first would silently repin it.
+    const checkedJarSession=async label=>{cookieHeader(cookieJars[label],origin);const value=await sessionFromCookies(cookieJars[label]);need(value.user.id===fixture(label).id,'cookie_identity');return value;};
     const token=label=>{const value=sessions[label]?.session?.access_token;need(typeof value==='string'&&/^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/.test(value)&&value.length<=8192);return value;};
     const ordinary=label=>{need(['A','B','C','N'].includes(label));return {apikey:keys.publicKey,...(label==='N'?{}:{Authorization:`Bearer ${token(label)}`})};};
     const service=()=>({apikey:keys.secretKey});
@@ -84,7 +92,7 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
       const row=PHOTO_CASES.find(c=>c.id===d.caseId);need(row);category='website';url=origin;path=`/api/profiles/${owner()}/photo`;successCap=4096;image=true;timeout=35000;actor=row.actor;
       need(s.preparation.stage==='complete','preparation_required');
       if(actor!=='N'){
-        const existing=await sessionFromCookies(cookieJars[actor]);need(existing.user.id===fixture(actor).id,'cookie_identity');
+        const existing=await checkedJarSession(actor);
         jar=sessionCookies(existing,origin,{forceRefresh:row.requestHeader==='expired-session'});headers.cookie=cookieHeader(jar,origin);
       }
       if(row.requestHeader==='range')headers.range='bytes=0-0';
@@ -104,7 +112,7 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
           else{path='/auth/v1/token?grant_type=password';headers.apikey=keys.publicKey;body=JSON.stringify({email:f.email,password});}
         }else if(d.kind==='authGetUser'){
           path='/auth/v1/user';headers=ordinary(d.label);
-          if(d.label==='A'&&d.slot===2){updatedSession=await sessionFromCookies(cookieJars.A);need(updatedSession.user.id===f.id,'cookie_identity');headers.Authorization=`Bearer ${updatedSession.access_token}`;}
+          if(d.label==='A'&&d.slot===2){updatedSession=await checkedJarSession('A');headers.Authorization=`Bearer ${updatedSession.access_token}`;}
         }else if(d.kind==='authDelete'){need(uuid.test(f.id));path=`/auth/v1/admin/users/${f.id}`;method='DELETE';headers={...service(),Authorization:`Bearer ${keys.secretKey}`,'content-type':'application/json'};body=JSON.stringify({should_soft_delete:false});}
         else throw Error('request_boundary');
       }
