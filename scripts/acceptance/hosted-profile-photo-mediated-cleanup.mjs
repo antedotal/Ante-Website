@@ -11,8 +11,17 @@ const attempted=(s,phase,kind,label)=>s.intents.some(i=>i.phase===phase&&i.descr
 const teardownAttempted=s=>s.intents.some(i=>i.phase!=='run'&&i.descriptor.kind==='cli'&&i.descriptor.slot===6);
 const metadataAbsent=v=>['profiles','friends','heads','operations'].every(k=>v[k].length===0);
 const empty=v=>metadataAbsent(v)&&v.auth.length===0&&v.objects.length===0&&v.protected===0&&v.admissions===0;
+// PostgreSQL Auth timestamps carry up to six fractional digits. Parse only the whole-second
+// timezone instant with Date, then retain the fraction as integer microseconds for ownership.
+function authTimestamp(value){
+ const parts=typeof value==='string'&&/^(\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d)(?:\.(\d{1,6}))?(Z|[+-]\d\d:\d\d)$/.exec(value);
+ need(parts,'auth_ownership');const seconds=Date.parse(parts[1]+parts[3]);need(Number.isFinite(seconds),'auth_ownership');
+ return BigInt(seconds)*1000n+BigInt((parts[2]??'').padEnd(6,'0'));
+}
 function checkAuth(s,f,u){
- need(u&&u.email===f.email&&u.marker===s.runId&&(!f.id||u.id===f.id)&&(!f.createdAt||Date.parse(u.created_at)===Date.parse(f.createdAt))&&Date.parse(u.created_at)>=Date.parse(s.startedAt)&&Date.parse(u.created_at)<=Date.parse(s.startedAt)+300000,'auth_ownership');
+ need(u&&u.email===f.email&&u.marker===s.runId&&(!f.id||u.id===f.id),'auth_ownership');
+ const created=authTimestamp(u.created_at),started=authTimestamp(s.startedAt);
+ need((!f.createdAt||created===authTimestamp(f.createdAt))&&created>=started&&created<=started+300000000n,'auth_ownership');
 }
 function checkProfiles(s,rows){for(const p of rows){const f=s.fixtures.find(f=>f.id===p.id);need(f&&p.email===f.email&&p.waitlist_status==='standard'&&p.stripe_customer_id===null&&p.avatar_url===null,'profile_ownership');}}
 function checkInventory(s,v){
@@ -85,6 +94,9 @@ async function reconcileAuthority(j,v){
   if(['insert_intent','insert_uncertain'].includes(stage)){need(status==='accepted','friend_authority');await j.mutate(n=>{n.friendship.stage='accepted';});}
   else if(['reject_intent','reject_uncertain'].includes(stage)&&status==='rejected')await j.mutate(n=>{n.friendship.stage='rejected';});
   else if(['restore_intent','restore_uncertain'].includes(stage)&&status==='accepted')await j.mutate(n=>{n.friendship.stage='accepted_again';});
+  // A failed cleanup transaction may leave either owned status after durable delete intent.
+  // checkInventory already verifies the exact friendship ID and participants; run stages stay strict.
+  else if(stage==='delete_intent')need(['accepted','rejected'].includes(status),'friend_authority');
   else need((['accepted','accepted_again','reject_intent','reject_uncertain'].includes(stage)?'accepted':'rejected')===status,'friend_authority');
  }else need(s.friendship.stage==='planned','friend_uncertain');
 }

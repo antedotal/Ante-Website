@@ -86,3 +86,37 @@ test('real private journal retains a failed reserved query and refuses replay af
 });
 
 test('final owned-state inventory rejects an admission arriving after the deletion verification',async()=>{const h=harness(),q=h.sql;h.sql=async(s,o)=>{const rows=await q(s,o);if(o.slot===20)rows[0].admissions=1;return rows;};await assert.rejects(cleanupMediated(h.j,h));assert.equal(h.j.state.stage,'cleanup_blocked');});
+
+// Recovery must distinguish a cleanup deletion intent from a run assertion about friendship state.
+test('explicit recovery tears down an exact accepted friendship after slot 6 did not commit',async()=>{
+ const h=fullHarness(),query=h.sql;let fail=true;
+ h.sql=async(s,o)=>{if(o.slot===6&&fail)throw Error('lock_timeout_before_commit');return query(s,o);};
+ await assert.rejects(cleanupMediated(h.j,h));assert.equal(h.j.state.friendship.stage,'delete_intent');assert.equal(h.inventory().friends[0].status,'accepted');assert.equal(h.alive.size,3);
+ const initial=h.j.state.intents.length;await assert.rejects(cleanupMediated(h.j,h),/epoch_used/);assert.equal(h.j.state.intents.length,initial);
+ await h.j.mutate(n=>{n.counters.recoveries.push({id:randomUUID(),startedAt:new Date().toISOString(),counts:{directAuth:0,directStorage:0,cli:0}});});fail=false;
+ await cleanupMediated(h.j,h,'recovery');assert.equal(h.j.state.cleanupComplete,true);assert.equal(h.alive.size,0);assert.equal(h.j.state.friendship.stage,'deleted');
+ for(const phase of ['cleanup','recovery'])assert.equal(h.j.state.intents.filter(i=>i.phase===phase&&i.descriptor.kind==='cli'&&i.descriptor.slot===6).length,1);
+ assert.deepEqual(h.j.state.counters.recoveries[0].counts,{directAuth:3,directStorage:6,cli:20});
+});
+
+// Keep the journal timestamp and the simulated authoritative row separate, including submilliseconds.
+function timestampHarness(){
+ const h=fullHarness(),at=new Date(Date.parse(h.j.state.startedAt)+1000).toISOString().replace(/\.\d{3}Z$/,'.123456Z');
+ h.j.state.fixtures[0].createdAt=at;h.fixtures[0].createdAt=at;return {h,at};
+}
+test('one-microsecond Auth timestamp change at final inspection prevents initial Auth deletion',async()=>{
+ const {h,at}=timestampHarness(),query=h.sql;h.sql=async(s,o)=>{const rows=await query(s,o);if(o.slot===11)rows[0].auth[0].created_at=at.replace('.123456Z','.123457Z');return rows;};
+ await assert.rejects(cleanupMediated(h.j,h));assert.ok(!h.calls.includes('authDelete:A'));assert.equal(h.j.state.fixtures[0].createdAt,at);assert.equal(h.j.state.fixtures[0].stage,'profile_removed');assert.equal(h.alive.size,1);
+});
+test('one-microsecond Auth timestamp change blocks recovery when metadata is already absent',async()=>{
+ const {h,at}=timestampHarness(),query=h.sql;h.sql=async(s,o)=>{if(o.slot===11)throw Error('lost_final_inspection');return query(s,o);};await assert.rejects(cleanupMediated(h.j,h));assert.equal(h.inventory().profiles.length,0);assert.equal(h.alive.size,1);
+ h.sql=query;h.fixtures[0].createdAt=at.replace('.123456Z','.123457Z');await h.j.mutate(n=>{n.counters.recoveries.push({id:randomUUID(),startedAt:new Date().toISOString(),counts:{directAuth:0,directStorage:0,cli:0}});});
+ await assert.rejects(cleanupMediated(h.j,h,'recovery'));assert.ok(!h.calls.includes('authDelete:A'));assert.equal(h.j.state.fixtures[0].createdAt,at);assert.equal(h.alive.size,1);
+});
+test('Auth timestamp equality accepts equivalent timezone and fractional precision encodings',async()=>{
+ for(const precision of ['microseconds','milliseconds','seconds']){
+  const {h,at}=timestampHarness();const canonical=precision==='microseconds'?at:precision==='milliseconds'?at.replace('.123456Z','.123Z'):at.replace('.123456Z','Z');h.j.state.fixtures[0].createdAt=canonical;h.fixtures[0].createdAt=canonical;
+  const localHour=new Date(Date.parse(canonical)+10*60*60*1000).toISOString().slice(0,19);const fraction=precision==='microseconds'?'123456':precision==='milliseconds'?'123000':'000000';const equivalent=`${localHour}.${fraction}+10:00`;
+  const query=h.sql;h.sql=async(s,o)=>{const rows=await query(s,o);if(o.slot===11)rows[0].auth[0].created_at=equivalent;return rows;};await cleanupMediated(h.j,h);assert.equal(h.j.state.cleanupComplete,true);assert.equal(h.j.state.fixtures[0].createdAt,canonical);
+ }
+});
