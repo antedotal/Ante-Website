@@ -35,11 +35,15 @@ The user removed the previous paused cross-project goal. The website-backend rep
 
 ## Current handoff — 27 September 2026
 
-### Latest: bounded photo Auth prerequisite accepted locally
+### Latest: complete mediated photo reader accepted locally
 
-Website `4b93406`/`d5a8018` add bounded photo Auth transport and SDK waits while preserving exact-token identity, SSR refresh cookies and existing shared sanitizer behavior. Independent task/re-review and final integration review approved. Final validation: 268 tests, typecheck/scoped lint and production Worker build pass. [Evidence and remaining work](superpowers/audits/2026-09-27-profile-photo-auth-bounds-acceptance.md).
+Website source through `4df7141` and documentation `ee15081` complete the three-task mediated reader plan. Independent task reviews and a fresh whole-plan review approved. Final verification: **347 tests**, typecheck/scoped lint and the final-source Worker build passed. The unchanged historical local harness previously passed51/51. [Acceptance, exact test scope and open gates](superpowers/audits/2026-09-27-profile-photo-mediated-website-acceptance.md).
 
-Next source slice is the separately planned server-mediated reader: service-only manifest, direct Storage denial before fresh keys, bounded admission, immutable-byte validation and final authorization checks. The [reviewed design](../../Ante/docs/superpowers/audits/2026-09-27-server-mediated-profile-read-design.md) explicitly incorporates the admission timeout gap. No provider changes occurred in this Auth slice. Photo gates remain closed; Cloudflare CLI login and hosted cache/runtime acceptance remain pending. The overall goal is active and incomplete.
+The paired backend manifest/direct-read-denial source is independently accepted through `de50586`, with6 focused package tests and15+14 adjacent checks. Its canonical preflight passed a read-only hosted applicability check, but the package remains **undeployed**. [Database acceptance](../../Ante/docs/superpowers/audits/2026-09-27-profile-photo-mediated-database-acceptance.md).
+
+Next: prepare the separately bounded mediated hosted-acceptance package. It must preserve prior failed cache receipts, journal synthetic identities/keys before mutations, reserve cleanup, preserve22 protected-table fingerprints, establish ordinary direct denial before new objects, and check service-warmed cache isolation and real website sessions/transitions. Strong hosted phase-race evidence and run-owned visitor-admission cleanup need concrete reviewed mechanisms; do not claim black-box replies prove those properties. Planning is underway, not execution approval.
+
+Wrangler4.139.0 freshly returned `loggedIn:false` on27September. The existing intended-account login request remains pending. The website photo mode remains unset, current Pages site unchanged, financial/retention containment preserved, and the full goal remains active and incomplete. Upload normalization/HEIC and cleanup are separate unfinished requirements.
 
 The sections below retain historical evidence; the latest status above and the cache-transition failure below supersede earlier next-step statements. In particular the server-key location, Workers Free selection and Stripe reconnection were resolved later in the history; they are not current missing decisions.
 
@@ -71,7 +75,7 @@ Current status: server-key access works, Workers Free is confirmed, and Stripe s
 | --- | --- | --- |
 | Shared Auth and durable visitor admission | Reviewed source and deployed SQL; actual opaque-server-key HTTP limits verified (5/6 and 60/61 admitted; anonymous calls denied) | Ingress and browser/Worker acceptance; direct hosted JWT checks now pass |
 | Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Name/preset hosted ownership/JWT checks pass; SMTP/two-inbox configuration and authorized recipients remain |
-| Private photos | Legacy routes remain gated; retention containment deployed; hosted HEIC failed CPU limit; new profile asset authority deployed and independently reviewed | Accepted normalizer, immutable upload/readback and reader integration, safe cleanup and authenticated hosted acceptance |
+| Private photos | Retention containment/profile metadata authority deployed; immutable Storage transport separately accepted; complete mediated reader source reviewed with347 website tests; hosted HEIC failed CPU limit | Accepted normalizer, publication orchestration, mediated SQL cutover and hosted session/cache/resource acceptance, safe cleanup |
 | Task/private-proof contracts | Fresh 26 September public function-catalog query returned no four planned task-authority RPCs | Authoritative backend contracts must be ready; no legacy-write fallback |
 | Stripe sandbox setup | Workstream mandates versioned consent/server-owned customer IDs; current goal conditions setup on approved contracts | Approved consent/customer-ownership implementation contract; no settlement or live money |
 | Reviewable commits/handoff | Current isolated branch commits and acceptance receipts | Entire objective is not achieved; no deployment or whole-project completion claimed |
