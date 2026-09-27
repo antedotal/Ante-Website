@@ -248,3 +248,9 @@ test('cleanup clock must be durably bound once before any cleanup reservation',a
   const early=copy(state);early.cleanupStartedAt=new Date(Date.parse(state.startedAt)-1).toISOString();assert.throws(()=>validateMediatedState(early));
   j.state=started;await reserveDispatch(j,'cleanup',{kind:'cli',slot:1});const missing=copy(j.state);missing.cleanupStartedAt=null;assert.throws(()=>validateMediatedState(missing));
 });
+
+test('admission IDs preserve canonical PostgreSQL bigint precision and cannot rebind',()=>{
+ const s=make();s.preparation.visitorDigest=sha;
+ for(const id of ['1','9007199254740993','9223372036854775807']){const next=copy(s);next.admissionRows=[{id,digest:sha,createdAt:s.startedAt}];validateMediatedState(next);const changed=copy(next);changed.admissionRows[0].id='2';assert.throws(()=>validateMediatedHistory(next,changed));}
+ for(const id of ['0','-1','01','9223372036854775808',randomUUID(),1]){const next=copy(s);next.admissionRows=[{id,digest:sha,createdAt:s.startedAt}];assert.throws(()=>validateMediatedState(next));}
+});

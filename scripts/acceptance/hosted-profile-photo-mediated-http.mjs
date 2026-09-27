@@ -121,8 +121,8 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
       if(d.kind==='dataOperation'){
         const o=object(d.label),base={p_owner:owner(),p_operation_id:o.operationId},leased={...base,p_lease_epoch:o.leaseEpoch};
         if(d.slot===1)rpc('reserve_profile_photo_v1',{...base,p_expected_revision:d.label==='G1'?0:1},service());
-        else if(d.slot===2)rpc('bind_profile_photo_input_v1',{...leased,p_input_sha256:`\\x${o.sha256}`,p_transform_version:'synthetic-reader-fixture-v1'},service());
-        else if(d.slot===3)rpc('prepare_profile_photo_v1',{...leased,p_input_sha256:`\\x${o.sha256}`,p_normalized_sha256:`\\x${o.sha256}`,p_mime:o.mime,p_width:1,p_height:1,p_byte_count:o.byteCount,p_transform_version:'synthetic-reader-fixture-v1'},service());
+        else if(d.slot===2)rpc('bind_profile_photo_input_v1',{...leased,p_input_sha256:`\\x${o.sha256}`,p_transform_version:'synthetic-mediated-reader-v1'},service());
+        else if(d.slot===3)rpc('prepare_profile_photo_v1',{...leased,p_input_sha256:`\\x${o.sha256}`,p_normalized_sha256:`\\x${o.sha256}`,p_mime:o.mime,p_width:1,p_height:1,p_byte_count:o.byteCount,p_transform_version:'synthetic-mediated-reader-v1'},service());
         else if(d.slot===4)rpc('publish_profile_photo_v1',leased,service());else throw Error('request_boundary');
       }else if(d.kind==='dataClear')rpc('clear_profile_photo_v1',{p_owner:owner(),p_operation_id:s.clear.operationId,p_expected_revision:2},service());
       else if(d.kind==='dataExposure')rpc('profile_photo_read_manifest_v1',{p_owner:owner(),p_asset_id:asset(d.label)},ordinary(d.actor));

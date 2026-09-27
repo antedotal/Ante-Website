@@ -50,6 +50,7 @@ test('all 25 fixed Data descriptors constrain RPC bodies, schema, actor and serv
   for(const label of ['absence','G1','G2'])for(const actor of ['A','B','C','N'])await http.dispatch({kind:'dataExposure',label,actor},'run');
   for(const slot of [1,2,3,4])await http.dispatch({kind:'dataBoundary',slot},'run');
   assert.equal(seen.length,25);
+  for(const i of [1,2,5,6])assert.equal(JSON.parse(seen[i].init.body).p_transform_version,'synthetic-mediated-reader-v1');
   assert.deepEqual(seen.slice(0,9).map(x=>new URL(x.url).pathname.split('/').at(-1)),['reserve_profile_photo_v1','bind_profile_photo_input_v1','prepare_profile_photo_v1','publish_profile_photo_v1','reserve_profile_photo_v1','bind_profile_photo_input_v1','prepare_profile_photo_v1','publish_profile_photo_v1','clear_profile_photo_v1']);
   seen.slice(0,9).forEach(x=>assert.equal(new Headers(x.init.headers).get('apikey'),credentials.secretKey));
   seen.slice(9).forEach(x=>assert.equal(new Headers(x.init.headers).get('apikey'),credentials.publicKey));
