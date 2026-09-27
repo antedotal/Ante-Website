@@ -1,9 +1,10 @@
-// Exercise the fixed-key server adapter with real request construction and controlled provider replies.
+// Exercise generation reads and dormant fixed-key helpers with controlled provider replies.
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 vi.mock('server-only', () => ({}))
 
 const owner = '00000000-0000-4000-8000-000000000001'
+const asset = 'abcdefab-cdef-4abc-8abc-abcdefabcdef'
 const object = `profile-photos/${owner}/avatar`
 const origin = 'https://yxilmwxptfnebnjsikwo.supabase.co'
 const secret = 'sb_secret_test_service_key'
@@ -11,6 +12,12 @@ const caller = 'caller.jwt.token'
 const photo = { bytes: new Uint8Array([137, 80, 78, 71]), contentType: 'image/png' as const, width: 1, height: 1 }
 const reply = (value: unknown, status = 200) => new Response(JSON.stringify(value), { status, headers: { 'content-type': 'application/json' } })
 const missing = { statusCode: '404', code: 'NoSuchKey', error: 'not_found', message: 'Object not found' }
+
+// Keep the resolver transport real while replacing only the external provider.
+function readFetch(storage: () => Response | Promise<Response>, resolved: unknown = { kind: 'legacy' }) {
+  vi.stubGlobal('fetch', vi.fn(async (url: string | URL | Request) =>
+    String(url).includes('/rest/v1/rpc/resolve_profile_photo_v1') ? reply(resolved) : storage()))
+}
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -23,6 +30,66 @@ beforeEach(() => {
 })
 
 describe('profile photo provider adapter', () => {
+  it('resolves a current generation with the exact caller token and downloads only its derived key', async () => {
+    const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
+    delete process.env.SUPABASE_SECRET_KEY
+    readFetch(() => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg' } }), { kind: 'current', asset_id: asset })
+    expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'found', bytes: new Uint8Array([1, 2, 3]), contentType: 'image/jpeg' })
+    expect(fetch).toHaveBeenCalledTimes(2)
+    const [resolverUrl, resolverInit] = vi.mocked(fetch).mock.calls[0]
+    expect(resolverUrl).toBe(`${origin}/rest/v1/rpc/resolve_profile_photo_v1`)
+    expect(resolverInit).toMatchObject({ method: 'POST', cache: 'no-store', redirect: 'error', body: JSON.stringify({ p_owner: owner }) })
+    expect(new Headers(resolverInit?.headers).get('authorization')).toBe(`Bearer ${caller}`)
+    expect(new Headers(resolverInit?.headers).get('apikey')).toBe('sb_publishable_testvalue')
+    const [storageUrl, storageInit] = vi.mocked(fetch).mock.calls[1]
+    expect(storageUrl).toBe(`${origin}/storage/v1/object/authenticated/profile-photos/${owner}/${asset}`)
+    expect(new Headers(storageInit?.headers).get('authorization')).toBe(`Bearer ${caller}`)
+    expect(new Headers(storageInit?.headers).get('apikey')).toBe('sb_publishable_testvalue')
+  })
+
+  it('stops at exact not_found and rejects ambiguous resolver replies without Storage or fallback', async () => {
+    const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
+    for (const [resolved, expected] of [
+      [{ kind: 'not_found' }, 'not_found'], [{ kind: 'legacy', asset_id: asset }, 'unavailable'],
+      [{ kind: 'current' }, 'unavailable'], [{ kind: 'current', asset_id: asset, key: 'x' }, 'unavailable'],
+      [{ kind: 'current', asset_id: asset.toUpperCase() }, 'unavailable'],
+      [{ kind: 'unknown' }, 'unavailable'], [null, 'unavailable'],
+      [{ kind: 'legacy', key: `${owner}/avatar` }, 'unavailable'],
+    ] as const) {
+      readFetch(() => { throw new Error('Storage must not be called') }, resolved)
+      expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: expected })
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+  })
+
+  it('stops on resolver redirects, oversized JSON and hung bodies within one ten-second call', async () => {
+    const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
+    for (const response of [reply({ kind: 'legacy' }, 302), reply({ kind: 'legacy', pad: 'x'.repeat(16384) }),
+      new Response('{broken', { headers: { 'content-type': 'application/json' } }),
+      new Response(JSON.stringify({ kind: 'legacy' }), { headers: { 'content-type': 'text/plain' } }),
+      reply({ kind: 'legacy' }, 201)]) {
+      vi.stubGlobal('fetch', vi.fn(async () => response))
+      expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
+      expect(fetch).toHaveBeenCalledTimes(1)
+    }
+    let cancelled = 0
+    vi.useFakeTimers()
+    try {
+      vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ pull() {}, cancel() { cancelled++ } }), { headers: { 'content-type': 'application/json' } })))
+      const pending = downloadProfilePhoto(owner, caller)
+      await vi.advanceTimersByTimeAsync(10000)
+      expect(await pending).toEqual({ kind: 'unavailable' })
+      expect(cancelled).toBe(1)
+      expect(fetch).toHaveBeenCalledTimes(1)
+    } finally { vi.useRealTimers() }
+  })
+
+  it('does not re-resolve or fall back after Storage denies a selected generation', async () => {
+    const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
+    readFetch(() => reply(missing, 400), { kind: 'current', asset_id: asset })
+    expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'not_found' })
+    expect(fetch).toHaveBeenCalledTimes(2)
+  })
   it('derives the one fixed key from a lowercase UUID and rejects malformed identifiers before I/O', async () => {
     const store = await import('../lib/server/profile-photo-store')
     expect(store.profilePhotoKey(owner)).toBe(`${owner}/avatar`)
@@ -78,7 +145,7 @@ describe('profile photo provider adapter', () => {
 
   it('reads with the public apikey and exact caller bearer, and returns original bytes', async () => {
     const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg', etag: 'private' } })))
+    readFetch(() => new Response(new Uint8Array([1, 2, 3]), { headers: { 'content-type': 'image/jpeg', etag: 'private' } }))
     expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'found', bytes: new Uint8Array([1, 2, 3]), contentType: 'image/jpeg' })
     const [url, init] = vi.mocked(fetch).mock.lastCall!
     expect(url).toBe(`${origin}/storage/v1/object/authenticated/${object}`)
@@ -93,11 +160,11 @@ describe('profile photo provider adapter', () => {
   it('maps only known Storage read denials to not_found', async () => {
     const { downloadProfilePhoto } = await import('../lib/server/profile-photo-store')
     for (const [code, statusCode] of [['NoSuchKey', '404'], ['NoSuchBucket', '404'], ['AccessDenied', '403']]) {
-      vi.stubGlobal('fetch', vi.fn(async () => reply({ statusCode, code, error: 'not_found', message: 'untrusted' }, 400)))
+      readFetch(() => reply({ statusCode, code, error: 'not_found', message: 'untrusted' }, 400))
       expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'not_found' })
     }
     for (const response of [reply({}, 400), reply({ statusCode: 404, code: 'NoSuchKey' }, 400), reply({ statusCode: '404', code: 'Other' }, 400), reply({ statusCode: '404', code: 'NoSuchKey' }, 403)]) {
-      vi.stubGlobal('fetch', vi.fn(async () => response))
+      readFetch(() => response)
       expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
     }
   })
@@ -136,14 +203,14 @@ describe('profile photo provider adapter', () => {
     const { downloadProfilePhoto, putProfilePhoto } = await import('../lib/server/profile-photo-store')
     let cancelled = 0
     const oversized = new ReadableStream<Uint8Array>({ start(controller) { controller.enqueue(new Uint8Array(2097153)) }, cancel() { cancelled++ } })
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(oversized, { headers: { 'content-type': 'image/png' } })))
+    readFetch(() => new Response(oversized, { headers: { 'content-type': 'image/png' } }))
     expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
     expect(cancelled).toBe(1)
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/png', 'content-length': '2097153' } })))
+    readFetch(() => new Response(new Uint8Array([1]), { headers: { 'content-type': 'image/png', 'content-length': '2097153' } }))
     expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
     vi.stubGlobal('fetch', vi.fn(async () => reply({ Key: object, padding: 'x'.repeat(16384) })))
     expect(await putProfilePhoto(owner, photo)).toEqual({ kind: 'unavailable' })
-    vi.stubGlobal('fetch', vi.fn(async () => reply({ ...missing, padding: 'x'.repeat(16384) }, 400)))
+    readFetch(() => reply({ ...missing, padding: 'x'.repeat(16384) }, 400))
     expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'unavailable' })
   })
 
@@ -156,7 +223,7 @@ describe('profile photo provider adapter', () => {
       else if (pulls === 2) { shared.set([3, 4]); controller.enqueue(shared) }
       else controller.close()
     } }, { highWaterMark: 0 })
-    vi.stubGlobal('fetch', vi.fn(async () => new Response(body, { headers: { 'content-type': 'image/png' } })))
+    readFetch(() => new Response(body, { headers: { 'content-type': 'image/png' } }))
     expect(await downloadProfilePhoto(owner, caller)).toEqual({ kind: 'found', bytes: new Uint8Array([1, 2, 3, 4]), contentType: 'image/png' })
   })
 
@@ -165,7 +232,7 @@ describe('profile photo provider adapter', () => {
     let cancelled = 0
     vi.useFakeTimers()
     try {
-      vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream({ pull() {}, cancel() { cancelled++ } }), { headers: { 'content-type': 'image/png' } })))
+      readFetch(() => new Response(new ReadableStream({ pull() {}, cancel() { cancelled++ } }), { headers: { 'content-type': 'image/png' } }))
       const pending = downloadProfilePhoto(owner, caller)
       await vi.advanceTimersByTimeAsync(10000)
       expect(await pending).toEqual({ kind: 'unavailable' })

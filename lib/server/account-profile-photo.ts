@@ -1,34 +1,28 @@
-// Apply admission, fresh Auth and fixed-key Storage operations to private profile photos.
+// Apply admission and fresh Auth to private current-generation profile photo reads.
 import 'server-only'
 import { NextRequest, NextResponse } from 'next/server'
 import { accountConfig } from '../supabase/config'
 import { trustedAccountOrigin } from './account-request'
 import { withVerifiedCookies } from './account-session'
 import { admitAccountVisitor, admitProfilePhotoUser } from './callback-admission'
-import { ProfilePhotoError, withProfilePhotoProcessing } from './profile-photo'
+import { withProfilePhotoProcessing } from './profile-photo'
 import { cancelProfilePhotoBody, MAX_PROFILE_PHOTO_BYTES } from './profile-photo-stream'
-import { deleteProfilePhoto, downloadProfilePhoto, photoOwnerProfile, profilePhotoKey, putProfilePhoto } from './profile-photo-store'
+import { downloadProfilePhoto, profilePhotoKey } from './profile-photo-store'
 import { verifyProfilePhotoSession, type VerifiedPhotoSession } from './profile-photo-session'
 
-type FailureStatus = 400 | 401 | 403 | 404 | 408 | 413 | 415 | 422 | 429 | 503
+type FailureStatus = 400 | 401 | 403 | 404 | 413 | 415 | 429 | 503
 
 // Return only fixed private errors; no provider response or decoder text crosses this boundary.
 function failure(status: FailureStatus, photoMissing = false) {
   const messages: Record<FailureStatus, string> = {
     400: 'Invalid request', 401: 'Authentication required', 403: 'Invalid origin',
-    404: photoMissing ? 'Photo not found' : 'Profile not found', 408: 'Photo upload timed out',
-    413: 'Request too large', 415: 'Unsupported content type', 422: 'Invalid image',
+    404: photoMissing ? 'Photo not found' : 'Profile not found',
+    413: 'Request too large', 415: 'Unsupported content type',
     429: 'Please try again later', 503: 'Photo temporarily unavailable',
   }
   const response = NextResponse.json({ error: messages[status] }, { status })
   response.headers.set('Cache-Control', 'private, no-store')
   if (status === 429 || status === 503) response.headers.set('Retry-After', '60')
-  return response
-}
-
-function success() {
-  const response = NextResponse.json({ ok: true })
-  response.headers.set('Cache-Control', 'private, no-store')
   return response
 }
 
@@ -43,8 +37,8 @@ function rejectWrite(request: NextRequest, status: FailureStatus) {
   return failure(status)
 }
 
-// The operator gate remains unset unless explicitly enabled after hosted acceptance.
-function enabled() { return process.env.ANTE_PROFILE_PHOTOS_MODE === 'private-v1' }
+// This separate read gate cannot activate the retired fixed-key write protocol.
+function readEnabled() { return process.env.ANTE_PROFILE_PHOTOS_MODE === 'generation-read-v1' }
 
 export async function handleAccountProfilePhoto(request: NextRequest, action: 'upload' | 'delete'): Promise<NextResponse> {
   if (request.signal.aborted) return rejectWrite(request, 400)
@@ -62,41 +56,8 @@ export async function handleAccountProfilePhoto(request: NextRequest, action: 'u
       if (Number(declared) > MAX_PROFILE_PHOTO_BYTES) return rejectWrite(request, 413)
     }
   }
-  if (!enabled()) return rejectWrite(request, 503)
-
-  // Shared visitor admission precedes SSR construction and every body read.
-  const visitor = await admitAccountVisitor(request)
-  if (visitor) { cancelProfilePhotoBody(request); return visitor }
-  const identity = await verifyProfilePhotoSession(request)
-  if (identity.kind === 'failed') return rejectWrite(request, identity.status)
-  const session = identity.session
-  const userAdmission = await admitProfilePhotoUser(session.ownerId, action)
-  if (userAdmission) { cancelProfilePhotoBody(request); return verified(userAdmission, session) }
-
-  // Privileged mutations are forbidden when the caller's own profile does not exist.
-  const profile = await photoOwnerProfile(session.ownerId, session.token, request.signal)
-  if (profile.kind !== 'exists') {
-    cancelProfilePhotoBody(request)
-    return verified(failure(profile.kind === 'missing' ? 404 : 503), session)
-  }
-  if (action === 'delete') {
-    const result = await deleteProfilePhoto(session.ownerId, request.signal)
-    return verified(result.kind === 'ok' ? success() : failure(503), session)
-  }
-
-  try {
-    // Keep validated bytes and Storage's upload copy inside the same admitted scope through acknowledgement.
-    return await withProfilePhotoProcessing(async validate => {
-      const image = await validate(request)
-      const result = await putProfilePhoto(session.ownerId, image, request.signal)
-      return verified(result.kind === 'ok' ? success() : failure(503), session)
-    })
-  }
-  catch (error) {
-    cancelProfilePhotoBody(request)
-    if (error instanceof ProfilePhotoError) return verified(failure(error.status), session)
-    return verified(failure(503), session)
-  }
+  // Validation precedes the closed response so malformed requests keep stable errors.
+  return rejectWrite(request, 503)
 }
 
 export async function handleProfilePhotoRead(request: NextRequest, targetId: string): Promise<NextResponse> {
@@ -105,7 +66,7 @@ export async function handleProfilePhotoRead(request: NextRequest, targetId: str
   try { siteOrigin = accountConfig().siteOrigin } catch { return failure(503) }
   if (!trustedAccountOrigin(request, siteOrigin, false)) return failure(403)
   if (request.nextUrl.search || !profilePhotoKey(targetId)) return failure(400)
-  if (!enabled()) return failure(503)
+  if (!readEnabled()) return failure(503)
 
   const visitor = await admitAccountVisitor(request)
   if (visitor) return visitor

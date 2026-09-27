@@ -1,4 +1,4 @@
-// Fixed-path, server-only Storage requests; route authorization remains the caller's responsibility.
+// Server-only photo provider requests; route authorization remains the caller's responsibility.
 import 'server-only'
 import { accountConfig } from '../supabase/config'
 import type { ValidatedProfilePhoto } from './profile-photo'
@@ -14,7 +14,7 @@ const photoCap = 2097152
 const jsonCap = 16384
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 
-// Reject path components before they can be interpolated into a privileged request.
+// Reject path components before deriving a legacy provider key.
 export function profilePhotoKey(ownerId: string): string | null {
   return uuid.test(ownerId) ? `${ownerId}/avatar` : null
 }
@@ -93,6 +93,24 @@ function authHeaders(key: string, bearer?: string): Record<string, string> {
   return { apikey: key, ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) }
 }
 
+// Accept only the published resolver union before deriving a private Storage key.
+async function resolvedPhotoKey(url: string, publicKey: string, ownerId: string, callerToken: string, signal?: AbortSignal): Promise<{ kind: 'key'; key: string } | { kind: 'not_found' } | { kind: 'unavailable' }> {
+  const result = await providerRequest(`${url}/rest/v1/rpc/resolve_profile_photo_v1`, {
+    method: 'POST', headers: { ...authHeaders(publicKey, callerToken), 'content-type': 'application/json', accept: 'application/json' },
+    body: JSON.stringify({ p_owner: ownerId }), cache: 'no-store', redirect: 'error',
+  }, jsonCap, signal)
+  if (!result || result.response.status !== 200 || result.response.headers.get('content-type')?.split(';', 1)[0].trim().toLowerCase() !== 'application/json') return unavailable
+  const body = jsonBody(result.bytes)
+  if (!body) return unavailable
+  const keys = Object.keys(body)
+  if (keys.length === 1 && body.kind === 'not_found') return { kind: 'not_found' }
+  if (keys.length === 1 && body.kind === 'legacy') return { kind: 'key', key: `${ownerId}/avatar` }
+  if (keys.length === 2 && body.kind === 'current' && typeof body.asset_id === 'string' && uuid.test(body.asset_id)) {
+    return { kind: 'key', key: `${ownerId}/${body.asset_id}` }
+  }
+  return unavailable
+}
+
 // Upload one already-validated original image; require the provider to confirm its exact key.
 export async function putProfilePhoto(ownerId: string, photo: ValidatedProfilePhoto, signal?: AbortSignal): Promise<PhotoMutationResult> {
   const key = profilePhotoKey(ownerId)
@@ -135,12 +153,14 @@ export async function deleteProfilePhoto(ownerId: string, signal?: AbortSignal):
   } catch { return unavailable }
 }
 
-// Read through current Storage RLS using only the public key and verified caller token.
+// Resolve the visible generation and read it through Storage RLS using the same caller token.
 export async function downloadProfilePhoto(targetId: string, callerToken: string, signal?: AbortSignal): Promise<PhotoReadResult> {
-  const key = profilePhotoKey(targetId)
-  if (!key || !callerSuitable(callerToken)) return unavailable
+  if (!profilePhotoKey(targetId) || !callerSuitable(callerToken)) return unavailable
   try {
     const { url, key: publicKey } = accountConfig()
+    const selected = await resolvedPhotoKey(url, publicKey, targetId, callerToken, signal)
+    if (selected.kind !== 'key') return selected
+    const key = selected.key
     const result = await providerRequest(`${url}/storage/v1/object/authenticated/profile-photos/${key}`, {
       method: 'GET', headers: authHeaders(publicKey, callerToken), cache: 'no-store', redirect: 'error',
     }, photoCap, signal)
