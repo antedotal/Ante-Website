@@ -13,7 +13,7 @@ const SHA=/^[0-9a-f]{64}$/;
 const COMMIT=/^[0-9a-f]{40}$/;
 const LABELS=['A','B','C'];
 const PIN_KEYS=['websiteCommit','backendCommit','adapterSha256','releaseSha256','catalog','ordinaryBundleSha256','acceptanceBundleSha256','origin','deploymentId','cacheReceiptSha256','quiescenceReceiptSha256'];
-const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','uncertainWebsite','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','failures','counters','observed','intents','settlement'];
+const STATE_KEYS=['version','project','runId','startedAt','pins','stage','outcome','cleanupComplete','uncertainWebsite','uncertainAt','fixtures','objects','absenceProbeAssetId','friendship','clear','revision','preparation','baseline','after','admissionRows','scenarioIndex','assertions','failures','counters','observed','intents','settlement'];
 const exact=(o,keys)=>o!==null&&typeof o==='object'&&!Array.isArray(o)&&Object.keys(o).sort().join(',')===[...keys].sort().join(',');
 const need=(ok,code)=>{if(!ok)throw Error(code);};
 const timestamp=x=>typeof x==='string'&&/^\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|[+-]\d\d:\d\d)$/.test(x)&&Number.isFinite(Date.parse(x));
@@ -22,10 +22,10 @@ const persisted=(a,b)=>a===null||JSON.stringify(a)===JSON.stringify(b);
 const prefix=(a,b)=>a.length<=b.length&&a.every((v,i)=>JSON.stringify(v)===JSON.stringify(b[i]));
 const zero=caps=>Object.fromEntries(Object.keys(caps).map(k=>[k,0]));
 const stages={prepared:['preflight','run','cleanup','cleanup_blocked'],preflight:['run','cleanup','cleanup_blocked'],run:['cleanup','cleanup_blocked'],cleanup:['cleanup_blocked','complete'],cleanup_blocked:['cleanup','complete'],complete:[]};
-const fixtureStages={planned:['create_intent'],create_intent:['created','create_uncertain'],create_uncertain:['created','cleanup_blocked'],created:['profile_removed','auth_delete_intent'],profile_removed:['auth_delete_intent'],auth_delete_intent:['cleaned','cleanup_blocked'],cleaned:[]};
-const objectStages={planned:['reserve_intent'],reserve_intent:['reserved','reserve_uncertain'],reserve_uncertain:['reserved','cleanup_blocked'],reserved:['bind_intent'],bind_intent:['bound','bind_uncertain'],bind_uncertain:['bound','cleanup_blocked'],bound:['prepare_intent'],prepare_intent:['prepared','prepare_uncertain'],prepare_uncertain:['prepared','cleanup_blocked'],prepared:['upload_intent'],upload_intent:['verified','upload_uncertain'],upload_uncertain:['verified','cleanup_blocked'],verified:['publish_intent','delete_intent'],publish_intent:['published','publish_uncertain'],publish_uncertain:['published','cleanup_blocked'],published:['delete_intent'],delete_intent:['deleted','cleanup_blocked'],deleted:[]};
-const friendStages={planned:['insert_intent'],insert_intent:['accepted','insert_uncertain'],insert_uncertain:['accepted','cleanup_blocked'],accepted:['reject_intent','delete_intent'],reject_intent:['rejected','reject_uncertain'],reject_uncertain:['rejected','cleanup_blocked'],rejected:['restore_intent','delete_intent'],restore_intent:['accepted_again','restore_uncertain'],restore_uncertain:['accepted_again','cleanup_blocked'],accepted_again:['delete_intent'],delete_intent:['deleted','cleanup_blocked'],deleted:[]};
-const clearStages={planned:['intent'],intent:['completed','uncertain'],uncertain:['completed','cleanup_blocked'],completed:[]};
+const fixtureStages={planned:['create_intent'],create_intent:['created','create_uncertain'],create_uncertain:['created'],created:['profile_removed','auth_delete_intent'],profile_removed:['auth_delete_intent'],auth_delete_intent:['cleaned'],cleaned:[]};
+const objectStages={planned:['reserve_intent'],reserve_intent:['reserved','reserve_uncertain'],reserve_uncertain:['reserved'],reserved:['bind_intent'],bind_intent:['bound','bind_uncertain'],bind_uncertain:['bound'],bound:['prepare_intent'],prepare_intent:['prepared','prepare_uncertain'],prepare_uncertain:['prepared'],prepared:['upload_intent'],upload_intent:['verified','upload_uncertain'],upload_uncertain:['verified'],verified:['publish_intent','delete_intent'],publish_intent:['published','publish_uncertain'],publish_uncertain:['published'],published:['delete_intent'],delete_intent:['deleted'],deleted:[]};
+const friendStages={planned:['insert_intent'],insert_intent:['accepted','insert_uncertain'],insert_uncertain:['accepted'],accepted:['reject_intent','delete_intent'],reject_intent:['rejected','reject_uncertain'],reject_uncertain:['rejected'],rejected:['restore_intent','delete_intent'],restore_intent:['accepted_again','restore_uncertain'],restore_uncertain:['accepted_again'],accepted_again:['delete_intent'],delete_intent:['deleted'],deleted:[]};
+const clearStages={planned:['intent'],intent:['completed','uncertain'],uncertain:['completed'],completed:[]};
 const preparationStages={planned:['intent'],intent:['complete','uncertain'],uncertain:['complete'],complete:[]};
 const advance=(a,b,graph)=>a===b||graph[a]?.includes(b);
 
@@ -34,7 +34,7 @@ const advance=(a,b,graph)=>a===b||graph[a]?.includes(b);
 /** @typedef {{label:'G1'|'G2',operationId:string,assetId:string|null,key:string|null,leaseEpoch:number|null,sha256:string|null,byteCount:number|null,mime:'image/png',stage:string,uploadAttempts:number,deleteAttempts:number}} MediatedObject */
 /** @typedef {{visitorDigest:string|null,userDigests:(string|null)[],intentId:string,stage:'planned'|'intent'|'complete'|'uncertain'}} MediatedPreparation */
 /** @typedef {{seq:number,phase:'run'|'cleanup'|'recovery',epochId:string|null,descriptor:import('./hosted-profile-photo-mediated-protocol.mjs').DispatchDescriptor,delta:Record<string,number>}} MediatedIntent */
-/** @typedef {{version:2,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,uncertainWebsite:boolean,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,issuedAt:string}} MediatedState */
+/** @typedef {{version:2,project:string,runId:string,startedAt:string,pins:MediatedPins,stage:string,outcome:'pending'|'phase_one_http_passed'|'failed',cleanupComplete:boolean,uncertainWebsite:boolean,uncertainAt:string|null,fixtures:MediatedFixture[],objects:MediatedObject[],absenceProbeAssetId:string,friendship:{id:string,stage:string},clear:{operationId:string,stage:string},revision:number,preparation:MediatedPreparation,baseline:null|Array<{table:string,count:number,digest:string}>,after:null|Array<{table:string,count:number,digest:string}>,admissionRows:Array<{id:string,digest:string,createdAt:string}>,scenarioIndex:number,assertions:Array<{caseId:number,passed:boolean}>,failures:string[],counters:{run:Record<string,number>,cleanup:Record<string,number>,recoveries:Array<{id:string,startedAt:string,counts:Record<string,number>}>},observed:{run:Record<string,number>,cleanup:Record<string,number>,recovery:Record<string,number>},intents:MediatedIntent[],settlement:null|{sha256:string,run_id:string,origin:string,deployment_id:string,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:string}} MediatedState */
 
 function validatePins(p){
   need(exact(p,PIN_KEYS),'pin_shape');
@@ -47,7 +47,7 @@ function validatePins(p){
 /** Construct fixed identities and operation UUIDs before any provider call. */
 export function newMediatedState(runId,pins){
   need(UUID.test(runId),'run_id');validatePins(pins);
-  const state={version:2,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,uncertainWebsite:false,
+  const state={version:2,project:PROJECT,runId,startedAt:new Date().toISOString(),pins:structuredClone(pins),stage:'prepared',outcome:'pending',cleanupComplete:false,uncertainWebsite:false,uncertainAt:null,
     fixtures:LABELS.map(label=>({label,email:`ante-mediated-${runId}-${label.toLowerCase()}@example.invalid`,id:null,createdAt:null,stage:'planned',createAttempts:0,deleteAttempts:0})),
     objects:['G1','G2'].map(label=>({label,operationId:randomUUID(),assetId:null,key:null,leaseEpoch:null,sha256:null,byteCount:null,mime:'image/png',stage:'planned',uploadAttempts:0,deleteAttempts:0})),
     absenceProbeAssetId:randomUUID(),friendship:{id:randomUUID(),stage:'planned'},clear:{operationId:randomUUID(),stage:'planned'},revision:0,
@@ -95,6 +95,7 @@ export function validateMediatedState(s){
   need(exact(s,STATE_KEYS)&&s.version===2&&s.project===PROJECT&&UUID.test(s.runId)&&timestamp(s.startedAt),'journal_shape');validatePins(s.pins);
   need(Object.hasOwn(stages,s.stage)&&['pending','phase_one_http_passed','failed'].includes(s.outcome)&&typeof s.cleanupComplete==='boolean'&&typeof s.uncertainWebsite==='boolean','journal_stage');
   need(s.cleanupComplete===(s.stage==='complete'),'journal_completion');
+  need(s.uncertainWebsite?timestamp(s.uncertainAt)&&Date.parse(s.uncertainAt)>=Date.parse(s.startedAt):s.uncertainAt===null,'journal_uncertainty');
   need(Array.isArray(s.fixtures)&&s.fixtures.length===3,'journal_fixtures');
   for(let i=0;i<3;i++){
     const f=s.fixtures[i],label=LABELS[i];
@@ -122,6 +123,7 @@ export function validateMediatedState(s){
   need(Number.isInteger(s.scenarioIndex)&&s.scenarioIndex>=0&&s.scenarioIndex<=24&&Array.isArray(s.assertions)&&s.assertions.length<=24&&s.assertions.every(a=>exact(a,['caseId','passed'])&&Number.isInteger(a.caseId)&&a.caseId>=1&&a.caseId<=24&&typeof a.passed==='boolean')&&Array.isArray(s.failures)&&s.failures.length<=50&&s.failures.every(f=>typeof f==='string'&&/^[a-z0-9_]{1,80}$/.test(f)),'journal_assertions');
   need(exact(s.counters,['run','cleanup','recoveries'])&&Array.isArray(s.counters.recoveries)&&s.counters.recoveries.length<=1,'journal_counters');counts(s.counters.run,RUN_CAPS);counts(s.counters.cleanup,CLEANUP_CAPS);
   for(const e of s.counters.recoveries)need(exact(e,['id','startedAt','counts'])&&UUID.test(e.id)&&timestamp(e.startedAt)&&(counts(e.counts,CLEANUP_CAPS),true),'journal_recovery');
+  if(s.uncertainWebsite&&s.counters.recoveries.length)need(Date.parse(s.counters.recoveries[0].startedAt)>=Date.parse(s.uncertainAt),'recovery_before_uncertainty');
   need(exact(s.observed,['run','cleanup','recovery']),'observed_shape');
   for(const [phase,caps,reserved] of [['run',RUN_CAPS,s.counters.run],['cleanup',CLEANUP_CAPS,s.counters.cleanup],['recovery',CLEANUP_CAPS,s.counters.recoveries[0]?.counts??zero(CLEANUP_CAPS)]]){
     counts(s.observed[phase],caps);
@@ -132,24 +134,28 @@ export function validateMediatedState(s){
   s.intents.forEach((i,n)=>{
     need(exact(i,['seq','phase','epochId','descriptor','delta'])&&i.seq===n+1&&['run','cleanup','recovery'].includes(i.phase)&&i.epochId===(i.phase==='recovery'?s.counters.recoveries[0]?.id??null:null),'journal_intent');
     validateDescriptor(i.descriptor);need(exact(i.delta,Object.keys(delta(i.descriptor)))&&Object.entries(delta(i.descriptor)).every(([k,v])=>i.delta[k]===v),'journal_envelope');
-    const identity=`${i.phase}:${JSON.stringify(i.descriptor)}`;need(!identities.has(identity),'duplicate_intent');identities.add(identity);
+    const identity=`${i.phase}:${JSON.stringify(Object.entries(i.descriptor).sort(([a],[b])=>a.localeCompare(b)))}`;need(!identities.has(identity),'duplicate_intent');identities.add(identity);
     for(const [k,v] of Object.entries(i.delta)){need(Object.hasOwn(totals[i.phase],k),'phase_counter');totals[i.phase][k]+=v;}
   });
   need(JSON.stringify(totals.run)===JSON.stringify(s.counters.run)&&JSON.stringify(totals.cleanup)===JSON.stringify(s.counters.cleanup)&&JSON.stringify(totals.recovery)===JSON.stringify(s.counters.recoveries[0]?.counts??zero(CLEANUP_CAPS)),'journal_counter_envelope');
-  need(s.settlement===null||exact(s.settlement,['sha256','issuedAt'])&&SHA.test(s.settlement.sha256)&&timestamp(s.settlement.issuedAt),'journal_settlement');
+  if(s.settlement!==null){
+    const r=s.settlement;
+    need(exact(r,['sha256','run_id','origin','deployment_id','closed_to_test_traffic','website_calls_settled','admission_writes_settled','issued_at'])&&SHA.test(r.sha256)&&r.run_id===s.runId&&r.origin===s.pins.origin&&r.deployment_id===s.pins.deploymentId&&r.closed_to_test_traffic===true&&r.website_calls_settled===true&&r.admission_writes_settled===true&&timestamp(r.issued_at)&&s.uncertainWebsite&&Date.parse(r.issued_at)>Date.parse(s.uncertainAt)&&s.counters.recoveries.length===1,'journal_settlement');
+  }
+  need(!s.cleanupComplete||!s.uncertainWebsite||s.settlement!==null,'settlement_required');
 }
 
 /** Compare consecutive fsynced snapshots; successful reconciliation may bind null once only. */
 export function validateMediatedHistory(old,next){
   validateMediatedState(old);validateMediatedState(next);
-  need(old.runId===next.runId&&old.startedAt===next.startedAt&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
+  need(old.runId===next.runId&&old.startedAt===next.startedAt&&JSON.stringify(old.pins)===JSON.stringify(next.pins)&&advance(old.stage,next.stage,stages)&&(!old.cleanupComplete||next.cleanupComplete)&&(!old.uncertainWebsite||next.uncertainWebsite)&&bound(old.uncertainAt,next.uncertainAt)&&(old.outcome==='pending'||old.outcome===next.outcome)&&old.revision<=next.revision&&next.revision<=old.revision+1&&old.scenarioIndex<=next.scenarioIndex&&prefix(old.intents,next.intents)&&prefix(old.assertions,next.assertions)&&prefix(old.failures,next.failures)&&prefix(old.admissionRows,next.admissionRows)&&persisted(old.baseline,next.baseline)&&persisted(old.after,next.after)&&persisted(old.settlement,next.settlement),'journal_history');
   for(let n=0;n<3;n++){const a=old.fixtures[n],b=next.fixtures[n];need(bound(a.id,b.id)&&bound(a.createdAt,b.createdAt)&&advance(a.stage,b.stage,fixtureStages)&&b.createAttempts>=a.createAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   for(let n=0;n<2;n++){const a=old.objects[n],b=next.objects[n];need(a.operationId===b.operationId&&bound(a.assetId,b.assetId)&&bound(a.key,b.key)&&bound(a.leaseEpoch,b.leaseEpoch)&&bound(a.sha256,b.sha256)&&bound(a.byteCount,b.byteCount)&&advance(a.stage,b.stage,objectStages)&&b.uploadAttempts>=a.uploadAttempts&&b.deleteAttempts>=a.deleteAttempts,'journal_history');}
   need(old.absenceProbeAssetId===next.absenceProbeAssetId&&old.friendship.id===next.friendship.id&&advance(old.friendship.stage,next.friendship.stage,friendStages)&&old.clear.operationId===next.clear.operationId&&advance(old.clear.stage,next.clear.stage,clearStages)&&old.preparation.intentId===next.preparation.intentId&&advance(old.preparation.stage,next.preparation.stage,preparationStages)&&bound(old.preparation.visitorDigest,next.preparation.visitorDigest)&&old.preparation.userDigests.every((d,i)=>bound(d,next.preparation.userDigests[i])),'journal_history');
   for(const phase of ['run','cleanup'])for(const k of Object.keys(old.counters[phase]))need(next.counters[phase][k]>=old.counters[phase][k],'journal_history');
   for(const phase of ['run','cleanup','recovery'])for(const k of Object.keys(old.observed[phase]))need(next.observed[phase][k]>=old.observed[phase][k],'journal_history');
   const before=old.counters.recoveries,after=next.counters.recoveries;need(after.length>=before.length&&after.length<=before.length+1,'journal_history');
-  if(before.length)for(const k of Object.keys(CLEANUP_CAPS))need(before[0].id===after[0].id&&after[0].counts[k]>=before[0].counts[k],'journal_history');
+  if(before.length){need(before[0].id===after[0].id&&before[0].startedAt===after[0].startedAt,'journal_history');for(const k of Object.keys(CLEANUP_CAPS))need(after[0].counts[k]>=before[0].counts[k],'journal_history');}
   if(after.length>before.length)need(Object.values(after[0].counts).every(n=>n===0)&&old.stage==='cleanup_blocked','journal_history');
 }
 

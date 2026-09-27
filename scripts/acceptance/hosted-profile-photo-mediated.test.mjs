@@ -88,7 +88,7 @@ test('recovery_adds_epoch_without_reset',async()=>{
   const j=await MediatedJournal.create(dir,make());
   try{
     await reserveDispatch(j,'cleanup',{kind:'authDelete',label:'A'});
-    await j.mutate(s=>{s.stage='cleanup_blocked';s.uncertainWebsite=true;});
+    await j.mutate(s=>{s.stage='cleanup_blocked';s.uncertainWebsite=true;s.uncertainAt=new Date().toISOString();});
     const before=copy(j.state);
     await j.mutate(s=>{s.counters.recoveries.push({id:randomUUID(),counts:{...CLEANUP_CAPS,directAuth:0,directStorage:0,cli:0},startedAt:new Date().toISOString()});});
     assert.equal(j.state.counters.cleanup.directAuth,1);
@@ -108,6 +108,57 @@ test('matrix_stage_key_and_attempt_identity_are_fixed',async()=>{
     await assert.rejects(reserveDispatch(j,'run',{...d,keyLabel:'G1'}),/descriptor/);
     assert.equal(j.state.counters.run.directStorage,1);
   }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+test('descriptor_key_order_cannot_reserve_a_second_attempt',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'ante-mediated-'));await chmod(dir,0o700);
+  const j=await MediatedJournal.create(dir,make());
+  try{
+    await reserveDispatch(j,'run',{kind:'authCreate',label:'A'});
+    await assert.rejects(reserveDispatch(j,'run',{label:'A',kind:'authCreate'}),/duplicate_intent/);
+    await reserveDispatch(j,'run',{kind:'photo',caseId:1});
+    await assert.rejects(reserveDispatch(j,'run',{caseId:1,kind:'photo'}),/duplicate_intent/);
+    await reserveDispatch(j,'run',{kind:'directMatrix',matrixId:1,keyLabel:'absence',actor:'A',view:'object'});
+    await assert.rejects(reserveDispatch(j,'run',{view:'object',actor:'A',keyLabel:'absence',matrixId:1,kind:'directMatrix'}),/duplicate_intent/);
+    assert.equal(j.state.intents.length,3);
+  }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+test('uncertain_website_completion_requires_subsequent_bound_recovery_settlement',()=>{
+  const before=make();before.stage='cleanup_blocked';before.uncertainWebsite=true;before.uncertainAt=new Date(Date.parse(before.startedAt)+1000).toISOString();
+  validateMediatedState(before);
+  const unfinished=copy(before);unfinished.stage='complete';unfinished.cleanupComplete=true;
+  assert.throws(()=>validateMediatedHistory(before,unfinished));
+  const receipt={sha256:sha,run_id:before.runId,origin:before.pins.origin,deployment_id:before.pins.deploymentId,closed_to_test_traffic:true,website_calls_settled:true,admission_writes_settled:true,issued_at:new Date(Date.parse(before.uncertainAt)+1000).toISOString()};
+  const noEpoch=copy(unfinished);noEpoch.settlement=receipt;assert.throws(()=>validateMediatedState(noEpoch));
+  const settled=copy(noEpoch);settled.counters.recoveries.push({id:randomUUID(),startedAt:new Date(Date.parse(before.uncertainAt)+500).toISOString(),counts:{directAuth:0,directStorage:0,cli:0}});
+  const earlyRecovery=copy(settled);earlyRecovery.counters.recoveries[0].startedAt=before.startedAt;assert.throws(()=>validateMediatedState(earlyRecovery));
+  for(const patch of [{run_id:randomUUID()},{origin:'https://other.example.invalid'},{deployment_id:'other'},{issued_at:before.uncertainAt},{admission_writes_settled:false}]){
+    const invalid=copy(settled);invalid.settlement={...receipt,...patch};assert.throws(()=>validateMediatedState(invalid));
+  }
+  validateMediatedHistory(before,settled);
+  const rebound=copy(settled);rebound.uncertainAt=new Date(Date.parse(before.uncertainAt)+2000).toISOString();assert.throws(()=>validateMediatedHistory(settled,rebound));
+});
+test('blocked_partial_acknowledgments_keep_authority_context_and_reconcile',async()=>{
+  const dir=await mkdtemp(join(tmpdir(),'ante-mediated-'));await chmod(dir,0o700);
+  const j=await MediatedJournal.create(dir,make());
+  try{
+    await j.mutate(s=>{s.stage='cleanup';s.fixtures[0].stage='create_intent';s.objects[0].stage='reserve_intent';s.friendship.stage='insert_intent';s.clear.stage='intent';});
+    await j.mutate(s=>{s.stage='cleanup_blocked';s.fixtures[0].stage='create_uncertain';s.objects[0].stage='reserve_uncertain';s.friendship.stage='insert_uncertain';s.clear.stage='uncertain';});
+    const blocked=copy(j.state);assert.equal(blocked.objects[0].stage,'reserve_uncertain');
+    await j.mutate(s=>{s.counters.recoveries.push({id:randomUUID(),startedAt:new Date().toISOString(),counts:{directAuth:0,directStorage:0,cli:0}});});
+    await reserveDispatch(j,'recovery',{kind:'cli',slot:1});
+    await assert.rejects(reserveDispatch(j,'recovery',{kind:'authCreate',label:'A'}),/phase_descriptor/);
+    await assert.rejects(reserveDispatch(j,'recovery',{kind:'dataOperation',label:'G1',slot:1}),/phase_descriptor/);
+    await j.mutate(s=>{s.stage='cleanup';s.fixtures[0].stage='created';s.fixtures[0].id=randomUUID();s.fixtures[0].createdAt=new Date().toISOString();s.objects[0].stage='reserved';s.objects[0].assetId=randomUUID();s.objects[0].key=`${s.fixtures[0].id}/${s.objects[0].assetId}`;s.objects[0].leaseEpoch=1;s.friendship.stage='accepted';s.clear.stage='completed';});
+    assert.equal(j.state.fixtures[0].stage,'created');assert.equal(j.state.objects[0].stage,'reserved');assert.equal(j.state.friendship.stage,'accepted');assert.equal(j.state.clear.stage,'completed');
+    const raw=await readFile(j.path,'utf8');assert.ok(raw.trim().split('\n').some(line=>JSON.parse(line).stage==='cleanup_blocked'));
+  }finally{await j.close();await rm(dir,{recursive:true,force:true});}
+});
+test('recovery_epoch_start_time_cannot_move',()=>{
+  const before=make();before.stage='cleanup_blocked';before.counters.recoveries.push({id:randomUUID(),startedAt:'2026-09-27T00:00:00.000Z',counts:{directAuth:0,directStorage:0,cli:0}});
+  validateMediatedState(before);
+  for(const startedAt of ['2026-09-28T00:00:00.000Z','2026-09-26T00:00:00.000Z']){
+    const after=copy(before);after.counters.recoveries[0].startedAt=startedAt;assert.throws(()=>validateMediatedHistory(before,after));
+  }
 });
 test('all_run_budgets_are_reserved_with_no_network_dispatch',async()=>{
   const dir=await mkdtemp(join(tmpdir(),'ante-mediated-'));await chmod(dir,0o700);
