@@ -1,6 +1,6 @@
 # Mediated phase-one operator contract
 
-Source package only, pending independent whole-package review. No current hosted access, deployed artifact, SQL cutover, enabled serving mode or overall acceptance is claimed. Local synthetic tests are runner-safety evidence. A successful explicit run can establish only `phase_one_http_passed`; phase traces, controlled races, real browsers, resources, profile-deletion transitions and overall acceptance remain `not_accepted`.
+Source package accepted through `6251eae` after independent whole-package review and scoped re-review; see the [source acceptance audit](2026-09-27-mediated-hosted-phase-one-source-acceptance.md). No current hosted access, deployed artifact, SQL cutover, enabled serving mode or overall acceptance is claimed. Local synthetic tests are runner-safety evidence. A successful explicit run can establish only `phase_one_http_passed`; phase traces, controlled races, real browsers, resources, profile-deletion transitions and overall acceptance remain `not_accepted`.
 
 ## Independent prerequisites
 
