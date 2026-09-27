@@ -215,3 +215,22 @@ test('private HTTPS legitimate 204 cleanup deletion releases its stream without 
   const {createMediatedHttp}=await transportModule(),setup=fixture();await setup.journal.mutate(s=>{s.cleanupStartedAt=s.startedAt;});
   const result=await createMediatedHttp(setup).dispatch({kind:'authDelete',label:'A'},'cleanup');assert.equal(result.status,204);assert.equal(result.bytes.length,0);assert.equal(incoming.destroyed,true);assert.equal(resumes,0);assert.equal(started,1);
 });
+
+
+// Received uncertain statuses must survive every cookie-processing exit and journal reconstruction.
+for(const status of [503,429])for(const cookie of ['rejected','malformed','deleted','foreign_identity'])test(`received ${status} with ${cookie} cookie durably preserves uncertainty`,async()=>{
+ const {createMediatedHttp}=await transportModule(),{sessionCookies,cookieHeader,SESSION_COOKIE}=await cookies(),setup=fixture();
+ const cookieJars={A:sessionCookies(setup.sessions.A.session,origin)},dir=await mkdtemp(join(tmpdir(),'mediated-uncertain-cookie-'));
+ let journal=await MediatedJournal.create(dir,setup.journal.state);const runId=journal.state.runId;
+ try{
+  const field=cookie==='rejected'?'unexpected=x':cookie==='malformed'?`${SESSION_COOKIE}=base64-e30`:cookie==='deleted'?`${SESSION_COOKIE}=; Max-Age=0`:cookieHeader(sessionCookies(fullSession(randomUUID()),origin),origin);
+  const http=createMediatedHttp({...setup,journal,cookieJars,fetchImpl:async()=>Response.json({error:'unavailable'},{status,headers:{'set-cookie':`${field}; Path=/; Secure; SameSite=Lax`}})});
+  await assert.rejects(http.dispatch({kind:'photo',caseId:1},'run'),cookie==='foreign_identity'?/cookie_identity/:/cookie_boundary/);
+  await journal.close();journal=await MediatedJournal.resume(dir,runId);
+  assert.equal(journal.state.uncertainWebsite,true);assert.ok(Date.parse(journal.state.uncertainAt)>=Date.parse(journal.state.startedAt));
+  assert.equal(journal.state.counters.run.website,1);assert.equal(journal.state.observed.run.website,1);
+  assert.equal(journal.state.counters.run.workerAuth,26);assert.equal(journal.state.counters.run.workerData,5);assert.equal(journal.state.counters.run.workerStorage,1);
+  assert.equal(journal.state.observed.run.workerAuth,0);assert.equal(journal.state.observed.run.workerData,0);assert.equal(journal.state.observed.run.workerStorage,0);
+  assert.equal(journal.state.intents.length,1);
+ }finally{await journal.close();await rm(dir,{recursive:true,force:true});}
+});

@@ -126,7 +126,6 @@ export function makeMediatedPort(j,credentials,{http=createMediatedHttp,query,in
    need(caseId===j.state.scenarioIndex+1,'scenario_order');const row=PHOTO_CASES[caseId-1];need(row,'photo_case');let before;
    if(caseId===10)before=cookieHeader(cookieJars.A,j.state.pins.origin);
    const r=await send({kind:'photo',caseId});
-   if(r.status>=500||r.status===429)await j.mutate(s=>{s.uncertainWebsite=true;s.uncertainAt??=new Date(clock()).toISOString();});
    assertPhotoResponse(r,row.expected);
    if(caseId===10){need(r.headers.getSetCookie().length>0&&cookieHeader(cookieJars.A,j.state.pins.origin)!==before,'refresh_cookies');const updated=await sessionFromCookies(cookieJars.A);need(updated.access_token!==sessions.A.session.access_token&&updated.user.id===j.state.fixtures[0].id,'refresh_identity');need(ok(await send({kind:'authGetUser',label:'A',slot:2})).id===j.state.fixtures[0].id,'refresh_identity');}
    await reconcileMediatedAdmissions(j,await sql(16+caseId,mediatedAdmissionsSql(j.state,'inspect')),new Date(clock()).toISOString());

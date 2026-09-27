@@ -88,3 +88,24 @@ The first focused GREEN attempt exposed an overbroad inherited test substring: f
 The Node suite used only `DOCKER_HOST=unix:///Users/daniel/.colima/ante-website-tests/docker.sock` and `DOCKER_CONTEXT=colima-ante-website-tests`, with `--test-concurrency=1` already in its command. The context was inspected before execution. The harness removed its exact ephemeral containers; the post-run filtered inventory found no `ante-mediated-sql-test-*` container. No retained context/container/network/volume was changed. The existing backend adapter `MODULE_TYPELESS_PACKAGE_JSON` warning remains visible.
 
 Per root ruling, unchanged 366-test Vitest, typecheck, ordinary/separate build and artifact-scan evidence above is reused, not rerun or represented as fresh. This fix changes runner evidence and documentation only. Hosted phase-one execution and all stronger acceptance gates remain unverified and unaccepted.
+
+## Final whole-package review fix — uncertainty before response cookies
+
+Status: DONE for the sole P2 in `final-review.md`, pending the one focused final re-review. Base source commit `0fcc994`. Root's in-progress goal, plan and source-acceptance audit documentation remains untouched and unstaged by this fix.
+
+The HTTP boundary now persists received website 5xx/429 uncertainty and the completed external-response counter in the same journal mutation before `applyResponseCookies`, session decoding or identity validation. Thus unexpected, malformed, deleted or foreign-identity cookies cannot throw past the uncertainty marker. The redundant later port marker was removed; transport/body failures retain their existing uncertainty path. Reservation ceilings, observed-versus-reserved semantics and provider dispatch counts are unchanged. `.guidelines/design.md` records this boundary change.
+
+Sixteen regressions cover HTTP 503 and 429 crossed with all four cookie exits at two real implementation boundaries. Eight exercise the actual HTTP/cookie modules with a private on-disk journal, reject the exact cookie error, reopen the journal and verify durable uncertainty plus the unchanged single website observation/reservation and 26/5/1 Worker reservation envelope (zero observed Worker calls). Eight run the actual fixed scenario, transport and cleanup with synthetic provider replies: initial cleanup must skip admission slots 9/10/17, retain `cleanup_blocked`, and report `not_complete` without a settlement receipt. No production cleanup behavior or SQL changed.
+
+| Check | Command / result | Evidence |
+| --- | --- | --- |
+| RED before implementation | `node --test --test-concurrency=1 --test-name-pattern='received (503\|429) with' scripts/acceptance/hosted-profile-photo-mediated-http.test.mjs scripts/acceptance/hosted-profile-photo-mediated-port.test.mjs`; all 16 failed: uncertainty stayed false or initial cleanup incorrectly completed | `/tmp/ante-mediated-final-fix-red.log` |
+| Focused GREEN | Same selection, 16/16 passed, zero skips | `/tmp/ante-mediated-final-fix-focused-green.log` |
+| Covering full Node acceptance, once | `DOCKER_HOST=unix:///Users/daniel/.colima/ante-website-tests/docker.sock DOCKER_CONTEXT=colima-ante-website-tests pnpm test:acceptance:local`; 170/170 passed, zero failures/skips, 63.45 seconds | `/tmp/ante-mediated-final-fix-acceptance.log` |
+| Scoped ESLint | `pnpm exec eslint` on mediated HTTP/port modules and their two test files; exit 0 | `/tmp/ante-mediated-final-fix-eslint.log` |
+| Diff whitespace | `git diff --check`; exit 0 | direct check |
+| Production/historical/cleanup SQL boundaries | `git diff --exit-code 0fcc994` for app, lib, ordinary/separate Worker configs, historical main runners, mediated cleanup/SQL modules; empty; paired backend status clean | direct checks |
+
+The dedicated Docker context was inspected before the suite and resolves to the exact socket above. Tests remained sequential; the harness removed its exact ephemeral containers, and the final filtered inventory found no `ante-mediated-sql-test-*` container. No retained Docker resources or other contexts were changed. The pre-existing backend adapter `MODULE_TYPELESS_PACKAGE_JSON` warning remains visible in the log.
+
+No hosted/provider request, actual credential read, deployment, production/backend edit or build was performed. The earlier unchanged 366-test Vitest, typecheck, Worker/preparation builds and scans remain reused evidence, not new verification. Hosted execution and all stronger acceptance gates remain open.

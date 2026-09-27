@@ -149,8 +149,12 @@ export function createMediatedHttp({journal,credentials,sessions={},cookieJars={
     let result;
     try{result=await receive(`${url}${path}`,{method,headers:{...headers,'accept-encoding':'identity'},body},{fetchImpl,clock,timeout,successCap,image});}
     catch(error){if(d.kind==='photo')await journal.mutate(next=>{next.uncertainWebsite=true;next.uncertainAt??=new Date(clock.wall()).toISOString();});throw error;}
-    // Only completed external HTTP responses are observed; reserved Worker envelopes are never traces.
-    await journal.mutate(next=>{next.observed[phase][category]++;});
+    // Persist received website uncertainty with its observed counter before fallible cookie processing.
+    // Completed external HTTP responses are observed; reserved Worker envelopes are never traces.
+    await journal.mutate(next=>{
+      next.observed[phase][category]++;
+      if(d.kind==='photo'&&(result.status>=500||result.status===429)){next.uncertainWebsite=true;next.uncertainAt??=new Date(clock.wall()).toISOString();}
+    });
     if(jar){applyResponseCookies(jar,result.headers,origin);const current=await sessionFromCookies(jar);need(current.user.id===fixture(actor).id,'cookie_identity');cookieJars[actor]=jar;}
     if(d.kind==='authGetUser'&&result.status===200){let user;try{user=JSON.parse(new TextDecoder().decode(result.bytes));}catch{throw Error('identity_reply');}need(user.id===fixture(d.label).id,'identity_reply');if(updatedSession)sessions.A.session=updatedSession;}
     return result;

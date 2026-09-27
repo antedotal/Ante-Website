@@ -11,7 +11,7 @@ import { newMediatedState, validateMediatedState, validateMediatedHistory } from
 import { TABLES } from './hosted-account-jwt-sql.mjs';
 import { PHOTO_CASES, RUN_CAPS, CLEANUP_CAPS, MATRIX_KEYS } from './hosted-profile-photo-mediated-protocol.mjs';
 import { syntheticReaderBytes } from './hosted-profile-photo-readers.mjs';
-import { cookieHeader, sessionCookies } from './hosted-profile-photo-mediated-cookies.mjs';
+import { cookieHeader, sessionCookies, SESSION_COOKIE } from './hosted-profile-photo-mediated-cookies.mjs';
 const portModule=()=>import('./hosted-profile-photo-mediated-port.mjs');
 const mainModule=()=>import('./hosted-profile-photo-mediated.mjs');
 const hash=b=>createHash('sha256').update(b).digest('hex');
@@ -77,6 +77,12 @@ async function setup(fault=''){
   if(d.kind==='directMatrix'){if(fault==='warm_leak'&&d.matrixId===2)return new Response(syntheticReaderBytes('G1'),{headers:{'content-type':'image/png'}});return d.view==='list'?json([]):json({message:'denied'},fault==='render_generic_400'&&d.view.startsWith('render-')?400:403);}
   if(d.kind==='dataExposure'||d.kind==='dataBoundary')return json({message:'denied'},403);
   if(d.kind==='photo'){
+   // Inject uncertain replies before the real transport's cookie processing and the real cleanup.
+   const uncertain=/^website_(503|429)_(rejected|malformed|deleted|foreign_identity)$/.exec(fault);
+   if(uncertain&&d.caseId===1){
+    const cookie=uncertain[2],field=cookie==='rejected'?'unexpected=x':cookie==='malformed'?`${SESSION_COOKIE}=base64-e30`:cookie==='deleted'?`${SESSION_COOKIE}=; Max-Age=0`:cookieHeader(sessionCookies(fullSession(randomUUID()),origin),origin);
+    return json({error:'unavailable'},Number(uncertain[1]),{...cacheHeaders,'set-cookie':`${field}; Path=/; Secure; SameSite=Lax`});
+   }
    if(fault==='lost_photo'&&d.caseId===1)throw Error('lost completion');
    if(fault==='run_timeout'&&d.caseId===1)now+=900001;
    const c=PHOTO_CASES[d.caseId-1],headers={...cacheHeaders};if(fault==='photo_cache'&&d.caseId===1)headers['cache-control']='public';
@@ -216,4 +222,17 @@ test('phase-one assertion rejects omitted evidence despite complete request coun
  // Suppress only successful observation persistence to simulate a broken injected port.
  const mutate=x.j.mutate.bind(x.j);x.j.mutate=async fn=>{const before=x.j.state.directObservations?.length;await mutate(fn);if(x.j.state.directObservations?.length>before)x.j.state.directObservations=[];};
  await assert.rejects(runMediatedAcceptance(x.j,x.port));assert.equal(x.j.state.outcome,'failed');assert.equal(x.j.state.counters.run.directStorage,314);
+});
+
+
+// A rejected cookie must not let the actual initial cleanup infer that admission work has settled.
+for(const status of [503,429])for(const cookie of ['rejected','malformed','deleted','foreign_identity'])test(`received ${status} with ${cookie} cookie blocks initial admission cleanup without settlement`,async()=>{
+ const x=await setup(`website_${status}_${cookie}`),{runMediatedAcceptance,mediatedReceipt}=await mainModule();
+ await assert.rejects(runMediatedAcceptance(x.j,x.port));
+ assert.equal(x.j.state.cleanupComplete,false);assert.equal(x.j.state.stage,'cleanup_blocked');assert.equal(x.j.state.outcome,'failed');
+ assert.equal(x.j.state.uncertainWebsite,true);assert.ok(x.j.state.uncertainAt);assert.equal(x.j.state.settlement,null);
+ assert.equal(x.j.state.counters.run.website,1);assert.equal(x.j.state.observed.run.website,1);assert.equal(x.calls.filter(c=>c.kind==='photo').length,1);
+ for(const slot of [9,10,17])assert.ok(!x.calls.some(c=>c.kind==='cli'&&c.phase==='cleanup'&&c.slot===slot));
+ assert.equal(mediatedReceipt(x.j.state).cleanup,'not_complete');
+ for(const [key,cap] of Object.entries(CLEANUP_CAPS))assert.ok(x.j.state.counters.cleanup[key]<=cap);
 });
