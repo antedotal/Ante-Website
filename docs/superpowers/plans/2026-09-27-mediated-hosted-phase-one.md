@@ -1,0 +1,99 @@
+# Mediated Hosted Phase One Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Prepare a locally tested, independently reviewed HTTP acceptance runner and isolated preparation artifact, without running or deploying either.
+
+**Architecture:** A separately named runner uses genuine fixture sessions and cookies against the intended isolated Worker while preserving historical runners. A build-only operator preparation handler derives four run-owned admission digests; journaled operation descriptors enforce finite provider/website envelopes, exact owned cleanup and 22-table preservation. Phase-one success explicitly leaves stronger acceptance gates open.
+
+**Tech Stack:** Existing Node ESM/Node test, Vitest, disposable PostgreSQL harness, installed Supabase JS 2.106.0/SSR 0.8.0, OpenNext and Wrangler 4.139.0; no new dependencies.
+
+**Spec:** [Mediated hosted phase-one design](../audits/2026-09-27-mediated-hosted-phase-one-design.md). Read it with the historical [contract-gap audit](../audits/2026-09-27-mediated-hosted-acceptance-contract-gaps.md); the new design records the controller's resolved engineering decisions.
+
+## Global Constraints
+
+- Source only: no credentials, provider requests, SQL application, deployment, mode/cache changes, new account, preview URL or paid workaround.
+- Preserve historical runners/failed receipts and production reader authorization/deadlines/cache/quotas. No production debug switch, authentication bypass or generic HMAC API.
+- Fixed Supabase project `yxilmwxptfnebnjsikwo`; operator pins have no historical defaults. Preparation and photo traffic use one separately authorized intended HTTPS origin.
+- Exactly three fixture users, two fresh service-generated asset UUIDs, 24 website reads and 11×28 direct Storage matrix requests; use only the spec's descriptors.
+- Run caps: direct Auth 11, Data 25, Storage 314, preparation 1, website 24, reserved Worker Auth 49/Data 120/Storage 24, CLI 41; total 609. Cleanup/recovery each Auth 3/Storage 6/CLI 20; total 29. Initial combined total 638.
+- Provider/preparation HTTP 10 seconds, website HTTP 35 seconds; bounded preparation request body 2 seconds/1024 bytes. Run 900 seconds, cleanup epoch 300 seconds. No retry or unused-reservation reclamation.
+- Private fsynced journal before dispatch, exact owned reconciliation and full 22-table equality including admissions. No unknown-row adoption, broad cleanup, sequence reset or scheduler changes.
+- Final status is `phase_one_http_passed`, never overall acceptance. Phase traces, controlled hosted races, caller/target deletion transitions, real browser and resource gates remain `not_accepted`.
+
+## Review Focus
+
+- IP/ingress changes between preparation and photo requests introduce unjournaled admission digests: halt and never adopt/delete them (Tasks 2, 4, 5).
+- A website response is lost after admission commits: preserve reserved capacity/uncertainty and require independent settlement evidence before final cleanup (Tasks 1, 4, 5).
+- Real refresh replaces/chunks/deletes cookies while direct owner JWT remains stale: update jars and verify the new exact A token once (Task 3).
+- A crash occurs between reserve/create acknowledgment and journal persistence: reconcile one attempt without repeating creation/upload or guessing ownership (Tasks 1, 4).
+- Preparation code/secrets accidentally enter the normal build or expose an unauthenticated derivation oracle: default deny and prove ordinary-bundle exclusion (Tasks 2, 5).
+
+---
+
+### Task 1: Independent protocol, finite ledger and durable state
+
+**Files:** Create `scripts/acceptance/hosted-profile-photo-mediated-protocol.mjs`, `hosted-profile-photo-mediated.mjs`, `hosted-profile-photo-mediated.test.mjs`.
+
+**Interfaces:** Protocol exports frozen `RUN_CAPS`, `CLEANUP_CAPS`, `PHOTO_CASES` (24 exact spec cases) and `DIRECT_VIEWS` (seven exact descriptors); `directMatrix(keyLabel)` returns 28 immutable actor/view descriptors; `photoEnvelope(caseId)` returns `{website:1,workerAuth:2|3,workerData:5,workerStorage:1}`. Main exports `newMediatedState(runId,pins)`, `validateMediatedState(state)`, `validateMediatedHistory(before,after)` and `MediatedJournal.create(dir,state)/resume(dir,runId,recoverLock)` with `.state/.path`, `.mutate(fn)/.close()`; `reserveDispatch(j,phase,descriptor)` journals one immutable intent/counter envelope and returns its sequence ID. Phases are `run`, `cleanup` or one explicit `recovery` epoch. Define exact JSDoc state/descriptor shapes in protocol; no arbitrary URL, SQL, header map or generic RPC field is accepted from CLI callers.
+
+- [ ] **Step 1: Add failing Node tests** `ledger_is_609_plus_29`, `matrix_is_11_by_28`, `website_envelopes_are_49_120_24`, `fsync_precedes_dispatch`, `journal_rejects_rebound_ids_digests_and_counter_rollback`, `lost_dispatch_never_reclaims_capacity`, `unresolved_journal_blocks_run` and `recovery_adds_epoch_without_reset`. Assert all cap values, one-attempt operation identity, private modes, torn-tail/stale-lock behavior and secret/extra-field rejection, including empty/partial identity states.
+- [ ] **Step 2: Run red:** `node --test scripts/acceptance/hosted-profile-photo-mediated.test.mjs`; require intended missing-export/behavior failures, not environment/provider errors.
+- [ ] **Step 3: Implement the exact interfaces.** Reuse the existing account primitives and copy reviewed journal mechanics where coupling prevents direct reuse; do not refactor historical runners. Keep read-only imports. Encode the new two-generation revision graph and the uncertain-website/cleanup-blocked distinction. Store probe/operation UUIDs before calls; asset keys bind only from reconciled service responses. Validate all 22 fingerprint table names uniquely, not just array length.
+- [ ] **Step 4: Run the same tests green.** Exercise budgets with an injected no-network dispatcher; assert importing all new modules opens no credential files/network connections.
+- [ ] **Step 5: Commit** only these files as `test: define bounded mediated acceptance protocol`; independent task review must approve ledger and crash semantics before ports rely on them.
+
+### Task 2: Build-only operator digest preparation
+
+**Files:** Create `scripts/acceptance/mediated-preparation-worker.mjs`, `worker-mediated-acceptance-entry.mjs`, `wrangler.mediated-acceptance.jsonc`, `tests/mediated-preparation.test.ts`.
+
+**Interfaces:** `prepareDigests(request: Request, env: PreparationEnv): Promise<Response>` implements the spec's sole route and four digests. `PreparationEnv` has only the five documented runtime values. The acceptance entry's `fetch(request,env,ctx)` handles the exact preparation path and delegates every other request to the unchanged ordinary entry, preserving exports/bindings. No generic endpoint, run-global mutable memory or production configuration override. Use the existing isolated Worker name/self-reference shape in the separate configuration, with no checked-in hostname or secret.
+
+- [ ] **Step 1: Add failing Vitest tests** for exact authorized body/result, three distinct UUIDs, operator token comparison, wrong run/origin/header/method/query, wrong token length/extra fields, invalid/sentinel/mapped IPv6, streamed body overflow/stall and no-store/no-CORS/no-cookie errors. Spy on global fetch and provider imports: preparation must make zero external/admission/Auth calls. Compare all four digest values with production admission's captured RPC arguments under identical synthetic trusted ingress/HMAC, without changing production code. Assert non-preparation photo delegation is byte-for-byte unchanged.
+- [ ] **Step 2: Run red:** `pnpm exec vitest run tests/mediated-preparation.test.ts`.
+- [ ] **Step 3: Implement the fixed contract.** Use private fixed-domain HMAC derivation, strict bounded parsing and `timingSafeEqual`. Ensure errors never serialize IP, IDs, secrets or provider data. The preparation token is an operator control credential only and is never accepted by photo/Auth routes. Normal `worker-entry.mjs` and `wrangler.jsonc` remain untouched.
+- [ ] **Step 4: Run tests green and locally inspect the import graph/config.** No Wrangler login, deploy or provider request. Bundle exclusion is checked at final integration with actual build output.
+- [ ] **Step 5: Commit** these files as `feat: prepare isolated acceptance admission digests`; independent review explicitly checks this new surface before integration.
+
+### Task 3: Fixed HTTP transports and genuine SSR cookie jars
+
+**Files:** Create `scripts/acceptance/hosted-profile-photo-mediated-http.mjs`, `hosted-profile-photo-mediated-cookies.mjs`, `hosted-profile-photo-mediated-http.test.mjs`, `tests/mediated-session-cookies.test.ts`.
+
+**Interfaces:** `createMediatedHttp({journal,credentials,sessions,cookieJars,origin,operatorToken,fetchImpl,clock})` returns `dispatch(descriptor,phase): Promise<{status,headers,bytes}>`; descriptors come only from Task 1 and select fixed Auth/Data/Storage/preparation/website paths and credential classes. `.dispatch` reserves/fsyncs before any fetch; website uses only its selected jar and the three specified optional header variants. Cookie module exports `sessionCookies(session,origin,{forceRefresh:false})`, `applyResponseCookies(jar,headers,origin)`, `cookieHeader(jar,origin)` and `sessionFromCookies(jar)`; use root exports `createChunks`, `combineChunks`, `stringToBase64URL`/`stringFromBase64URL` from installed SSR, prefix `base64-` and production cookie name `sb-yxilmwxptfnebnjsikwo-auth-token`.
+
+- [ ] **Step 1: Add failing tests** for exact seven-route/four-actor credentials, all 25 Data/11 Auth descriptors, cross-origin/service-key/cookie isolation, no arbitrary path/header/redirect, bounded fetch/body/late cancellation, reserve-before-network and no resend. Include missing Content-Length, oversized/truncated/error-as-image bodies, 206/304 and unexpected compression.
+- [ ] **Step 2: Add failing installed-SDK cookie tests** using fake provider HTTP with the real SSR/session reader. Serialize a real-shaped provider session; prove zero bootstrap HTTP, ordinary read's two exact-token checks, induced expiry's exactly one refresh, proper cookie chunk replacement/deletion and identical identity after refresh. Verify updated A token has exactly one separately budgeted direct identity check; secrets never reach journals/output. This is the hard gate for the assumed 49 Worker Auth envelope; revise/review the design if the installed SDK contradicts it.
+- [ ] **Step 3: Run red:** `node --test scripts/acceptance/hosted-profile-photo-mediated-http.test.mjs` and `pnpm exec vitest run tests/mediated-session-cookies.test.ts`.
+- [ ] **Step 4: Implement the bounded adapters/jars.** Use current configured HTTPS origin only, private credentials in memory and exact documented cookie policy. Parse `Headers.getSetCookie()` entries independently; reject foreign Domain/path, unsafe attributes and malformed chunk sessions. Runtime code must not request secret values from Wrangler or print provider bodies. Keep reservation and observed completion counts distinct.
+- [ ] **Step 5: Run both commands green; commit** these files as `feat: add bounded mediated HTTP and session transport`; obtain independent transport/credential review.
+
+### Task 4: Exact owned inventory, reconciliation and cleanup SQL
+
+**Files:** Create `scripts/acceptance/hosted-profile-photo-mediated-sql.mjs`, `hosted-profile-photo-mediated-sql.test.mjs`, `hosted-profile-photo-mediated-cleanup.mjs`, `hosted-profile-photo-mediated-cleanup.test.mjs`.
+
+**Interfaces:** SQL exports `mediatedInventorySql(state)`, `mediatedFixtureSql(state,label)` (combined owned Auth/profile/reference read), `mediatedFriendSql(state,action:'insert'|'reject'|'restore')`, `mediatedTeardownSql(state)`, `mediatedAdmissionsSql(state,action:'inspect'|'delete')`. All call Task 1 state validation; all mutations recheck catalog/ownership inside the transaction. Cleanup exports `cleanupMediated(j,{sql,http,quiescenceReceipt},phase): Promise<void>`; `sql` reserves one fixed CLI slot before calling reused `dbQuery`, with only these generated statements/read-only pinned catalog/postconditions/fingerprint SQL allowed. Import the disposable harness from `../../../Ante/scripts/backend/integration/disposable-postgres.mjs` as existing SQL tests do.
+
+- [ ] **Step 1: Add failing disposable PostgreSQL tests** for exact two-generation/clear revisions, partial one/two-user teardown, lost create/reserve/bind/prepare/publish/clear acknowledgments, foreign marker/email/time/profile/reference/object/multipart blocks and table-preservation equality. Admission cases: pre-existing digest, unexpected digest/IP drift, outside-interval rows, changed known row, count beyond reserved admissions, expected cron expiry and exact owned deletion under digest advisory locks. Demonstrate unrelated rows survive every blocked cleanup and all 22 fingerprints remain checked. Never disable scheduler or reset sequence.
+- [ ] **Step 2: Add failing cleanup transport tests** for maximum 3 Auth/6 Storage/20 CLI, missing-object uncertain upload, exact one delete per epoch, lost delete reply reconciliation, partial cleanup failure, journal retention and website-timeout admission blocking without operator settlement evidence. Test every crash boundary against the ceiling, not only the happy path.
+- [ ] **Step 3: Run red:** `node --test scripts/acceptance/hosted-profile-photo-mediated-sql.test.mjs scripts/acceptance/hosted-profile-photo-mediated-cleanup.test.mjs` against only disposable fixtures.
+- [ ] **Step 4: Implement using historical ownership/reference/lock checks with the new state graph.** Never reuse historical `validateReaderState`/revision assumptions. Check preserved catalog before destructive statements, reconcile authoritative state without resending intents, delete only exact owned fixture rows/keys/users. Treat SQL statement/lock timeouts as uncertain, never as proof a mutation did not commit. Missing quiescence evidence affects uncertain branches; unaffected owned branches may still finish within the reserved epoch. Unknown rows remain untouched and final completion blocked.
+- [ ] **Step 5: Run tests green; commit** these files as `feat: guard mediated fixture and admission cleanup`; independent review focuses on destructive SQL and acknowledgment ambiguity.
+
+### Task 5: Connect the fixed scenario, operator contract and build verification
+
+**Files:** Create `scripts/acceptance/hosted-profile-photo-mediated-port.mjs`, `hosted-profile-photo-mediated-port.test.mjs`, `docs/superpowers/audits/2026-09-27-mediated-hosted-phase-one-operator.md`; modify new `hosted-profile-photo-mediated.mjs` and `package.json` only.
+
+**Interfaces:** `makeMediatedPort(j,credentials,{http,query,inspectConfig,adapter,clock})` supplies `preflight`, `createIdentity`, `prepareDigests`, `createGeneration`, `publish`, `friend`, `photoCase`, `directMatrix`, `exposure`, `clear`, `cleanup`; each consumes only journal labels/validated descriptors. `runMediatedAcceptance(j,port)` performs the fixed spec order with no dynamic retries or skipped cases. `main(argv)` accepts only preflight/run/cleanup and the reviewed flags; actual provider code is constructed only on explicit CLI invocation. Pass only `{catalog,backendCommit,adapterSha256}` to the existing adapter-pin validator. Add script `test:acceptance:mediated` listing the five new Node test files; add those same files to existing `test:acceptance:local`, leaving historical entries intact.
+
+- [ ] **Step 1: Add failing full fake-port tests** that enumerate all 24 exact website cases, 11 matrices/308 denials, the 16 Data exposure checks, two generation lifecycles, clear, three friendship transitions and 41 CLI slots. Assert no object before all pre-object denials and 14 postconditions; preparation after reconciled users but before first photo; all four digests durable before admission; G2 hidden then different current bytes; exact saved URLs across revoke/regrant/clear; all methods/status/body/cache assertions. Warmed ordinary leak must fail immediately into cleanup without header changes or cache busting.
+- [ ] **Step 2: Add failing end-to-end failure tests** for a preparation failure after users exist, token/cookie refresh mismatch, lease expiry, new ingress digest after a photo request, total run timeout, failed cleanup, unknown operation and lost website completion. Expected receipt always lists stronger gates `not_accepted`, never `passed`; fake HTTP acceptance must not claim a hosted run. Bound every branch using Task 1/4 ceilings.
+- [ ] **Step 3: Run red:** `node --test scripts/acceptance/hosted-profile-photo-mediated-port.test.mjs`.
+- [ ] **Step 4: Implement orchestration/CLI and operator audit.** Keep preflight provider-read-only; fixed run uses real sessions and in-memory jars; always attempt safe cleanup and preserve distinct assertion/cleanup failures. Operator document lists required private files, exact pin schema, source-only build commands, manual independent SQL/config/deployment prerequisites, 609+29 ceilings, run/cleanup commands, uncertainty recovery and all remaining gates. It must not contain credentials, guessed hostname, auto-deploy scripts or a claim that current hosted access exists.
+- [ ] **Step 5: Run scoped tests green, then required integration once:** `pnpm test:acceptance:local`, `pnpm test`, `pnpm typecheck`, scoped ESLint for new `.mjs`/test `.ts` files, `pnpm build:worker`, and `git diff --check`. Build the separate preparation wrapper locally using `pnpm exec wrangler deploy --dry-run --config wrangler.mediated-acceptance.jsonc --outdir .superpowers/mediated-acceptance-build` only after verifying installed CLI help confirms dry-run performs no upload/login requirement. If unavailable, report local artifact-build limitation rather than authenticate/deploy. Inspect ordinary output for preparation route/module/operator-token references and synthetic secret literals; normal build must exclude them. Ensure accepted production source/historical runner diffs remain empty. No actual hosted runner command is executed.
+- [ ] **Step 6: Commit** the scoped integration/operator files as `feat: complete mediated phase-one acceptance harness`; request final independent review of the entire source package. Record actual local results and unresolved hosted prerequisites in a new source acceptance audit. Review approval still authorizes no provider/deployment action or overall acceptance claim.
+
+## Self-review and execution handoff
+
+Spec coverage maps ledger/journaling to Task 1, preparation isolation to Task 2, real cookies/HTTP to Task 3, preservation/recovery to Task 4 and finite scenario/operator receipts to Task 5. Every Review Focus risk has a named test in its owning task. Interface names and cap vectors above are the shared contract; no task may invent a retry, endpoint, fixture or budget increment. The bounded first package intentionally does not implement observability, browser automation, resource probes or the future race artifact.
+
+Controller-preserved execution method is subagent TDD with independent reviews. Root reviews this design/plan before implementation. This planning turn changes documentation only; no application tests or provider operations were run.
