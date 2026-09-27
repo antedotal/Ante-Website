@@ -1,6 +1,6 @@
 # Website backend goal
 
-Updated 26 September 2026. Requested scope: Ante-Website backend only.
+Updated 27 September 2026. Requested scope: Ante-Website backend only.
 
 ## Objective
 
@@ -33,11 +33,11 @@ Existing code supports Google sign-in only. The user has now requested email sig
 
 The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
 
-## Current handoff — 26 September 2026
+## Current handoff — 27 September 2026
 
 ### Completion audit — current evidence, not a completion claim
 
-27 September follow-through: paired backend types now include the seven deployed photo RPCs (`16c6980`); compiler scope corrected (`fe0b2f8`) with app and separate Deno checks passing. The next independent acceptance step is the [bounded hosted account JWT design](superpowers/audits/2026-09-27-hosted-account-jwt-design.md): implement/review a two-fixture runner before any account creation. No hosted account test has run. Cloudflare login remains needed for the image probe.
+27 September follow-through: paired backend types now include the seven deployed photo RPCs (`16c6980`); compiler scope corrected (`fe0b2f8`) with app and separate Deno checks passing. The reviewed [hosted account JWT acceptance](superpowers/audits/2026-09-27-hosted-account-jwt-acceptance.md) now passes all 33 checks: two genuine sessions, independent names/presets, ownership denials, missing-profile and revoked-refresh behavior. Both fixtures were removed and 22 table fingerprints preserved. An initial harness status mismatch was corrected and its failed receipt retained. Cloudflare login remains needed for the image probe.
 
 27 September: the Cloudflare image probe is implemented and reviewed, but connector upload was denied and local Wrangler is unauthenticated. No Worker exists and no hosted fixture ran. [Current probe status and resume steps](superpowers/audits/2026-09-27-cloudflare-images-probe-status.md).
 
@@ -45,14 +45,14 @@ Current status: server-key access works, Workers Free is confirmed, and Stripe s
 
 | Goal requirement | Current evidence | Remaining requirement |
 | --- | --- | --- |
-| Shared Auth and durable visitor admission | Reviewed source and deployed SQL; actual opaque-server-key HTTP limits verified (5/6 and 60/61 admitted; anonymous calls denied) | Real user JWT, ingress and browser/Worker acceptance |
-| Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Hosted ownership/JWT checks; SMTP/two-inbox configuration and authorized recipients |
+| Shared Auth and durable visitor admission | Reviewed source and deployed SQL; actual opaque-server-key HTTP limits verified (5/6 and 60/61 admitted; anonymous calls denied) | Ingress and browser/Worker acceptance; direct hosted JWT checks now pass |
+| Profile, AUD presets, email editing | Source routes and local review accepted; shared prerequisite SQL deployed | Name/preset hosted ownership/JWT checks pass; SMTP/two-inbox configuration and authorized recipients remain |
 | Private photos | Legacy routes remain gated; retention containment deployed; hosted HEIC failed CPU limit; new profile asset authority deployed and independently reviewed | Accepted normalizer, immutable upload/readback and reader integration, safe cleanup and authenticated hosted acceptance |
 | Task/private-proof contracts | Fresh 26 September public function-catalog query returned no four planned task-authority RPCs | Authoritative backend contracts must be ready; no legacy-write fallback |
 | Stripe sandbox setup | Workstream mandates versioned consent/server-owned customer IDs; current goal conditions setup on approved contracts | Approved consent/customer-ownership implementation contract; no settlement or live money |
 | Reviewable commits/handoff | Current isolated branch commits and acceptance receipts | Entire objective is not achieved; no deployment or whole-project completion claimed |
 
-The user has supplied a server key in the main app and website `.env.local` files, confirmed Workers Free, and reconnected Stripe. Server-key gateway and limiter checks now pass; these do not establish real-user JWT or hosted website acceptance. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
+The user has supplied a server key in the main app and website `.env.local` files, confirmed Workers Free, and reconnected Stripe. Server-key gateway and limiter checks pass. Separate real-user JWT name/preset ownership checks now pass; hosted website acceptance remains open. The current route inventory has no task/proof or card-setup routes, consistent with the explicit dependency gates above.
 
 
 The goal remains active and incomplete. Shared photo authority work is progressing; external prerequisites still gate full acceptance. Work is committed on the existing website `codex/shared-web-account` and shared backend `codex/web-first-foundation` branches. Main checkouts and the current antedotal.com Pages site remain untouched.
@@ -77,7 +77,7 @@ Callback limiter 20260925095113; account visitor limiter 20260925111932; preset 
 
 ### Hosted and configuration gates
 
-- Shared project and server-key PostgREST access are verified. Real JWT ownership/session flows and deployed website ingress remain unverified; database SET ROLE evidence is a different layer.
+- Shared project and server-key PostgREST access are verified. Direct hosted JWT name/preset ownership, missing-profile denial and revoked-refresh rejection are verified by the 27 September receipt. Deployed website ingress, browser cookies, OTP and Google remain unverified; database SET ROLE evidence is a different layer.
 - Target antedotal.com in Havish's Cloudflare account on Workers Free. Isolated connector calls now verify an empty Workers list and subdomain `walihavish`. Upload and staging ingress remain unverified; the Images usage API returned5403 (account/service access unavailable). That does not establish Images binding entitlement. See [candidate audit](superpowers/audits/2026-09-26-cloudflare-images-candidate.md). Keep the Pages site live; no paid upgrade selected.
 - Verify OTP/Change-email templates, SMTP, secure two-inbox settings, fresh Auth pending-email exposure, Google/email same-account behavior and browser/Worker cookies. No real recipient is authorized until Workspace setup. Local preparation has sent no emails.
 - OpenNext reports experimental Node middleware support; hosted runtime acceptance remains required before release.
