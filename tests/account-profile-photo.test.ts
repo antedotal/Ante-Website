@@ -1,7 +1,7 @@
 // Exercise permanent photo route exports with the installed SSR/Auth SDK and controlled HTTP providers.
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { readFileSync } from 'node:fs'
-import { createHmac } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { NextRequest } from 'next/server'
 import { autoImplementMethods } from 'next/dist/server/route-modules/app-route/helpers/auto-implement-methods'
 
@@ -15,6 +15,8 @@ const owner = '00000000-0000-4000-8000-000000000001'
 const forged = '00000000-0000-4000-8000-000000000002'
 const token = 'fresh.checked.token'
 const photo = new Uint8Array(readFileSync(new URL('./fixtures/red-2x2.png', import.meta.url)))
+const asset = 'abcdefab-cdef-4abc-8abc-abcdefabcdef'
+const manifest = { kind: 'current', asset_id: asset, revision: '1', sha256: createHash('sha256').update(photo).digest('hex'), mime: 'image/png', width: 2, height: 2, byte_count: photo.length, transform_version: 'png-v1' }
 const json = (body: unknown, status = 200) => new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 let calls: { url: string; init: RequestInit }[]
 let authStatus = 200
@@ -62,6 +64,14 @@ const upload = (options: Parameters<typeof request>[2] = {}) => request('PUT', '
 const deletion = (options: Parameters<typeof request>[2] = {}) => request('DELETE', '/api/account/profile/photo', options)
 const read = (options: Parameters<typeof request>[2] = {}, path = `/api/profiles/${owner}/photo`) => request('GET', path, options)
 
+// The same privacy policy must cover successful bytes, denials and bodyless methods.
+function expectPrivate(response: Response) {
+  for (const [name, value] of Object.entries({ 'cache-control': 'private, no-store', 'cdn-cache-control': 'no-store',
+    'cloudflare-cdn-cache-control': 'no-store', pragma: 'no-cache', expires: '0' })) expect(response.headers.get(name)).toBe(value)
+  expect(response.headers.get('vary')?.split(',').map(value => value.trim().toLowerCase())).toContain('cookie')
+  for (const name of ['etag', 'last-modified', 'accept-ranges', 'content-range', 'age', 'surrogate-control']) expect(response.headers.get(name)).toBeNull()
+}
+
 beforeAll(async () => {
   codecEnv.PROFILE_PNG_WASM = await WebAssembly.compile(readFileSync(new URL('../node_modules/@jsquash/png/codec/pkg/squoosh_png_bg.wasm', import.meta.url)))
   codecEnv.PROFILE_JPEG_WASM = await WebAssembly.compile(readFileSync(new URL('../node_modules/@jsquash/jpeg/codec/dec/mozjpeg_dec.wasm', import.meta.url)))
@@ -75,11 +85,11 @@ beforeEach(() => {
   process.env.ANTE_AUTH_INGRESS = 'cloudflare'
   process.env.ANTE_AUTH_LIMIT_HMAC_SECRET = 'a'.repeat(32)
   process.env.SUPABASE_SECRET_KEY = 'sb_secret_test_service_key'
-  process.env.ANTE_PROFILE_PHOTOS_MODE = 'generation-read-v1'
+  process.env.ANTE_PROFILE_PHOTOS_MODE = 'mediated-read-v1'
   calls = []
   authStatus = 200
   authBody = { id: owner, aud: 'authenticated', role: 'authenticated', email: 'verified@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} }
-  resolved = json({ kind: 'legacy' })
+  resolved = json({ kind: 'current', asset_id: asset })
   resolverOverride = null
   photoRead = new Response(photo.slice(), { headers: { 'content-type': 'image/png', etag: 'provider-private' } })
   quota = 'allow'
@@ -98,7 +108,8 @@ beforeEach(() => {
       user: { id: forged, aud: 'authenticated', role: 'authenticated', email: 'forged@example.test', created_at: '2026-09-25T00:00:00Z', app_metadata: {}, user_metadata: {} } })
     if (address.includes('/auth/v1/user')) return authStatus === 200 ? json(authBody) : json({ code: 'bad_jwt', msg: 'private' }, authStatus)
     if (address.includes('/rest/v1/rpc/resolve_profile_photo_v1')) return resolverOverride ? resolverOverride() : resolved.clone()
-    if (address.includes('/storage/v1/object/authenticated/')) {
+    if (address.includes('/rest/v1/rpc/profile_photo_read_manifest_v1')) return json(manifest)
+    if (address.includes('/storage/v1/object/profile-photos/')) {
       if (storageHold) { storageHold.entered(); await storageHold.wait }
       return photoRead.clone()
     }
@@ -107,16 +118,176 @@ beforeEach(() => {
 })
 
 describe('profile photo route gates and reads', () => {
+  it('serves only a frozen current asset after both fresh caller checks', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const asset = 'abcdefab-cdef-4abc-8abc-abcdefabcdef'
+    const digest = createHash('sha256').update(photo).digest('hex')
+    process.env.ANTE_PROFILE_PHOTOS_MODE = 'mediated-read-v1'
+    const sequence: string[] = []
+    vi.stubGlobal('fetch', vi.fn(async (url: string | URL | Request, init: RequestInit = {}) => {
+      const address = String(url)
+      calls.push({ url: address, init })
+      if (address.includes('/rpc/consume_website_account_limit')) { sequence.push('quota'); return json({ allowed: true, retry_after_seconds: 0 }) }
+      if (address.includes('/auth/v1/user')) { sequence.push('auth'); return json(authBody) }
+      if (address.includes('/rpc/resolve_profile_photo_v1')) { sequence.push('resolver'); return json({ kind: 'current', asset_id: asset }) }
+      if (address.includes('/rpc/profile_photo_read_manifest_v1')) {
+        sequence.push('manifest')
+        return json({ kind: 'current', asset_id: asset, revision: '1', sha256: digest, mime: 'image/png', width: 2, height: 2, byte_count: photo.length, transform_version: 'png-v1' })
+      }
+      if (address.includes(`/storage/v1/object/profile-photos/${owner}/${asset}`)) { sequence.push('bytes'); return new Response(photo.slice(), { headers: { 'content-type': 'image/png' } }) }
+      throw new Error(`Unexpected provider URL ${address}`)
+    }))
+    const response = await GET(read({ headers: { range: 'bytes=0-1', 'if-none-match': 'old' } }), { params: Promise.resolve({ ownerId: owner }) })
+    expect(response.status).toBe(200)
+    expect(new Uint8Array(await response.arrayBuffer())).toEqual(photo)
+    expect(sequence).toEqual(['quota', 'auth', 'quota', 'resolver', 'manifest', 'bytes', 'auth', 'resolver'])
+    expectPrivate(response)
+    for (const [name, value] of Object.entries({ 'cache-control': 'private, no-store', 'cdn-cache-control': 'no-store', 'cloudflare-cdn-cache-control': 'no-store', pragma: 'no-cache', expires: '0', vary: 'Cookie' })) {
+      expect(response.headers.get(name)).toBe(value)
+    }
+    for (const name of ['etag', 'last-modified', 'accept-ranges']) expect(response.headers.get(name)).toBeNull()
+  })
+
+  it('starts the wall deadline before asynchronous route parameters resolve', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    process.env.ANTE_PROFILE_PHOTOS_MODE = 'mediated-read-v1'
+    const params = new Promise<{ ownerId: string }>(() => {})
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const pending = GET(read(), { params })
+      await vi.advanceTimersByTimeAsync(30_000)
+      const response = await pending
+      expect(response.status).toBe(503)
+      expect(calls).toEqual([])
+    } finally { vi.useRealTimers() }
+  })
+
+  it('uses the monotonic deadline when a delayed timer has not fired', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    let elapsed = 0
+    vi.spyOn(performance, 'now').mockImplementation(() => elapsed)
+    const params = Promise.resolve().then(() => { elapsed = 30_001; return { ownerId: owner } })
+    const response = await GET(read(), { params })
+    expect(response.status).toBe(503)
+    expect(calls).toEqual([])
+    expectPrivate(response)
+  })
+
+  it('denies a selected asset when the final resolver observes replacement', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const asset = 'abcdefab-cdef-4abc-8abc-abcdefabcdef'
+    process.env.ANTE_PROFILE_PHOTOS_MODE = 'mediated-read-v1'
+    let resolves = 0
+    vi.stubGlobal('fetch', vi.fn(async (url: string | URL | Request, init: RequestInit = {}) => {
+      const address = String(url); calls.push({ url: address, init })
+      if (address.includes('/rpc/consume_website_account_limit')) return json({ allowed: true, retry_after_seconds: 0 })
+      if (address.includes('/auth/v1/user')) return json(authBody)
+      if (address.includes('/rpc/resolve_profile_photo_v1')) return json({ kind: 'current', asset_id: ++resolves === 1 ? asset : forged })
+      if (address.includes('/rpc/profile_photo_read_manifest_v1')) return json({ kind: 'current', asset_id: asset, revision: '1', sha256: createHash('sha256').update(photo).digest('hex'), mime: 'image/png', width: 2, height: 2, byte_count: photo.length, transform_version: 'png-v1' })
+      if (address.includes(`/storage/v1/object/profile-photos/${owner}/${asset}`)) return new Response(photo.slice(), { headers: { 'content-type': 'image/png' } })
+      throw new Error(`Unexpected provider URL ${address}`)
+    }))
+    const response = await GET(read(), { params: Promise.resolve({ ownerId: owner }) })
+    expect(response.status).toBe(404)
+    expect(await response.json()).toEqual({ error: 'Photo not found' })
+    expect(resolves).toBe(2)
+  })
+
+  it.each([
+    ['clear', { kind: 'not_found' }],
+    ['accepted-friendship revocation', { kind: 'not_found' }],
+    ['caller deletion', { kind: 'not_found' }],
+    ['target deletion', { kind: 'not_found' }],
+    ['replacement', { kind: 'current', asset_id: forged }],
+  ])('discards buffered bytes after %s reaches the final resolver', async (_change, finalSelection) => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const entered = barrier(); const release = barrier()
+    storageHold = { entered: entered.open, wait: release.wait }
+    const pending = GET(read(), { params: Promise.resolve({ ownerId: owner }) })
+    try {
+      await entered.wait
+      resolverOverride = () => json(finalSelection)
+      release.open()
+      const response = await pending
+      expect(response.status).toBe(404)
+      expect(await response.json()).toEqual({ error: 'Photo not found' })
+      expect(calls.filter(call => call.url.includes('/auth/v1/user'))).toHaveLength(2)
+      expect(calls.filter(call => call.url.includes('/rpc/resolve_profile_photo_v1'))).toHaveLength(2)
+      expect(calls.filter(call => call.url.includes('/storage/v1/object/profile-photos/'))).toHaveLength(1)
+      expectPrivate(response)
+    } finally { release.open(); storageHold = null }
+  })
+
+  it('does not publish when final Auth returns malformed success or provider failure', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const baseline = vi.mocked(fetch).getMockImplementation()!
+    for (const finalReply of [json({}), json({ code: 'unavailable' }, 500)]) {
+      calls = []
+      vi.stubGlobal('fetch', baseline)
+      const entered = barrier(); const release = barrier()
+      storageHold = { entered: entered.open, wait: release.wait }
+      const pending = GET(read(), { params: Promise.resolve({ ownerId: owner }) })
+      try {
+        await entered.wait
+        vi.stubGlobal('fetch', vi.fn((url: string | URL | Request, init: RequestInit = {}) =>
+          String(url).includes('/auth/v1/user') ? Promise.resolve(finalReply.clone()) : baseline(url, init)))
+        release.open()
+        const response = await pending
+        expect(response.status).toBe(503)
+        expect(calls.filter(call => call.url.includes('/rpc/resolve_profile_photo_v1'))).toHaveLength(1)
+        expectPrivate(response)
+      } finally { release.open(); storageHold = null }
+    }
+  })
+
+  it('discards buffered bytes after a final Auth revocation and preserves initial refresh cookies', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    refreshedToken = 'rotated.checked.token'
+    const entered = barrier(); const release = barrier()
+    storageHold = { entered: entered.open, wait: release.wait }
+    const pending = GET(read({ cookie: cookie(token, forged, 1) }), { params: Promise.resolve({ ownerId: owner }) })
+    try {
+      await entered.wait
+      authStatus = 401
+      release.open()
+      const response = await pending
+      expect(response.status).toBe(401)
+      expect(response.headers.get('set-cookie')).toContain('Secure')
+      expect(await response.json()).toEqual({ error: 'Authentication required' })
+      expect(calls.filter(call => call.url.includes('/rpc/resolve_profile_photo_v1'))).toHaveLength(1)
+      expectPrivate(response)
+    } finally { release.open(); storageHold = null }
+  })
+
+  it('aborts during byte download without starting final Auth or publishing bytes', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const controller = new AbortController()
+    const entered = barrier(); const release = barrier()
+    storageHold = { entered: entered.open, wait: release.wait }
+    const pending = GET(read({ signal: controller.signal }), { params: Promise.resolve({ ownerId: owner }) })
+    try {
+      await entered.wait
+      controller.abort()
+      const response = await pending
+      expect(response.status).toBe(503)
+      expect(await response.json()).toEqual({ error: 'Photo temporarily unavailable' })
+      expect(calls.filter(call => call.url.includes('/auth/v1/user'))).toHaveLength(1)
+      expectPrivate(response)
+    } finally { release.open(); storageHold = null }
+  })
+
   it('returns bodyless private 405 for unsupported methods before network', async () => {
     const writeHandlers = autoImplementMethods(await import('../app/api/account/profile/photo/route'))
     const readHandlers = autoImplementMethods(await import('../app/api/profiles/[ownerId]/photo/route') as never)
     for (const method of ['HEAD', 'OPTIONS', 'GET', 'POST', 'PATCH'] as const) {
       const response = await writeHandlers[method](request(method, '/api/account/profile/photo'), {} as never) as Response
       expect([response.status, response.headers.get('allow'), response.headers.get('cache-control'), await response.text()]).toEqual([405, 'PUT, DELETE', 'private, no-store', ''])
+      expectPrivate(response)
     }
     for (const method of ['HEAD', 'OPTIONS', 'POST', 'PUT', 'PATCH', 'DELETE'] as const) {
       const response = await readHandlers[method](request(method, `/api/profiles/${owner}/photo`), { params: Promise.resolve({ ownerId: owner }) } as never) as Response
       expect([response.status, response.headers.get('allow'), response.headers.get('cache-control'), await response.text()]).toEqual([405, 'GET', 'private, no-store', ''])
+      expectPrivate(response)
     }
     expect(calls).toEqual([])
   })
@@ -144,17 +315,17 @@ describe('profile photo route gates and reads', () => {
     expect(calls).toEqual([])
   })
 
-  it('permits GET only in generation-read-v1 and keeps both write routes closed in either mode', async () => {
+  it('permits GET only in mediated-read-v1 and keeps both write routes closed in every mode', async () => {
     const { PUT, DELETE } = await import('../app/api/account/profile/photo/route')
     const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
-    for (const mode of ['private-v1', 'generation-read-v1']) {
+    for (const mode of ['private-v1', 'generation-read-v1', 'mediated-read-v1']) {
       process.env.ANTE_PROFILE_PHOTOS_MODE = mode
       calls = []
       expect((await PUT(upload())).status).toBe(503)
       expect((await DELETE(deletion())).status).toBe(503)
       expect(calls).toEqual([])
       const response = await GET(read(), { params: Promise.resolve({ ownerId: owner }) })
-      expect(response.status).toBe(mode === 'generation-read-v1' ? 200 : 503)
+      expect(response.status).toBe(mode === 'mediated-read-v1' ? 200 : 503)
     }
   })
 
@@ -166,7 +337,7 @@ describe('profile photo route gates and reads', () => {
     expect(calls).toEqual([])
   })
 
-  it('uses fresh Auth and the exact checked token for resolver and Storage', async () => {
+  it('uses the checked token for both resolver calls and a separate service credential for bytes', async () => {
     const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
     const response = await GET(read(), { params: Promise.resolve({ ownerId: owner }) })
     expect(response.status).toBe(200)
@@ -175,8 +346,9 @@ describe('profile photo route gates and reads', () => {
     const resolver = calls.find(call => call.url.includes('/rpc/resolve_profile_photo_v1'))!
     expect(resolver.init.body).toBe(JSON.stringify({ p_owner: owner }))
     expect(new Headers(resolver.init.headers).get('authorization')).toBe(`Bearer ${token}`)
-    const storage = calls.find(call => call.url.includes('/storage/v1/object/authenticated/'))!
-    expect(new Headers(storage.init.headers).get('authorization')).toBe(`Bearer ${token}`)
+    const storage = calls.find(call => call.url.includes('/storage/v1/object/profile-photos/'))!
+    expect(new Headers(storage.init.headers).get('authorization')).toBeNull()
+    expect(new Headers(storage.init.headers).get('apikey')).toBe('sb_secret_test_service_key')
     expect(storage.url).not.toContain(forged)
   })
 
@@ -270,11 +442,11 @@ describe('profile photo route gates and reads', () => {
     expect(response.headers.get('cache-control')).toBe('private, no-store')
     expect(response.headers.get('x-content-type-options')).toBe('nosniff')
     for (const name of ['etag', 'last-modified', 'content-range']) expect(response.headers.get(name)).toBeNull()
-    const storage = calls.find(call => call.url.includes('/storage/v1/object/authenticated/'))!
-    expect(storage.url).toBe(`${project}/storage/v1/object/authenticated/profile-photos/${owner}/avatar`)
+    const storage = calls.find(call => call.url.includes('/storage/v1/object/profile-photos/'))!
+    expect(storage.url).toBe(`${project}/storage/v1/object/profile-photos/${owner}/${asset}`)
     const headers = new Headers(storage.init.headers)
-    expect(headers.get('authorization')).toBe(`Bearer ${token}`)
-    expect(headers.get('apikey')).toBe('sb_publishable_testvalue')
+    expect(headers.get('authorization')).toBeNull()
+    expect(headers.get('apikey')).toBe('sb_secret_test_service_key')
     expect(headers.get('cookie')).toBeNull()
     expect(headers.get('range')).toBeNull()
     expect(calls.some(call => call.url.includes('/auth/v1/user'))).toBe(true)
@@ -286,11 +458,11 @@ describe('profile photo route gates and reads', () => {
     resolved = json({ kind: 'current', asset_id: asset })
     const response = await GET(read(), { params: Promise.resolve({ ownerId: owner }) })
     expect(response.status).toBe(200)
-    expect(calls.find(call => call.url.includes('/storage/v1/object/authenticated/'))?.url).toBe(`${project}/storage/v1/object/authenticated/profile-photos/${owner}/${asset}`)
-    photoRead = json({ statusCode: '403', code: 'AccessDenied', error: 'not_found' }, 400)
+    expect(calls.find(call => call.url.includes('/storage/v1/object/profile-photos/'))?.url).toBe(`${project}/storage/v1/object/profile-photos/${owner}/${asset}`)
+    photoRead = json({ statusCode: '404', code: 'NoSuchKey', error: 'not_found' }, 400)
     calls = []
     expect((await GET(read(), { params: Promise.resolve({ ownerId: owner }) })).status).toBe(404)
-    expect(calls.filter(call => call.url.includes('/storage/v1/object/authenticated/'))).toHaveLength(1)
+    expect(calls.filter(call => call.url.includes('/storage/v1/object/profile-photos/'))).toHaveLength(1)
   })
 
   it('maps missing photos to 404 and corrupted stored bytes to 503', async () => {
@@ -328,12 +500,24 @@ describe('profile photo route gates and reads', () => {
     expect(response.headers.get('set-cookie')).toContain('Secure')
     resolved = json({ kind: 'legacy' }); calls = []
     response = await get()
-    expect(response.status).toBe(200)
+    expect(response.status).toBe(404)
     expect(response.headers.get('set-cookie')).toContain('Secure')
     calls = []; authStatus = 401
     response = await get()
     expect(response.status).toBe(401)
     expect(response.headers.get('set-cookie')).toBeNull()
+  })
+
+  it('retains initial verified refresh cookies on an unexpected later exception', async () => {
+    const { GET } = await import('../app/api/profiles/[ownerId]/photo/route')
+    const admission = await import('../lib/server/callback-admission')
+    refreshedToken = 'rotated.checked.token'
+    vi.spyOn(admission, 'admitProfilePhotoUser').mockRejectedValueOnce(new Error('unexpected'))
+    const response = await GET(read({ cookie: cookie(token, forged, 1) }), { params: Promise.resolve({ ownerId: owner }) })
+    expect(response.status).toBe(503)
+    expect(response.headers.get('set-cookie')).toContain('Secure')
+    expect(calls.some(call => call.url.includes('/rpc/resolve_profile_photo_v1'))).toBe(false)
+    expectPrivate(response)
   })
 
 
@@ -353,9 +537,9 @@ describe('profile photo route gates and reads', () => {
       const raw = pendingUpload()
       await expect(validateProfilePhoto(raw.request)).rejects.toMatchObject({ status: 503 })
       expect([raw.pulls, raw.cancellations]).toEqual([0, 1])
-      const before = calls.filter(call => call.url.includes('/storage/v1/object/authenticated/')).length
+      const before = calls.filter(call => call.url.includes('/storage/v1/object/profile-photos/')).length
       expect((await GET(read(), { params: Promise.resolve({ ownerId: owner }) })).status).toBe(503)
-      expect(calls.filter(call => call.url.includes('/storage/v1/object/authenticated/'))).toHaveLength(before)
+      expect(calls.filter(call => call.url.includes('/storage/v1/object/profile-photos/'))).toHaveLength(before)
       release.open()
       const unread = await first
       expect(unread.status).toBe(200)

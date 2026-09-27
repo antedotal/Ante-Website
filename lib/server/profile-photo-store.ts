@@ -7,7 +7,6 @@ import { serviceCredential } from './service-credential'
 
 export type StoredProfilePhoto = { bytes: Uint8Array; contentType: 'image/jpeg' | 'image/png' }
 export type PhotoMutationResult = { kind: 'ok' } | { kind: 'unavailable' }
-export type PhotoReadResult = ({ kind: 'found' } & StoredProfilePhoto) | { kind: 'not_found' } | { kind: 'unavailable' }
 export type PhotoProfileResult = { kind: 'exists' } | { kind: 'missing' } | { kind: 'unavailable' }
 
 const unavailable = { kind: 'unavailable' } as const
@@ -93,33 +92,6 @@ export async function deleteProfilePhoto(ownerId: string, signal?: AbortSignal):
     if (result.response.status === 200 && body?.message === 'Successfully deleted') return { kind: 'ok' }
     if (result.response.status === 400 && body?.statusCode === '404' && body.code === 'NoSuchKey' && body.error === 'not_found') return { kind: 'ok' }
     return unavailable
-  } catch { return unavailable }
-}
-
-// Resolve the visible generation and read it through Storage RLS using the same caller token.
-export async function downloadProfilePhoto(targetId: string, callerToken: string, signal?: AbortSignal): Promise<PhotoReadResult> {
-  if (!profilePhotoKey(targetId) || !callerSuitable(callerToken)) return unavailable
-  try {
-    const { url, key: publicKey } = accountConfig()
-    const selected = await resolvePhoto(url, publicKey, targetId, callerToken, signal)
-    if (selected.kind !== 'current' && selected.kind !== 'legacy') return selected
-    const key = `${targetId}/${selected.kind === 'current' ? selected.assetId : 'avatar'}`
-    const result = await boundedProviderRequest(`${url}/storage/v1/object/authenticated/profile-photos/${key}`, {
-      method: 'GET', headers: authHeaders(publicKey, callerToken), cache: 'no-store', redirect: 'error',
-    }, photoCap, { signal })
-    if (!result) return unavailable
-    const { response, bytes } = result
-    if (response.status === 200) {
-      const contentType = response.headers.get('content-type')
-      return bytes.length > 0 && (contentType === 'image/jpeg' || contentType === 'image/png')
-        ? { kind: 'found', bytes, contentType } : unavailable
-    }
-    if (response.status !== 400) return unavailable
-    const error = jsonBody(bytes)
-    return error && (
-      error.statusCode === '404' && (error.code === 'NoSuchKey' || error.code === 'NoSuchBucket') ||
-      error.statusCode === '403' && error.code === 'AccessDenied'
-    ) ? { kind: 'not_found' } : unavailable
   } catch { return unavailable }
 }
 

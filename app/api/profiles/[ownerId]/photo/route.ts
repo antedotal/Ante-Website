@@ -2,20 +2,20 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { handleProfilePhotoRead } from '../../../../../lib/server/account-profile-photo'
 import { cancelProfilePhotoBody } from '../../../../../lib/server/profile-photo-stream'
+import { privateProfilePhotoResponse } from '../../../../../lib/server/profile-photo-response'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
 type Context = { params: Promise<{ ownerId: string }> }
 export async function GET(request: NextRequest, context: Context) {
-  const { ownerId } = await context.params
-  return handleProfilePhotoRead(request, ownerId)
+  return handleProfilePhotoRead(request, context.params)
 }
 
 // Explicit 405s prevent framework HEAD and OPTIONS auto behavior from reaching Auth.
 function methodNotAllowed(request: NextRequest) {
   cancelProfilePhotoBody(request)
-  return new NextResponse(null, { status: 405, headers: { Allow: 'GET', 'Cache-Control': 'private, no-store' } })
+  return privateProfilePhotoResponse(new NextResponse(null, { status: 405, headers: { Allow: 'GET' } }))
 }
 export const HEAD = methodNotAllowed
 export const OPTIONS = methodNotAllowed
