@@ -97,4 +97,50 @@ describe('bounded provider request', () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response(new Uint8Array([1]))))
     expect((await request())?.bytes).toEqual(new Uint8Array([1]))
   })
+
+  it('ends continuously ready empty chunks at a monotonic deadline without timer dispatch', async () => {
+    vi.useFakeTimers()
+    let elapsed = 0
+    let pulls = 0
+    let cancelled = 0
+    vi.stubGlobal('performance', { now: () => elapsed })
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) {
+        elapsed += 1000
+        pulls++
+        // A finite ceiling keeps the red test bounded even when the implementation is wrong.
+        if (pulls === 100) { controller.enqueue(new Uint8Array([1])); controller.close() }
+        else controller.enqueue(new Uint8Array())
+      },
+      cancel() { cancelled++ },
+    }, { highWaterMark: 0 }))))
+    expect(await request(16384, { timeoutMs: 5000 })).toBeNull()
+    expect(pulls).toBeLessThan(100)
+    expect(cancelled).toBe(1)
+  })
+
+  it('ignores finite empty chunks before real content without corrupting bytes', async () => {
+    let pulls = 0
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(new ReadableStream<Uint8Array>({
+      pull(controller) {
+        pulls++
+        if (pulls <= 3) controller.enqueue(new Uint8Array())
+        else { controller.enqueue(new Uint8Array([7, 8])); controller.close() }
+      },
+    }, { highWaterMark: 0 }))))
+    expect((await request())?.bytes).toEqual(new Uint8Array([7, 8]))
+  })
+
+  it('rejects a bodyless success that arrives after the monotonic deadline', async () => {
+    vi.useFakeTimers()
+    let elapsed = 0
+    let deliver!: (response: Response) => void
+    vi.stubGlobal('performance', { now: () => elapsed })
+    vi.stubGlobal('fetch', vi.fn(() => new Promise<Response>(resolve => { deliver = resolve })))
+    const pending = request(16384, { timeoutMs: 5000 })
+    await vi.waitFor(() => expect(fetch).toHaveBeenCalledTimes(1))
+    elapsed = 5001
+    deliver(new Response(null, { status: 204 }))
+    expect(await pending).toBeNull()
+  })
 })

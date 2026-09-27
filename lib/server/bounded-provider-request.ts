@@ -23,6 +23,9 @@ export async function boundedProviderRequest(
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 ||
       options.signal?.aborted || init.signal?.aborted) return null
 
+  // A monotonic boundary also works when a ready stream starves timer callbacks.
+  const deadlineAt = performance.now() + timeoutMs
+  const pastDeadline = () => performance.now() >= deadlineAt
   const controller = new AbortController()
   let expired = false
   let stopRequest!: () => void
@@ -37,7 +40,7 @@ export async function boundedProviderRequest(
   let response: Response | undefined
   let completed = false
   try {
-    if (options.signal?.aborted || init.signal?.aborted) return null
+    if (options.signal?.aborted || init.signal?.aborted || pastDeadline()) return null
     const headers = new Headers(init.headers)
     // Some fetch runtimes own this header; response encoding is still checked below.
     try { headers.set('Accept-Encoding', 'identity') } catch { /* Runtime-controlled header. */ }
@@ -48,7 +51,12 @@ export async function boundedProviderRequest(
     // A response arriving after cancellation must not leave a private stream unread.
     void pending.then(late => { if (expired) cancelResponse(late) }, () => {})
     response = await Promise.race([pending, stopped]) ?? undefined
-    if (!response || expired) return null
+    if (!response) return null
+    if (expired || pastDeadline()) {
+      stopRequest()
+      cancelResponse(response)
+      return null
+    }
     if (response.redirected || response.type === 'opaqueredirect' || response.type === 'opaque' ||
         response.status === 206 || response.status >= 300 && response.status < 400 ||
         response.headers.has('content-range')) {
@@ -68,15 +76,19 @@ export async function boundedProviderRequest(
       cancelResponse(response)
       return null
     }
-    if (!response.body) return length === null || length === 0 ? { response, bytes: new Uint8Array() } : null
+    if (!response.body) {
+      if (pastDeadline() || expired) { stopRequest(); return null }
+      return length === null || length === 0 ? { response, bytes: new Uint8Array() } : null
+    }
     reader = response.body.getReader()
     const chunks: Uint8Array[] = []
     let size = 0
     while (true) {
       const part = await Promise.race([reader.read(), stopped])
-      if (!part || expired) return null
+      if (!part || expired || pastDeadline()) { stopRequest(); return null }
       if (part.done) break
       if (!(part.value instanceof Uint8Array) || part.value.length > cap - size) return null
+      if (part.value.length === 0) continue
       size += part.value.length
       chunks.push(part.value.slice())
     }
@@ -84,6 +96,7 @@ export async function boundedProviderRequest(
     const bytes = new Uint8Array(size)
     let offset = 0
     for (const chunk of chunks) { bytes.set(chunk, offset); offset += chunk.length }
+    if (pastDeadline() || expired) { stopRequest(); return null }
     completed = true
     return { response, bytes }
   } catch {
