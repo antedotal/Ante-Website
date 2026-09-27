@@ -51,6 +51,7 @@ function canonicalIp(value) {
 async function readBoundedBody(request) {
   const reader = request.body?.getReader()
   if (!reader) return null
+  const startedAt = performance.now()
   const chunks = []
   let length = 0
   let emptyChunks = 0
@@ -62,6 +63,8 @@ async function readBoundedBody(request) {
   try {
     for (;;) {
       const part = await Promise.race([reader.read(), deadline])
+      // A synchronous producer can settle after two seconds before the queued timer callback runs.
+      if (performance.now() - startedAt >= bodyDeadlineMs) return null
       if (part.done) { complete = true; break }
       if (!(part.value instanceof Uint8Array) || length + part.value.byteLength > maxBodyBytes) return null
       if (part.value.byteLength === 0) {
@@ -72,7 +75,7 @@ async function readBoundedBody(request) {
       length += part.value.byteLength
       chunks.push(part.value.slice())
     }
-    if (request.signal.aborted || length === 0) return null
+    if (request.signal.aborted || length === 0 || performance.now() - startedAt >= bodyDeadlineMs) return null
     return Buffer.concat(chunks, length).toString('utf8')
   } catch {
     return null
@@ -96,9 +99,10 @@ function authenticatedRequest(request, env) {
   } catch {
     return false
   }
+  const requestOrigin = request.headers.get('origin')
   if (request.method !== 'POST' || request.url !== `${url.origin}${path}` ||
       request.headers.has('cf-worker') ||
-      request.headers.get('origin') && request.headers.get('origin') !== url.origin ||
+      requestOrigin !== null && requestOrigin !== url.origin ||
       request.headers.get('content-type') !== 'application/json') return false
   const supplied = request.headers.get('authorization')
   if (!supplied?.startsWith('Bearer ') || !tokenHex.test(supplied.slice(7))) return false
@@ -117,8 +121,9 @@ export async function prepareDigests(request, env) {
     if (!ip) return notFound()
     const raw = await readBoundedBody(request)
     if (raw === null) return notFound()
-    // Reject ambiguous duplicate JSON fields and declared lengths that disagree with the consumed body.
-    if ((raw.match(/"run_id"\s*:/g) ?? []).length !== 1 ||
+    // This fixed ASCII grammar has no reason to escape a key or UUID; forbidding escapes prevents decoded key aliases.
+    // Also reject literal duplicates and declared lengths that disagree with the consumed body.
+    if (raw.includes('\\') || (raw.match(/"run_id"\s*:/g) ?? []).length !== 1 ||
         (raw.match(/"fixture_ids"\s*:/g) ?? []).length !== 1 ||
         declaredLength !== null && Number(declaredLength) !== Buffer.byteLength(raw, 'utf8')) return notFound()
     let value

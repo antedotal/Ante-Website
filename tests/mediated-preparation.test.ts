@@ -130,6 +130,26 @@ describe('isolated mediated digest preparation', () => {
     expect(fetch).not.toHaveBeenCalled()
   })
 
+  it('allows absent Origin for the operator client but rejects a present empty Origin', async () => {
+    const { prepareDigests } = await import('../scripts/acceptance/mediated-preparation-worker.mjs')
+    const absent = request()
+    absent.headers.delete('origin')
+    expect((await prepareDigests(absent, env)).status).toBe(200)
+    expect((await prepareDigests(request({ headers: { origin } }), env)).status).toBe(200)
+    await expectPrivate404(await prepareDigests(request({ headers: { origin: '' } }), env))
+    await expectPrivate404(await prepareDigests(request({ headers: { origin: 'https://other.test' } }), env))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
+  it('rejects duplicate decoded field names hidden by JSON key escapes', async () => {
+    const { prepareDigests } = await import('../scripts/acceptance/mediated-preparation-worker.mjs')
+    const escapedRun = `{"\\u0072un_id":"wrong","run_id":"${run}","fixture_ids":${JSON.stringify(ids)}}`
+    const escapedFixtures = `{"run_id":"${run}","\\u0066ixture_ids":[],"fixture_ids":${JSON.stringify(ids)}}`
+    await expectPrivate404(await prepareDigests(request({ body: escapedRun }), env))
+    await expectPrivate404(await prepareDigests(request({ body: escapedFixtures }), env))
+    expect(fetch).not.toHaveBeenCalled()
+  })
+
   it('rejects malformed configuration, body, identifiers and ingress uniformly', async () => {
     const { prepareDigests } = await import('../scripts/acceptance/mediated-preparation-worker.mjs')
     for (const badEnv of [
@@ -171,6 +191,20 @@ describe('isolated mediated digest preparation', () => {
     await expectPrivate404(await prepareDigests(request({ body: stalled }), env))
     expect(Date.now() - before).toBeLessThan(3000)
     expect(cancelled).toBe(2)
+    expect(fetch).not.toHaveBeenCalled()
+  }, 5000)
+
+  it('rejects a body read that settles after the monotonic deadline before its timer callback', async () => {
+    const { prepareDigests } = await import('../scripts/acceptance/mediated-preparation-worker.mjs')
+    const lateBody = new ReadableStream<Uint8Array>({
+      pull(controller) {
+        const start = performance.now()
+        while (performance.now() - start < 2100) { /* Simulate a synchronous producer blocking the timer callback. */ }
+        controller.enqueue(new TextEncoder().encode(body))
+        controller.close()
+      },
+    }, { highWaterMark: 0 })
+    await expectPrivate404(await prepareDigests(request({ body: lateBody }), env))
     expect(fetch).not.toHaveBeenCalled()
   }, 5000)
 })
