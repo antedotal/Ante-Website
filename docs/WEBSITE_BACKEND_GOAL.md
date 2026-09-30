@@ -1,6 +1,6 @@
 # Website backend goal
 
-Updated 28 September 2026. Requested scope: Ante-Website backend only.
+Updated 1 October 2026. Requested scope: Ante-Website backend only.
 
 ## Objective
 
@@ -33,7 +33,15 @@ Existing code supports Google sign-in only. The user has now requested email sig
 
 The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
 
-## Current handoff — 27 September 2026
+## Current handoff — 1 October 2026
+
+The reviewed website source `c32417f1fda7ab12b426ad3f4664bab13a9322d0` is now on remote `develop`. Current Pages production still uses main `3915a7c1857ecf36e528127eb4629f136d4b32dc`. Fresh verification passed **366 application tests and 170 local acceptance tests**, typecheck and authored-source ESLint. Plain lint encountered generated ignored bundles under `.superpowers/`; excluding only that generated directory passed, so the unscoped command is not recorded as green.
+
+Shared Supabase now has the mediated profile-reader privacy prerequisite (migration `20260930145446`, fourteen postconditions and twenty-two unchanged protected row fingerprints) and difficulty-label compatibility (migration `20260930153540`, ten postconditions, twenty-nine preserved NULL labels and the same row preservation). These schema prerequisites activate neither profile routes nor task/proof authority. [Paired current integration evidence and remaining work](../../Ante/docs/superpowers/audits/2026-10-01-supabase-develop-integration.md).
+
+Cloudflare read access works for Havish's account, but the reviewed diagnostic Worker upload still receives “No access to specified resource”; Worker inventory is empty. Wrangler has no credentials, and the user-facing OAuth login expired. Renew login once the user is ready; do not repeatedly upload while denied. Supabase CLI access and configured custom SMTP/eight-digit email OTP are confirmed. Actual Worker ingress, email template/delivery and browser/session tests still need acceptance and an authorized inbox. Profile publication/serving and email-change operator modes stay unset. All earlier dated handoffs below are historical evidence.
+
+## Earlier handoff — 27 September 2026
 
 ### Latest: complete mediated photo reader accepted locally
 
