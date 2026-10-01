@@ -26,7 +26,7 @@ describe('callback limit REST adapter', () => {
     expect(url).toBe(rpcUrl)
     expect(init?.method).toBe('POST')
     expect(init?.cache).toBe('no-store')
-    expect(init?.redirect).toBe('error')
+    expect(init?.redirect).toBe('manual')
     expect(JSON.parse(String(init?.body))).toEqual({ p_visitor_hash: digest })
     expect(String(init?.body)).not.toContain(opaqueKey)
     expect(String(url)).not.toContain(opaqueKey)

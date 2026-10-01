@@ -29,7 +29,7 @@ describe('verified user email-change admission', () => {
       expect(url).toBe('https://yxilmwxptfnebnjsikwo.supabase.co/rest/v1/rpc/consume_website_callback_limit')
       expect(init?.method).toBe('POST')
       expect(init?.cache).toBe('no-store')
-      expect(init?.redirect).toBe('error')
+      expect(init?.redirect).toBe('manual')
       expect(JSON.parse(String(init?.body))).toEqual({
         p_visitor_hash: createHmac('sha256', secret).update(`website-email-change-${action}:v1:${userId}`).digest('hex'),
       })

@@ -98,7 +98,7 @@ describe('callback admission', () => {
       expect(String(init?.body)).not.toContain('private')
       expect(init?.method).toBe('POST')
       expect(init?.cache).toBe('no-store')
-      expect(init?.redirect).toBe('error')
+      expect(init?.redirect).toBe('manual')
       const headers = new Headers(init?.headers)
       expect(headers.get('apikey')).toBe(opaqueKey)
       expect(headers.get('authorization')).toBeNull()

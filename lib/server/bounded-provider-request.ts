@@ -18,7 +18,7 @@ export async function boundedProviderRequest(
   url: string,
   init: RequestInit,
   maxBytes: number,
-  options: { signal?: AbortSignal; timeoutMs?: number } = {},
+  options: { signal?: AbortSignal; timeoutMs?: number; allowPostgrestSingletonRange?: true } = {},
 ): Promise<{ response: Response; bytes: Uint8Array } | null> {
   const timeoutMs = options.timeoutMs ?? 10000
   if (!Number.isSafeInteger(maxBytes) || maxBytes < 0 || !Number.isSafeInteger(timeoutMs) || timeoutMs < 1 ||
@@ -47,7 +47,9 @@ export async function boundedProviderRequest(
     try { headers.set('Accept-Encoding', 'identity') } catch { /* Runtime-controlled header. */ }
     const pending = Promise.resolve().then(() => {
       if (controller.signal.aborted) throw new Error('aborted')
-      return fetch(url, { ...init, headers, signal: controller.signal })
+      // The installed workerd rejects redirect: 'error'; manual exposes redirects below
+      // without following a Location or forwarding private headers to another endpoint.
+      return fetch(url, { ...init, headers, redirect: 'manual', signal: controller.signal })
     })
     // A response arriving after cancellation must not leave a private stream unread.
     void pending.then(late => { if (expired) cancelResponse(late) }, () => {})
@@ -58,9 +60,16 @@ export async function boundedProviderRequest(
       cancelResponse(response)
       return null
     }
+    // Fixed scalar PostgREST RPCs describe their one JSON value with item metadata.
+    // Only an explicit caller opt-in accepts that exact HTTP 200 header; byte ranges,
+    // other item intervals and all HTTP 206 responses remain unavailable.
+    const range = response.headers.get('content-range')
+    const rangeUnit = response.headers.get('range-unit')
+    const singletonRange = options.allowPostgrestSingletonRange === true &&
+      response.status === 200 && range === '0-0/*' && (rangeUnit === null || rangeUnit === 'items')
     if (response.redirected || response.type === 'opaqueredirect' || response.type === 'opaque' ||
         response.status === 206 || response.status >= 300 && response.status < 400 ||
-        response.headers.has('content-range')) {
+        range !== null && !singletonRange) {
       cancelResponse(response)
       return null
     }

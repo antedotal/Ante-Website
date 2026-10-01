@@ -39,10 +39,11 @@ async function consumeLimit(visitorHash: string, functionName: 'consume_website_
       accept: 'application/json',
     }
     if (credential.bearer) headers.Authorization = `Bearer ${credential.key}`
+    // These two fixed JSONB RPCs return one complete value with PostgREST item metadata.
     const result = await boundedProviderRequest(`${url}/rest/v1/rpc/${functionName}`, {
       method: 'POST', headers, body: JSON.stringify({ p_visitor_hash: visitorHash }),
       cache: 'no-store', redirect: 'error',
-    }, 16384, { signal, timeoutMs: 5000 })
+    }, 16384, { signal, timeoutMs: 5000, allowPostgrestSingletonRange: true })
     // Admission only trusts a complete JSON record from an exact successful RPC reply.
     if (!result || result.response.status !== 200) return unavailable
     return parseResult(JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(result.bytes)))
