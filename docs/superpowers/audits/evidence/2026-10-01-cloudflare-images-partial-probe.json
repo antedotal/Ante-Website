@@ -1,0 +1,68 @@
+{
+  "checkedAt": "2026-10-01T03:39:09.984201+00:00",
+  "accountId": "5af41de7e4953ebc3d99f3ec07803736",
+  "source": {
+    "sourceCommit": "0c9f865",
+    "checkedAt": "2026-10-01T03:32:48.599932+00:00",
+    "worker": "ante-images-probe-20260926",
+    "expiry": "2026-10-01T03:52:48Z",
+    "sourceHashes": {
+      "worker.ts": "dfc2f021dcd19283eff8cd6020e8a55b899bce1ba6e0698b3125177c24af8218",
+      "handler.ts": "490b65eb80fbce41d96651c53057fe226896e1aded2a12503404d69cc8209761",
+      "manifest.json": "9ca5131f39afa95eacc959962dec0b029c29a70c8585f159b358a06a214d5479"
+    },
+    "scope": "One available exact allowlisted landscape PNG; three missing fixtures are not accepted."
+  },
+  "versionId": "a9397ccb-5c08-4b27-82c8-49990cf390db",
+  "initialClientDiagnostic": {
+    "status": 403,
+    "publicError": "error code: 1010",
+    "clientCorrection": "Explicit truthful Ante-Backend-Acceptance User-Agent; no security/provider setting changed."
+  },
+  "authorizationDenied": {
+    "status": 401,
+    "cacheControl": "private, no-store",
+    "contentType": "application/json",
+    "wallMsObserved": 99,
+    "body": {
+      "error": "unauthorized"
+    }
+  },
+  "fixture": {
+    "status": 200,
+    "cacheControl": "private, no-store",
+    "contentType": "application/json",
+    "wallMsObserved": 800,
+    "body": {
+      "fixture": "phone-pattern.png",
+      "inputBytes": 19491,
+      "inputSha256": "16b156913f5aedc329a225b237808538e8df89b2b8c22db190cf4daf65caa2ea",
+      "inputWidth": 4032,
+      "inputHeight": 3024,
+      "outputBytes": 130977,
+      "outputSha256": "9dd12f33977c78b986eca44d748800c932e8a5139ce3c4f43566b1c19a6f821a",
+      "outputWidth": 1440,
+      "outputHeight": 1080,
+      "outputFormat": "jpeg",
+      "wallMs": 681
+    }
+  },
+  "missingFixtures": [
+    "phone-noise.heic",
+    "phone-noise.jpg",
+    "phone-portrait.png"
+  ],
+  "fullEnvelopeAccepted": false,
+  "cpuResourceAccepted": false,
+  "productionPipelineAccepted": false,
+  "cleanup": {
+    "status": "verified",
+    "workerAbsentAt": "2026-10-01T03:41:15.726Z",
+    "workerInventory": [],
+    "pagesProductionBranch": "main",
+    "pagesBuildCommand": "npx @cloudflare/next-on-pages@1",
+    "pagesDestination": ".vercel/output/static",
+    "customRoutes": [],
+    "privateOperatorSecretRemoved": true
+  }
+}

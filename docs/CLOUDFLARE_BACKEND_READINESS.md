@@ -1,6 +1,10 @@
 # Cloudflare backend readiness
 
-Updated 25 September 2026. The user confirmed the current site is on Cloudflare Pages and authorized preparing a Workers deployment while Pages stays live. Email one-time-code sign-in is also approved; no email/password or magic-link UI is requested.
+Updated 1 October 2026. Earlier dated sections below retain historical source/local observations. The user confirmed the current site is on Cloudflare Pages and authorized preparing a Workers deployment while Pages stays live. Email one-time-code sign-in is also approved; no email/password or magic-link UI is requested.
+
+## Current hosted state
+
+The corrected separate [preview Worker](https://ante-website-backend-preview.walihavish.workers.dev) is deployed at version `60629d28-85b3-476a-b5c3-0cb15bb7cd0a`. Independent source reviews approve9e17e91, now integrated into develop; 384 local application tests pass. Live anonymous account redirects, protected API denials and closed photo gates pass with private/no-store and zero session cookies. Pages/main, domains and routes remain unchanged. Both relevant Auth templates now include numeric codes and the exact staging callback is allowlisted, with all 240 other Auth fields preserved. The user will test email manually; authenticated session, actual subrequest, resource and complete photo acceptance remain open. [Current evidence and next steps](superpowers/audits/2026-10-01-worker-correction-and-next-steps.md).
 
 ## Verified source state
 
@@ -14,7 +18,7 @@ The separate local Worker build is configured with OpenNext 1.20.6, Next 16.3.3 
 
 A correctly named synthetic auth cookie initially made `getClaims()` throw on a missing JWT expiry and produced a private 500 in the Worker. The proxy now catches thrown verification errors, redirects protected account paths to the configured site's sign-in route, and keeps sign-in reachable. Focused tests cover both paths; the corrected Worker preview result is recorded in the task report.
 
-The existing marketing pages render optimized Next images. OpenNext requires a Cloudflare Images binding or a custom image loader for those requests; Cloudflare Images may incur charges. Neither was enabled in this backend-only preparation, so verify image delivery and choose its resource before any hosted Worker replaces Pages. No R2 cache is configured.
+The marketing pages use Next image routes. Installed OpenNext1.20.6 serves the original bytes when its Images binding is absent; actual staging `/logoicon.png` and `/_next/image` both return200 with identical PNG bytes. Optimized delivery needs a separately selected resource or loader, but an absent binding does not block original-image delivery. No paid Images resource or R2 cache was selected.
 
 1. Finish and independently review callback admission. Trust only the explicit Cloudflare deployment's `cf-connecting-ip`, with no fallback to arbitrary forwarding headers. Reject malformed identity and fail closed when configuration or the durable store is unavailable.
 2. Add pinned, compatible Workers build tooling and configuration. Preserve the existing Pages deployment, marketing files and routes. Do not publish or change DNS as part of local preparation. Keep secrets out of tracked files and assets.
