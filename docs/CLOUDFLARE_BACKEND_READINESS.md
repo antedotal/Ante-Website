@@ -1,5 +1,17 @@
 # Cloudflare backend readiness
 
+## 3 October 2026 — PR #37 build correction
+
+The original PR build on 29 September installed its pnpm dependencies successfully, then failed with npm `ERESOLVE` while executing `npx @cloudflare/next-on-pages@1`. That temporary install selected next-on-pages 1.13.16 (Workers types v4) and Wrangler 4.143.0 (Workers types v5). The adapter supports only Next 14.3.0 through 15.5.2 and Edge routes, so overriding peer checks cannot build this Next 16.3.3 backend correctly. The later 30 September retry failed during Git cloning with a TLS/early-EOF error before dependency installation; that is a separate failure.
+
+The user selected OpenNext Workers for PR #37 while keeping the existing production Pages site live. Use `pnpm run build:worker` with the repository's pinned OpenNext and Wrangler, rather than installing a Pages adapter with npx. `pnpm exec wrangler versions upload` uploads a build without replacing the currently deployed Worker version. The Worker entrypoint remains `worker-entry.mjs` so Wrangler includes both decoder WASM modules. Do not deploy `.open-next/assets` as a Pages site: that directory is only the asset portion of the Worker.
+
+`package.json` pins pnpm 10.11.1 and `.node-version` pins Node 22.16.0, matching the failed build's environment. The native install policy now uses pnpm 10's `onlyBuiltDependencies` and `ignoredBuiltDependencies`; the older build ignored `allowBuilds`. The allowed/blocked packages are unchanged. The stale npm lockfile is removed and `start.sh` installs the frozen pnpm graph without independently upgrading ESLint.
+
+Live dashboard inspection found the existing `ante-website-backend-preview` Worker manually deployed, with its Git repository disconnected. Connecting Workers Builds requires a new deployment token; that credential step needs explicit approval. Build configuration and authentication/photo release acceptance remain separate. The dated statements below are historical preparation evidence.
+
+Local verification with Node 22.16.0 and pnpm 10.11.1 passed a clean frozen install, ESLint, all 366 application tests, the Next/OpenNext Worker build including TypeScript, and `wrangler deploy --dry-run`. The dry-run artifact includes the PNG and JPEG decoder WASM modules. The pnpm dependency lockfile is unchanged. This does not yet establish a successful hosted build or deployment.
+
 Updated 25 September 2026. The user confirmed the current site is on Cloudflare Pages and authorized preparing a Workers deployment while Pages stays live. Email one-time-code sign-in is also approved; no email/password or magic-link UI is requested.
 
 ## Verified source state

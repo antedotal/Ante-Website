@@ -91,6 +91,15 @@ Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` permits the
 
 ---
 
+### 1.2 Cloudflare build dependencies (2026-10-03)
+
+- `package.json` pins `pnpm@10.11.1`, matching Cloudflare's build image. The install-script policy now uses `onlyBuiltDependencies` and `ignoredBuiltDependencies`: pnpm 10.11.1 ignored the newer `allowBuilds` setting and skipped required native install checks. The allowed and blocked packages are unchanged. `.node-version` pins the hosted build runtime to Node 22.16.0; the tooling requires Node >=22.
+- `pnpm-lock.yaml` is the sole dependency lockfile. The stale npm lockfile described Next 16.1.1 and omitted the Worker and account dependencies, contradicting the actual manifest. `start.sh` now performs only a frozen pnpm install and does not install or upgrade ESLint independently.
+- This branch builds for Cloudflare Workers with `pnpm run build:worker`, using the installed OpenNext 1.20.6 and Wrangler 4.139.0. The current Pages command `npx @cloudflare/next-on-pages@1` creates a separate unpinned npm dependency tree: next-on-pages 1.13.16 requires Workers types v4, whereas the selected Wrangler requires v5. That adapter also only supports Next 14.3.0 through 15.5.2 and Edge routes, so bypassing its peer checks cannot support this Next 16 backend.
+- The existing production Pages deployment stays live. Worker previews use the separate Worker configuration and `worker-entry.mjs`, including its static decoder WASM imports. `.open-next/assets` is the Worker's asset directory, not a complete Pages deployment. Backend serving gates remain separate from build validation.
+
+---
+
 ## 2. Tech Stack
 
 ### 2.1 Core Runtime & Framework
@@ -262,7 +271,7 @@ High-level layout under the repo root:
   - `postcss.config.mjs`
   - `components.json`
   - `README.md`
-  - `package.json`, `package-lock.json`
+  - `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.node-version`
 
 ### 3.1 `app/` Structure
 
