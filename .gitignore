@@ -10,6 +10,9 @@
 !.yarn/releases
 !.yarn/versions
 .next
+/.open-next/
+/.wrangler/
+.dev.vars*
 
 # testing
 /coverage
@@ -60,4 +63,3 @@ CURRENT_SQL.md
 .cursor
 
 /ios
-

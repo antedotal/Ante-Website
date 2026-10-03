@@ -1,0 +1,21 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  // Build the same isolated Worker with a separate operator-only entry.
+  "name": "ante-website-backend-preview",
+  "main": "worker-mediated-acceptance-entry.mjs",
+  "compatibility_date": "2026-09-25",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "preview_urls": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS"
+  },
+  "services": [
+    {
+      // Keep OpenNext internal calls bound to the existing isolated Worker name.
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "ante-website-backend-preview"
+    }
+  ]
+}

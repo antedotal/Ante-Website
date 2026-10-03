@@ -1,0 +1,213 @@
+{
+  "project": "yxilmwxptfnebnjsikwo",
+  "runId": "6bd884b2-c604-47ae-8d0a-6eeb5a49d5f5",
+  "startedAt": "2026-09-27T02:01:23.972Z",
+  "outcome": "failed",
+  "cleanupComplete": true,
+  "counters": {
+    "data": 27,
+    "auth": 5,
+    "create": 2,
+    "delete": 2
+  },
+  "assertions": [
+    {
+      "check": "identity-A",
+      "status": null,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "identity-B",
+      "status": null,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-set-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-get-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-set-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-get-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-A-unchanged",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-unset-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-unset-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-set-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-get-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-set-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-get-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "owner-get_my_profile_name",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-set_my_profile_name",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-get_my_ante_presets",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-set_my_ante_presets",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "direct-name-A",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "direct-name-B",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "direct-private",
+      "status": 406,
+      "code": "PGRST106",
+      "passed": true
+    },
+    {
+      "check": "photo-A",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "photo-anon",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "anonymous-name",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "anonymous-presets",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "final-name-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-preset-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-name-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-preset-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "missing-profile-get",
+      "status": 500,
+      "code": "P0002",
+      "passed": false
+    }
+  ],
+  "failures": [
+    {
+      "phase": "assertions",
+      "fixture": "A",
+      "reason": "assertion_failed",
+      "status": 500,
+      "code": "P0002"
+    },
+    {
+      "phase": "runner",
+      "fixture": null,
+      "reason": "assertion_failed",
+      "status": 500,
+      "code": "P0002"
+    }
+  ],
+  "catalog": "6ecb70845fc10d9d80ba6f43b2810300d934fb6889fe880fde2146ff5d6799a5",
+  "implementation": "6586a21",
+  "preservation": {
+    "tables": 22,
+    "unchanged": true
+  },
+  "fixtures_cleaned": true,
+  "interpretation": "Failed acceptance: missing-profile P0002 correctly returned HTTP500; harness expected404. Both fixtures cleaned; preservation verified. This receipt remains a failed run."
+}

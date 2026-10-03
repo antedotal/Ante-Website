@@ -1,0 +1,19 @@
+{
+  "source": "Exact synthetic inputs from the 2026-09-26 normalizer hosted probe",
+  "fixtures": [
+    { "name": "phone-noise.heic", "mime": "image/heic", "sha256": "b1d7ff650b34610d7476d08b139faae1073ff1733c328f65666567b6f32382aa", "bytes": 6358037, "width": 4032, "height": 3024, "hasAlpha": false },
+    { "name": "phone-noise.jpg", "mime": "image/jpeg", "sha256": "3889df89424cd5ae7f2b58e12ba681d205149ed5c17b57263d35ebbeee037dfd", "bytes": 8685878, "width": 4032, "height": 3024, "hasAlpha": false },
+    { "name": "phone-pattern.png", "mime": "image/png", "sha256": "16b156913f5aedc329a225b237808538e8df89b2b8c22db190cf4daf65caa2ea", "bytes": 19491, "width": 4032, "height": 3024, "hasAlpha": false },
+    { "name": "phone-portrait.png", "mime": "image/png", "sha256": "c11abcc21ba71071c968d635985cf3be6a5e88fd38bd9fbb50b5cc56a4e3f9c8", "bytes": 20831, "width": 3024, "height": 4032, "hasAlpha": false }
+  ],
+  "operator": {
+    "entrypoint": "worker.ts",
+    "moduleType": "esm",
+    "binding": { "type": "images", "name": "IMAGES" },
+    "secretText": "ANTE_IMAGES_PROBE_TOKEN",
+    "plainTextExpiry": "ANTE_IMAGES_PROBE_EXPIRES_AT",
+    "method": "POST",
+    "path": "/probe",
+    "tokenHeader": "x-ante-images-probe-token"
+  }
+}

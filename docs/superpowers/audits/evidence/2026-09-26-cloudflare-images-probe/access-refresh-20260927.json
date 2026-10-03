@@ -1,0 +1,32 @@
+{
+  "checkedAt": "2026-09-27T11:43:49.165890+00:00",
+  "accountId": "5af41de7e4953ebc3d99f3ec07803736",
+  "cli": {
+    "version": "4.139.0",
+    "loggedIn": false
+  },
+  "connectorRead": {
+    "workers": [],
+    "antePagesProject": "ante-website",
+    "anteDomains": [
+      "ante-website.pages.dev",
+      "antedotal.com",
+      "www.antedotal.com"
+    ],
+    "zoneId": "de319241db3b178216ee2d05ba556509",
+    "zoneStatus": "active",
+    "workersSubdomain": "walihavish"
+  },
+  "upload": {
+    "worker": "ante-images-probe-20260926",
+    "sourceCommit": "0c9f865",
+    "moduleHashesVerified": true,
+    "freshSecretAndExpiry": true,
+    "success": false,
+    "error": "No access to the specified resource."
+  },
+  "postAttemptWorkers": [],
+  "fixturesSent": 0,
+  "resourcesCreatedConfirmed": 0,
+  "next": "Existing intended-account Wrangler login request remains pending; do not repeat connector upload without changed access."
+}

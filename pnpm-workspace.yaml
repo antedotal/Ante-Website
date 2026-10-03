@@ -1,0 +1,13 @@
+# Use the pnpm 10 policy recognized by Cloudflare to install only required native build tooling.
+onlyBuiltDependencies:
+  - esbuild
+  - sharp
+  - unrs-resolver
+  - workerd
+# These unused CLI installers must not download or self-update binaries during a website build.
+ignoredBuiltDependencies:
+  - rclone.js
+  - supabase
+minimumReleaseAgeExclude:
+  - miniflare@5.20260923.0-alpha
+  - wrangler@4.139.0

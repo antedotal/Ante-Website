@@ -1,0 +1,57 @@
+{
+  "sampleCount": 221,
+  "profileWindowMs": 511.114,
+  "sampledActiveMs": 324.295,
+  "sampledGcMs": 33.638,
+  "sampledIdleMs": 149.325,
+  "topLeafFunctions": [
+    {
+      "name": "wasm-function[6]",
+      "sampledMs": 55.336
+    },
+    {
+      "name": "g2",
+      "sampledMs": 52.524
+    },
+    {
+      "name": "wasm-function[8]",
+      "sampledMs": 45.259
+    },
+    {
+      "name": "",
+      "sampledMs": 41.996
+    },
+    {
+      "name": "read",
+      "sampledMs": 28.679
+    },
+    {
+      "name": "(program)",
+      "sampledMs": 25.597
+    },
+    {
+      "name": "wasm-function[214]",
+      "sampledMs": 18.078
+    },
+    {
+      "name": "pipeThrough",
+      "sampledMs": 15.23
+    },
+    {
+      "name": "wasm-function[9]",
+      "sampledMs": 12.05
+    },
+    {
+      "name": "_IncrementalCache",
+      "sampledMs": 6.013
+    },
+    {
+      "name": "wasm-function[215]",
+      "sampledMs": 5.997
+    },
+    {
+      "name": "parseUrl",
+      "sampledMs": 3.963
+    }
+  ]
+}
