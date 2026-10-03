@@ -97,6 +97,7 @@ Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` permits the
 - `pnpm-lock.yaml` is the sole dependency lockfile. The stale npm lockfile described Next 16.1.1 and omitted the Worker and account dependencies, contradicting the actual manifest. `start.sh` now performs only a frozen pnpm install and does not install or upgrade ESLint independently.
 - This branch builds for Cloudflare Workers with `pnpm run build:worker`, using the installed OpenNext 1.20.6 and Wrangler 4.139.0. The current Pages command `npx @cloudflare/next-on-pages@1` creates a separate unpinned npm dependency tree: next-on-pages 1.13.16 requires Workers types v4, whereas the selected Wrangler requires v5. That adapter also only supports Next 14.3.0 through 15.5.2 and Edge routes, so bypassing its peer checks cannot support this Next 16 backend.
 - The existing production Pages deployment stays live. Worker previews use the separate Worker configuration and `worker-entry.mjs`, including its static decoder WASM imports. `.open-next/assets` is the Worker's asset directory, not a complete Pages deployment. Backend serving gates remain separate from build validation.
+- Workers Builds is connected to `antedotal/Ante-Website` on `codex/shared-web-account`, root `/`, with `pnpm run build:worker` and `pnpm exec wrangler versions upload`. Cloudflare stores the explicitly approved build token; no credential value is tracked. Other branches do not trigger this connection. Uploading versions preserves the active backend Worker and the production Pages site on `main`.
 
 ---
 
