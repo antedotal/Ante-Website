@@ -16,7 +16,6 @@
     "test:acceptance:mediated": "node --test --test-concurrency=1 scripts/acceptance/hosted-profile-photo-mediated.test.mjs scripts/acceptance/hosted-profile-photo-mediated-http.test.mjs scripts/acceptance/hosted-profile-photo-mediated-cleanup.test.mjs scripts/acceptance/hosted-profile-photo-mediated-sql.test.mjs scripts/acceptance/hosted-profile-photo-mediated-port.test.mjs"
   },
   "dependencies": {
-    "@fontsource/google-sans-flex": "^5.2.4",
     "@jsquash/jpeg": "1.6.0",
     "@jsquash/png": "3.1.1",
     "@radix-ui/react-icons": "^1.3.2",

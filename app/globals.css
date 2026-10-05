@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import "lenis/dist/lenis.css";
 
 :root {
   --font-google-sans: "Google Sans Flex", sans-serif;
@@ -11,35 +12,39 @@
   --font-sans: var(--font-google-sans);
   --font-serif: var(--font-google-sans);
 
-  --color-background: #003949;
+  /* Primary blue brand theme tokens updated to #4A8B9F */
+  --color-background: #4A8B9F;
   --color-foreground: #ffffff;
 
-  --color-primary: #003949;
+  --color-primary: #4A8B9F;
   --color-primary-foreground: #ffffff;
 
   --color-secondary: #f3f4f6;
   --color-secondary-foreground: #1f2937;
 
-  --color-accent: #003949;
+  --color-accent: #4A8B9F;
   --color-accent-foreground: #ffffff;
 }
 
 /* Custom Utilities */
 @layer utilities {
   .font-serif-custom {
-    /* Display font for headings and hero copy. */
+    /* Display font for headings and hero copy: width 125 with roundness 50 */
     font-family: var(--font-google-sans);
+    font-variation-settings: "wdth" 125, "ROND" 50;
   }
 
   .font-sans-flex {
-    /* Body font with a clean, neutral feel. */
+    /* Body font with roundness 50 */
     font-family: var(--font-google-sans);
+    font-variation-settings: "ROND" 50;
   }
 
   .font-immersive {
-    /* Interactive brand mark with subtle typography motion. */
+    /* Interactive brand mark with subtle typography motion: width 125 with roundness 50 */
     font-family: var(--font-google-sans);
     font-optical-sizing: auto;
+    font-variation-settings: "wdth" 125, "ROND" 50;
     transition: letter-spacing 0.35s cubic-bezier(0.22, 1, 0.36, 1), color 0.35s cubic-bezier(0.22, 1, 0.36, 1);
   }
 
@@ -48,9 +53,10 @@
   }
 
   .font-subheading {
-    /* Secondary headline styling for supporting copy. */
+    /* Secondary headline styling for supporting copy: width 125 with roundness 50 */
     font-family: var(--font-google-sans);
     font-optical-sizing: auto;
+    font-variation-settings: "wdth" 125, "ROND" 50;
     letter-spacing: -0.01em;
   }
 
@@ -78,12 +84,28 @@
   animation: gradient 3s linear infinite;
 }
 
+/* Base typography: body copy defaults to ROND 50 */
 body {
   color: var(--color-foreground);
   overflow-x: hidden;
   font-family: var(--font-google-sans);
   font-variation-settings: "ROND" 50;
   letter-spacing: 0.01em;
+}
+
+/* Emphasised text elements: titles, main headings, and subheadings apply wdth 125 and ROND 50 */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+[role="heading"],
+.font-serif-custom,
+.font-subheading,
+.font-immersive,
+.font-heading {
+  font-variation-settings: "wdth" 125, "ROND" 50;
 }
 
 /* Hide all scrollbars site-wide while preserving scroll functionality. */
@@ -162,20 +184,20 @@ html {
   --radius-2xl: calc(var(--radius) + 8px);
   --radius-3xl: calc(var(--radius) + 12px);
   --radius-4xl: calc(var(--radius) + 16px);
-  --color-background: var(--background);
+  --color-background: #4A8B9F;
   --color-foreground: var(--foreground);
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
   --color-popover: var(--popover);
   --color-popover-foreground: var(--popover-foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: #4A8B9F;
+  --color-primary-foreground: #ffffff;
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: #4A8B9F;
+  --color-accent-foreground: #ffffff;
   --color-destructive: var(--destructive);
   --color-border: var(--border);
   --color-input: var(--input);
@@ -261,20 +283,20 @@ html {
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: #4A8B9F;
   --foreground: oklch(0.145 0 0);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
+  --primary: #4A8B9F;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
   --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
+  --accent: #4A8B9F;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.577 0.245 27.325);
   --border: oklch(0.922 0 0);
   --input: oklch(0.922 0 0);
@@ -301,14 +323,14 @@ html {
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
   --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
+  --primary: #4A8B9F;
+  --primary-foreground: #ffffff;
   --secondary: oklch(0.269 0 0);
   --secondary-foreground: oklch(0.985 0 0);
   --muted: oklch(0.269 0 0);
   --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
+  --accent: #4A8B9F;
+  --accent-foreground: #ffffff;
   --destructive: oklch(0.704 0.191 22.216);
   --border: oklch(1 0 0 / 10%);
   --input: oklch(1 0 0 / 15%);
@@ -335,5 +357,21 @@ html {
 
   body {
     @apply bg-background text-foreground;
+    font-family: var(--font-google-sans);
+    font-variation-settings: "ROND" 50;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6,
+  [role="heading"],
+  .font-serif-custom,
+  .font-subheading,
+  .font-immersive,
+  .font-heading {
+    font-variation-settings: "wdth" 151, "ROND" 50;
   }
 }

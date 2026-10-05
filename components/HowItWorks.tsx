@@ -27,31 +27,26 @@ export function HowItWorks() {
     () => [
       {
         title: "Add your friends as verifiers",
-        description: "Invite your friends to keep you honest and call out the excuses.",
         image: addFriendsMockup,
         bg: stepBg1,
       },
       {
         title: "Set the Ante",
-        description: "Put real money on the line so your goals feel urgent.",
         image: paymentHoldMockup,
         bg: stepBg2,
       },
       {
         title: "Do the damn task",
-        description: "Follow through. Knock it out. No loopholes.",
         image: inTaskMenu,
         bg: stepBg3,
       },
       {
         title: "Submit proof",
-        description: "Upload a photo or receipt so your verifier can check it.",
         image: getVerifiedOrPay,
         bg: stepBg1,
       },
       {
         title: "Get verified (or pay)",
-        description: "If they approve, you keep your cash. If not, you pay up.",
         image: taskFailed,
         bg: stepBg2,
       },
@@ -79,9 +74,6 @@ export function HowItWorks() {
       return;
     }
 
-    // Cleanup for wheel event listener (assigned inside the desktop branch).
-    let wheelCleanup: (() => void) | null = null;
-
     const context = gsap.context(() => {
       if (isMobile) {
         // Mobile: simple fade-in per step, no pin/scrub.
@@ -99,164 +91,56 @@ export function HowItWorks() {
           });
         });
       } else {
-        // Desktop: pinned scroll — left column stays fixed in place,
-        // only the active step highlights as the user scrolls.
-        // Right media viewport crossfades in sync.
+        // Desktop: pinned scroll with continuous scrubbed timeline.
+        // Direct scrubbed tweens provide native-refresh 60/120fps crossfades without frame drops,
+        // discrete jumps, or auto-snap conflicts.
         if (!mediaTrack) return;
 
         const cards = gsap.utils.toArray<HTMLDivElement>("[data-how-card]");
         const media = gsap.utils.toArray<HTMLDivElement>("[data-how-media]");
         const numbers = gsap.utils.toArray<HTMLSpanElement>("[data-how-number]");
-        const descriptions = gsap.utils.toArray<HTMLParagraphElement>("[data-how-desc]");
-        let activeIndex = -1;
 
-        // Enough scroll distance to move through all steps comfortably.
-        const scrollDistance = cards.length * 250;
-
-        // Initialize: first step active, rest dimmed.
+        // Set initial state: step 0 active, rest dimmed.
         gsap.set(cards, { opacity: 0.25 });
         gsap.set(cards[0], { opacity: 1 });
-        gsap.set(numbers, { color: "rgba(0, 164, 198, 0.15)" });
-        gsap.set(numbers[0], { color: "rgba(0, 164, 198, 0.80)" });
-        gsap.set(descriptions, { opacity: 0.5 });
-        gsap.set(descriptions[0], { opacity: 1 });
-        gsap.set(media, { autoAlpha: 0 });
-        gsap.set(media[0], { autoAlpha: 1 });
-        activeIndex = 0;
+        gsap.set(numbers, { color: "rgba(74, 139, 159, 0.20)" });
+        gsap.set(numbers[0], { color: "rgba(74, 139, 159, 0.90)" });
+        gsap.set(media, { autoAlpha: 0, scale: 0.97 });
+        gsap.set(media[0], { autoAlpha: 1, scale: 1 });
 
-        // Empty timeline — we only use the ScrollTrigger callbacks,
-        // not timeline-driven transforms, since the left side is static.
+        // Scroll distance to give each step comfortable breathing room.
+        const scrollDistance = (cards.length - 1) * 350;
+
         const tl = gsap.timeline({
           scrollTrigger: {
-            trigger: pinSection,
-            start: "top top",
+            trigger: sectionRef.current,
+            start: "center center",
             end: `+=${scrollDistance}`,
-            scrub: true,
-            pin: pinSection,
+            scrub: 0.8,
+            pin: true,
             anticipatePin: 1,
-            onUpdate: (self) => {
-              const index = Math.min(
-                Math.floor(self.progress * cards.length),
-                cards.length - 1
-              );
-              if (index === activeIndex) return;
-              activeIndex = index;
-
-              // Dim all step cards, then highlight the active one.
-              gsap.to(cards, {
-                opacity: 0.25,
-                duration: 0.35,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-              gsap.to(cards[index], {
-                opacity: 1,
-                duration: 0.4,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-
-              // Dim all descriptions, highlight active.
-              gsap.to(descriptions, {
-                opacity: 0.5,
-                duration: 0.35,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-              gsap.to(descriptions[index], {
-                opacity: 1,
-                duration: 0.4,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-
-              // Mute all numbers, highlight active.
-              gsap.to(numbers, {
-                color: "rgba(0, 164, 198, 0.15)",
-                duration: 0.35,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-              gsap.to(numbers[index], {
-                color: "rgba(0, 164, 198, 0.80)",
-                duration: 0.4,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-
-              // Crossfade media images with a subtle upward shift for emphasis.
-              gsap.to(media, {
-                autoAlpha: 0,
-                y: 12,
-                scale: 0.98,
-                duration: 0.35,
-                ease: NATURAL_EASE,
-                overwrite: true,
-              });
-              gsap.fromTo(
-                media[index],
-                { autoAlpha: 0, y: 20, scale: 0.97 },
-                {
-                  autoAlpha: 1,
-                  y: 0,
-                  scale: 1,
-                  duration: 0.5,
-                  ease: NATURAL_EASE,
-                  overwrite: true,
-                }
-              );
-            },
           },
         });
 
-        // --- Inertia removal ---
-        // Intercept wheel events while the pinned section is active to prevent
-        // trackpad/mouse momentum from accidentally skipping steps.
-        // Batches all wheel deltas per animation frame, caps the applied amount,
-        // and discards excess — killing momentum buildup entirely.
-        // 10% transition zones at entry and exit preserve seamless native scrolling.
-        const st = tl.scrollTrigger!;
+        // Add smooth sequential crossfades across the 5 steps
+        for (let i = 0; i < cards.length - 1; i++) {
+          const stepTl = gsap.timeline();
 
-        // Exit transition zone boundary (last 10% of final card's progress).
-        const exitStart = 1 - (1 / cards.length) * 0.1;
+          // Fade out current step
+          stepTl.to(cards[i], { opacity: 0.25, duration: 1, ease: "power1.inOut" }, 0);
+          stepTl.to(numbers[i], { color: "rgba(74, 139, 159, 0.20)", duration: 1, ease: "power1.inOut" }, 0);
+          stepTl.to(media[i], { autoAlpha: 0, scale: 0.97, duration: 1, ease: "power1.inOut" }, 0);
 
-        // Max pixels to scroll per animation frame — caps speed to prevent skipping.
-        const MAX_FRAME_DELTA = 35;
-        let pendingDelta = 0;
-        let rafScheduled = false;
+          // Fade in next step
+          stepTl.to(cards[i + 1], { opacity: 1, duration: 1, ease: "power1.inOut" }, 0.2);
+          stepTl.to(numbers[i + 1], { color: "rgba(74, 139, 159, 0.90)", duration: 1, ease: "power1.inOut" }, 0.2);
+          stepTl.to(media[i + 1], { autoAlpha: 1, scale: 1, duration: 1, ease: "power1.inOut" }, 0.2);
 
-        const onWheel = (e: WheelEvent) => {
-          if (!st.isActive) return;
+          // Hold duration on current step before beginning next transition
+          stepTl.to({}, { duration: 0.5 });
 
-          const progress = st.progress;
-
-          // Exit transition zone: allow native scroll for seamless departure.
-          // No entry zone — momentum from above is killed as soon as the pin engages.
-          if (progress > exitStart) return;
-
-          // Active zone — take over scroll to remove inertia.
-          e.preventDefault();
-          pendingDelta += e.deltaY;
-
-          if (!rafScheduled) {
-            rafScheduled = true;
-            requestAnimationFrame(() => {
-              // Clamp the batched delta to cap scroll speed.
-              const clamped =
-                Math.sign(pendingDelta) *
-                Math.min(Math.abs(pendingDelta), MAX_FRAME_DELTA);
-              window.scrollBy(0, clamped);
-              // Discard excess delta — this kills momentum/inertia buildup.
-              pendingDelta = 0;
-              rafScheduled = false;
-            });
-          }
-        };
-
-        window.addEventListener("wheel", onWheel, { passive: false });
-        wheelCleanup = () => {
-          window.removeEventListener("wheel", onWheel);
-        };
+          tl.add(stepTl);
+        }
       }
 
       ScrollTrigger.refresh();
@@ -264,7 +148,6 @@ export function HowItWorks() {
 
     return () => {
       context.revert();
-      wheelCleanup?.();
     };
   }, [steps.length, isMobile]);
 
@@ -276,12 +159,11 @@ export function HowItWorks() {
       id="how-it-works"
       ref={sectionRef}
       data-cursor-color="#1a1a1a"
-      className="relative px-4 sm:px-6 pt-10 sm:pt-14 md:pt-18 pb-16 sm:pb-24 md:pb-36 bg-[#FAFBFC] text-[#1a1a1a]"
+      className="relative px-4 sm:px-6 py-12 md:py-20 min-h-screen bg-[#FAFBFC] text-[#1a1a1a] flex items-center justify-center"
     >
-      <div className="container mx-auto max-w-6xl">
-        {/* Pinned container: title + grid both pin together so the heading stays visible during scroll-lock.
-            Top padding ensures the title clears the fixed navbar when pinned to viewport top. */}
-        <div ref={pinRef} className="pt-16 sm:pt-20">
+      <div className="container mx-auto max-w-6xl w-full">
+        {/* Pinned container: title + grid both pin together at viewport center */}
+        <div ref={pinRef} className="py-4 md:py-8 flex flex-col justify-center w-full">
           {/* Section header — inside pinRef so it stays visible when pinned */}
           <div className="text-center mb-4 lg:mb-8">
             <h2 className="text-3xl sm:text-4xl md:text-6xl font-serif-custom font-semibold">
@@ -298,49 +180,48 @@ export function HowItWorks() {
                   <article
                     key={step.title}
                     data-how-card
-                    className="relative pl-12 sm:pl-16 py-2"
+                    className="relative flex items-start lg:items-center gap-4 sm:gap-6 py-3 sm:py-4"
                   >
-                    {/* Large step number */}
+                    {/* Dedicated step number column — guarantees zero overlap with text */}
                     <span
                       data-how-number
-                      className="absolute left-0 top-2 text-4xl sm:text-5xl font-serif-custom font-bold text-[#00A4C6]/15 leading-none select-none transition-colors duration-300"
+                      className="w-14 sm:w-18 shrink-0 text-3xl sm:text-4xl lg:text-5xl font-serif-custom font-bold text-[#4A8B9F]/20 leading-none select-none transition-colors duration-300 pt-0.5 lg:pt-0"
                     >
                       {formatNumber(index)}
                     </span>
 
-                    <h3 className="text-lg sm:text-xl font-serif-custom font-semibold mb-0.5">
-                      {step.title}
-                    </h3>
-                    <p data-how-desc className="text-sm sm:text-base text-[#1a1a1a]/60 leading-snug">
-                      {step.description}
-                    </p>
+                    <div className="flex-1 min-w-0">
+                      <h3 className="text-xl sm:text-2xl font-serif-custom font-semibold text-[#1a1a1a]">
+                        {step.title}
+                      </h3>
+
+                      {/* Inline step image visible only on mobile (below lg) */}
+                      <div className="relative mt-6 overflow-hidden rounded-2xl lg:hidden">
+                        {/* Gradient backdrop to mask shadow edges */}
+                        <Image
+                          src={step.bg}
+                          alt=""
+                          fill
+                          quality={60}
+                          className="object-cover"
+                          aria-hidden="true"
+                        />
+                        <Image
+                          src={step.image}
+                          alt={step.title}
+                          width={1040}
+                          height={1280}
+                          quality={90}
+                          sizes="(max-width: 640px) 180vw, 1040px"
+                          className="relative w-full h-auto object-cover"
+                        />
+                      </div>
+                    </div>
 
                     {/* Connector line between steps (not on last step) */}
                     {index < steps.length - 1 && (
-                      <div className="absolute left-6 sm:left-8 top-[calc(100%+0px)] w-px h-4 bg-[#1a1a1a]/10" />
+                      <div className="absolute left-7 sm:left-9 top-[calc(100%-2px)] w-px h-5 bg-[#1a1a1a]/10" />
                     )}
-
-                    {/* Inline step image visible only on mobile (below lg) */}
-                    <div className="relative mt-6 overflow-hidden rounded-2xl lg:hidden">
-                      {/* Gradient backdrop to mask shadow edges */}
-                      <Image
-                        src={step.bg}
-                        alt=""
-                        fill
-                        quality={60}
-                        className="object-cover"
-                        aria-hidden="true"
-                      />
-                      <Image
-                        src={step.image}
-                        alt={step.title}
-                        width={1040}
-                        height={1280}
-                        quality={90}
-                        sizes="(max-width: 640px) 180vw, 1040px"
-                        className="relative w-full h-auto object-cover"
-                      />
-                    </div>
                   </article>
                 ))}
               </div>

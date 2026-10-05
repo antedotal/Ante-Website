@@ -1,0 +1,166 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #root {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #ffffff;
+        }
+        .bg-canvas {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 50% 45%, #003a4a 0%, #002530 45%, #00151c 80%, #000d12 100%);
+          z-index: 0;
+        }
+        .ambient-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(140px);
+          pointer-events: none;
+          opacity: 0.65;
+        }
+        .orb-center {
+          width: 800px;
+          height: 800px;
+          top: 50%;
+          left: 50%;
+          margin-top: -400px;
+          margin-left: -400px;
+          background: radial-gradient(circle, rgba(0, 164, 198, 0.45) 0%, rgba(35, 101, 151, 0) 70%);
+        }
+        .grid-overlay {
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+          background-size: 64px 64px;
+          opacity: 0.7;
+          z-index: 1;
+        }
+        .outro-container {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          text-align: center;
+          padding: 80px 140px;
+        }
+        .logo-icon-lg {
+          width: 150px;
+          height: 150px;
+          margin-bottom: 28px;
+          border-radius: 36px;
+          box-shadow: 0 0 90px rgba(0, 210, 248, 0.5);
+        }
+        .brand-title-lg {
+          font-size: 110px;
+          font-weight: 900;
+          letter-spacing: -0.04em;
+          line-height: 1;
+          margin-bottom: 18px;
+          background: linear-gradient(180deg, #ffffff 40%, #94a3b8 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+        }
+        .brand-tagline-lg {
+          font-size: 40px;
+          font-weight: 700;
+          color: #38bdf8;
+          margin-bottom: 16px;
+          letter-spacing: -0.01em;
+        }
+        .brand-sub-lg {
+          font-size: 26px;
+          color: #cbd5e1;
+          margin-bottom: 38px;
+          max-width: 780px;
+          line-height: 1.4;
+        }
+        .cta-pills {
+          display: flex;
+          align-items: center;
+          gap: 20px;
+        }
+        .primary-btn {
+          padding: 18px 46px;
+          border-radius: 9999px;
+          background: #ffffff;
+          color: #002530;
+          font-size: 22px;
+          font-weight: 800;
+          box-shadow: 0 10px 30px rgba(255, 255, 255, 0.25);
+        }
+        .secondary-pill {
+          padding: 18px 36px;
+          border-radius: 9999px;
+          background: rgba(255, 255, 255, 0.08);
+          border: 1px solid rgba(255, 255, 255, 0.22);
+          color: #e2e8f0;
+          font-size: 22px;
+          font-weight: 700;
+        }
+      </style>
+
+      <div
+        id="root"
+        data-composition-id="outro"
+        data-width="1920"
+        data-height="1080"
+        data-duration="4.5"
+      >
+        <div class="bg-canvas"></div>
+        <div class="ambient-orb orb-center" data-layout-allow-overflow></div>
+        <div class="grid-overlay"></div>
+
+        <div class="outro-container">
+          <img id="s4-logo" class="logo-icon-lg" src="assets/images/logoicon.png" alt="Ante Logo" />
+          <h2 id="s4-brand" class="brand-title-lg">Ante</h2>
+          <div id="s4-tagline" class="brand-tagline-lg">The Social Task Manager</div>
+          <p id="s4-sub" class="brand-sub-lg">
+            Stop procrastinating. Start doing.<br />
+            Put skin in the game and crush your university goals.
+          </p>
+          <div id="s4-cta" class="cta-pills">
+            <div class="primary-btn">Join the Waitlist</div>
+            <div class="secondary-pill">ante.app</div>
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const tl = gsap.timeline({ paused: true });
+
+        // Logo & Title Entrance
+        tl.fromTo("#s4-logo", { opacity: 0, scale: 0.6, y: 30 }, { opacity: 1, scale: 1, y: 0, duration: 0.65, ease: "back.out(1.5)" }, 0.2);
+        tl.fromTo("#s4-brand", { opacity: 0, y: 25 }, { opacity: 1, y: 0, duration: 0.55, ease: "power3.out" }, 0.45);
+        tl.fromTo("#s4-tagline", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.7);
+        tl.fromTo("#s4-sub", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.95);
+        tl.fromTo("#s4-cta", { opacity: 0, y: 20, scale: 0.95 }, { opacity: 1, y: 0, scale: 1, duration: 0.55, ease: "back.out(1.4)" }, 1.2);
+
+        // Beat-locked Logo Bloom at 3.02s local (= 17.02s global strong cue, synced with impactBell_heavy_000.ogg)
+        tl.to("#s4-logo", {
+          scale: 1.1,
+          duration: 0.18,
+          yoyo: true,
+          repeat: 1,
+          ease: "power2.out"
+        }, 3.02);
+
+        window.__timelines["outro"] = tl;
+        tl.seek(0);
+      </script>
+    </template>
+  </body>
+</html>

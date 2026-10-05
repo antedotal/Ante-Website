@@ -1,0 +1,236 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+  </head>
+  <body>
+    <template>
+      <style>
+        #root {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+          color: #ffffff;
+        }
+        .bg-canvas {
+          position: absolute;
+          inset: 0;
+          background: radial-gradient(circle at 70% 35%, #003a4a 0%, #002530 40%, #00151c 80%, #000d12 100%);
+          z-index: 0;
+        }
+        .ambient-orb {
+          position: absolute;
+          border-radius: 50%;
+          filter: blur(120px);
+          pointer-events: none;
+          opacity: 0.55;
+        }
+        .orb-2 {
+          width: 650px;
+          height: 650px;
+          bottom: -150px;
+          left: -100px;
+          background: radial-gradient(circle, rgba(74, 139, 159, 0.4) 0%, rgba(0, 30, 40, 0) 70%);
+        }
+        .grid-overlay {
+          position: absolute;
+          inset: 0;
+          background-image: linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                            linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+          background-size: 64px 64px;
+          opacity: 0.7;
+          z-index: 1;
+        }
+        .scene-container {
+          position: absolute;
+          inset: 0;
+          z-index: 2;
+          display: grid;
+          grid-template-columns: 1.15fr 0.85fr;
+          align-items: center;
+          gap: 80px;
+          padding: 80px 140px;
+        }
+        .badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          padding: 10px 22px;
+          border-radius: 9999px;
+          background: rgba(0, 164, 198, 0.18);
+          border: 1px solid rgba(0, 190, 230, 0.45);
+          color: #38bdf8;
+          font-size: 19px;
+          font-weight: 700;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-bottom: 24px;
+        }
+        .badge-dot {
+          width: 10px;
+          height: 10px;
+          border-radius: 50%;
+          background: #00d2f8;
+          box-shadow: 0 0 12px #00d2f8;
+        }
+        .headline-huge {
+          font-size: 82px;
+          font-weight: 800;
+          line-height: 1.05;
+          letter-spacing: -0.03em;
+          color: #ffffff;
+          margin-bottom: 24px;
+        }
+        .headline-accent {
+          color: #38bdf8;
+          text-shadow: 0 0 35px rgba(56, 189, 248, 0.35);
+        }
+        .subtitle-lg {
+          font-size: 30px;
+          line-height: 1.4;
+          color: #e2e8f0;
+          max-width: 680px;
+        }
+        .stakes-grid {
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          gap: 18px;
+          margin-top: 36px;
+          max-width: 620px;
+        }
+        .stake-card {
+          padding: 22px 16px;
+          border-radius: 20px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.12);
+          text-align: center;
+        }
+        .stake-card.active {
+          background: rgba(0, 164, 198, 0.24);
+          border: 2px solid #00d2f8;
+          box-shadow: 0 0 30px rgba(0, 210, 248, 0.35);
+        }
+        .stake-val {
+          font-size: 36px;
+          font-weight: 800;
+          color: #ffffff;
+        }
+        .stake-card.active .stake-val {
+          color: #38bdf8;
+        }
+        .stake-sub {
+          font-size: 15px;
+          color: #94a3b8;
+          margin-top: 4px;
+          font-weight: 600;
+        }
+        .stake-card.active .stake-sub {
+          color: #e0f2fe;
+        }
+        .phone-wrapper {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          position: relative;
+        }
+        .phone-glow {
+          position: absolute;
+          inset: -20px;
+          background: radial-gradient(circle, rgba(0, 180, 220, 0.35) 0%, transparent 70%);
+          border-radius: 60px;
+          filter: blur(35px);
+          z-index: 0;
+        }
+        .phone-img {
+          position: relative;
+          z-index: 1;
+          max-height: 820px;
+          width: auto;
+          border-radius: 46px;
+          box-shadow: 0 35px 80px -15px rgba(0, 0, 0, 0.85),
+                      0 0 0 1px rgba(255, 255, 255, 0.15);
+        }
+      </style>
+
+      <div
+        id="root"
+        data-composition-id="stakes"
+        data-width="1920"
+        data-height="1080"
+        data-duration="5.0"
+      >
+        <div class="bg-canvas"></div>
+        <div class="ambient-orb orb-2" data-layout-allow-overflow></div>
+        <div class="grid-overlay"></div>
+
+        <div class="scene-container">
+          <div id="s2-text-col">
+            <div id="s2-badge" class="badge">
+              <span class="badge-dot"></span>
+              Step 01 — Set The Stakes
+            </div>
+            <h2 class="headline-huge">
+              Put real money <br />
+              <span class="headline-accent">on the line.</span>
+            </h2>
+            <p id="s2-subtitle" class="subtitle-lg">
+              Pay for your laziness, literally. Select your stake so your goals feel urgent and impossible to ignore.
+            </p>
+            <div class="stakes-grid">
+              <div id="s2-stake-5" class="stake-card">
+                <div class="stake-val">$5</div>
+                <div class="stake-sub">Light nudge</div>
+              </div>
+              <div id="s2-stake-10" class="stake-card active">
+                <div class="stake-val">$10</div>
+                <div class="stake-sub">Locked in</div>
+              </div>
+              <div id="s2-stake-20" class="stake-card">
+                <div class="stake-val">$20</div>
+                <div class="stake-sub">Midterm prep</div>
+              </div>
+              <div id="s2-stake-50" class="stake-card">
+                <div class="stake-val">$50</div>
+                <div class="stake-sub">No excuses</div>
+              </div>
+            </div>
+          </div>
+
+          <div id="s2-phone-col" class="phone-wrapper">
+            <div class="phone-glow" data-layout-allow-overflow></div>
+            <img class="phone-img" src="assets/images/payment_hold_mockup.png" alt="Payment Hold Mockup" />
+          </div>
+        </div>
+      </div>
+
+      <script>
+        const tl = gsap.timeline({ paused: true });
+
+        // Entrance
+        tl.fromTo("#s2-badge", { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.45, ease: "power2.out" }, 0.1);
+        tl.fromTo("#s2-text-col h2", { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.55, ease: "power2.out" }, 0.2);
+        tl.fromTo("#s2-subtitle", { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }, 0.35);
+        tl.fromTo("#s2-phone-col", { opacity: 0, x: 70, scale: 0.95 }, { opacity: 1, x: 0, scale: 1, duration: 0.7, ease: "power3.out" }, 0.25);
+
+        // Stakes cards sequential reveal
+        tl.fromTo("#s2-stake-5", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.4)" }, 0.5);
+        tl.fromTo("#s2-stake-10", { opacity: 0, y: 15, scale: 0.92 }, { opacity: 1, y: 0, scale: 1.05, duration: 0.35, ease: "back.out(1.6)" }, 0.7);
+        tl.fromTo("#s2-stake-20", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.4)" }, 0.85);
+        tl.fromTo("#s2-stake-50", { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.35, ease: "back.out(1.4)" }, 1.0);
+
+        // Active pulse (at 1.2s local = 5.0s global, synced with chip SFX, no overlap)
+        tl.to("#s2-stake-10", { scale: 1.15, duration: 0.15, yoyo: true, repeat: 1, ease: "power1.inOut" }, 1.2);
+
+        // Exit
+        tl.to("#s2-text-col", { opacity: 0, y: -25, duration: 0.3, ease: "power2.in" }, 4.7);
+        tl.to("#s2-phone-col", { opacity: 0, scale: 0.94, duration: 0.3, ease: "power2.in" }, 4.7);
+
+        window.__timelines["stakes"] = tl;
+        tl.seek(0);
+      </script>
+    </template>
+  </body>
+</html>

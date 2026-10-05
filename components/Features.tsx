@@ -150,14 +150,13 @@ export function Features() {
     container.addEventListener("wheel", handleWheel, { passive: true });
     container.addEventListener("scroll", handleScroll, { passive: true });
 
-    // Start halfway through the carousel
+    // Start in the middle set (set 1 of [0, 1, 2])
     setTimeout(() => {
       if (container && track && track.children.length >= features.length * 2) {
         const firstChild = track.children[0] as HTMLElement;
         const secondSetFirstChild = track.children[features.length] as HTMLElement;
         const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
-        // Start in the middle of the sets (at the 3rd set)
-        exactScrollLeft = oneSetWidth * 2;
+        exactScrollLeft = oneSetWidth;
         lastProgrammaticScroll = Date.now();
         container.scrollLeft = exactScrollLeft;
       }
@@ -173,14 +172,14 @@ export function Features() {
       const secondSetFirstChild = track.children[features.length] as HTMLElement;
       const oneSetWidth = secondSetFirstChild.offsetLeft - firstChild.offsetLeft;
       
-      // Handle infinite looping in both directions
-      // We have 6 sets. We want to keep the scroll position between set 2 and set 4.
-      // We do this even when scrolling so the user never hits the end
-      if (container.scrollLeft >= oneSetWidth * 3) {
+      // Handle infinite looping in both directions across 3 sets:
+      // When reaching set 2 (end of set 1), wrap back by subtracting one set width.
+      // When scrolling left past set 0, wrap forward by adding one set width.
+      if (container.scrollLeft >= oneSetWidth * 2) {
         exactScrollLeft = container.scrollLeft - oneSetWidth;
         lastProgrammaticScroll = Date.now();
         container.scrollLeft = exactScrollLeft;
-      } else if (container.scrollLeft <= oneSetWidth) {
+      } else if (container.scrollLeft <= 0) {
         exactScrollLeft = container.scrollLeft + oneSetWidth;
         lastProgrammaticScroll = Date.now();
         container.scrollLeft = exactScrollLeft;
@@ -242,8 +241,9 @@ export function Features() {
           ref={trackRef}
           className="flex gap-4 md:gap-8 px-4 md:px-[max(1.5rem,calc((100vw-72rem)/2+1.5rem))]"
         >
-          {/* Render cards 6 times for seamless infinite loop even on ultrawide screens */}
-          {[...features, ...features, ...features, ...features, ...features, ...features].map((feature, i) => (
+          {/* Render cards 3 times for seamless infinite loop (left buffer, active center, right buffer)
+              while minimizing total DOM nodes and image decoding overhead. */}
+          {[...features, ...features, ...features].map((feature, i) => (
             <article
               key={`${feature.title}-${i}`}
               className="w-[65vw] max-w-[280px] sm:min-w-70 md:min-w-105 shrink-0"
@@ -259,13 +259,8 @@ export function Features() {
                 />
               </div>
 
-              {/* Feature label */}
-              <span className="text-[10px] md:text-sm uppercase tracking-[0.15em] text-[#00A4C6] font-medium">
-                {feature.label}
-              </span>
-
               {/* Feature title */}
-              <h3 className="text-lg md:text-2xl font-serif-custom font-semibold text-[#1a1a1a] mt-1 md:mt-2">
+              <h3 className="text-lg md:text-2xl font-serif-custom font-semibold text-[#1a1a1a]">
                 {feature.title}
               </h3>
 
