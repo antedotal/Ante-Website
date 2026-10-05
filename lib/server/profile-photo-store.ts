@@ -35,12 +35,13 @@ function authHeaders(key: string, bearer?: string): Record<string, string> {
   return { apikey: key, ...(bearer ? { Authorization: `Bearer ${bearer}` } : {}) }
 }
 
-// Accept only the published resolver union before deriving a private Storage key.
+// Accept only the published scalar resolver union before deriving a private Storage key.
+// Its exact PostgREST singleton item metadata is distinct from partial image bytes.
 async function resolvePhoto(url: string, publicKey: string, ownerId: string, callerToken: string, signal?: AbortSignal): Promise<{ kind: 'current'; assetId: string } | { kind: 'legacy' } | { kind: 'not_found' } | { kind: 'unavailable' }> {
   const result = await boundedProviderRequest(`${url}/rest/v1/rpc/resolve_profile_photo_v1`, {
     method: 'POST', headers: { ...authHeaders(publicKey, callerToken), 'content-type': 'application/json', accept: 'application/json' },
     body: JSON.stringify({ p_owner: ownerId }), cache: 'no-store', redirect: 'error',
-  }, jsonCap, { signal })
+  }, jsonCap, { signal, allowPostgrestSingletonRange: true })
   if (!result || result.response.status !== 200 || !isJson(result.response)) return unavailable
   const body = jsonBody(result.bytes)
   if (!body) return unavailable
@@ -165,10 +166,11 @@ export async function readSelectedProfilePhoto(selection: CurrentPhotoSelection,
   try {
     const { url } = accountConfig()
     const headers = authHeaders(credential.key, credential.bearer ? credential.key : undefined)
+    // The fixed scalar manifest shares resolver metadata; the object GET stays default-deny.
     const result = await boundedProviderRequest(`${url}/rest/v1/rpc/profile_photo_read_manifest_v1`, {
       method: 'POST', headers: { ...headers, 'content-type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({ p_owner: selection.ownerId, p_asset_id: selection.assetId }), cache: 'no-store', redirect: 'error',
-    }, jsonCap, { signal })
+    }, jsonCap, { signal, allowPostgrestSingletonRange: true })
     if (!result || result.response.status !== 200 || !isJson(result.response)) return unavailable
     const body = jsonBody(result.bytes)
     if (body?.kind === 'not_found' && Object.keys(body).length === 1) return { kind: 'not_found' }

@@ -67,6 +67,7 @@ describe('bounded provider request', () => {
       new Response('', { status: 302, headers: { location: 'https://other.test/' } }),
       new Response('x', { status: 206 }),
       new Response('x', { headers: { 'content-range': 'bytes 0-0/1' } }),
+      new Response('x', { headers: { 'content-range': '0-0/*' } }),
       new Response('x', { headers: { 'content-encoding': 'gzip' } }),
     ]) {
       vi.stubGlobal('fetch', vi.fn(async () => reply))

@@ -1,0 +1,376 @@
+{
+  "classification": "hosted staging deployment succeeded; account/email admission unaccepted",
+  "sourceApplicationCommit": "c32417f1fda7ab12b426ad3f4664bab13a9322d0",
+  "sourceDocumentationCommit": "cf79985fd25c7a75a94a4db8ec885d872d47a74c",
+  "accountId": "5af41de7e4953ebc3d99f3ec07803736",
+  "workerName": "ante-website-backend-preview",
+  "versionId": "f5251860-ba3d-457f-a406-eb2bcef4402f",
+  "etag": "f20c79694122417663b64d103022df7141939b6416c5b9abaf5c9932f1dec569",
+  "canonicalOrigin": "https://ante-website-backend-preview.walihavish.workers.dev",
+  "artifactScan": {
+    "buildExitCode": 0,
+    "artifactFiles": 1426,
+    "internalSymlinks": 24,
+    "totalArtifactBytes": 46700839,
+    "privateValueMatches": 0,
+    "privateCompileKeysPresent": false,
+    "dotenvEnvironmentExportsEmpty": true,
+    "canonicalOrigin": "https://ante-website-backend-preview.walihavish.workers.dev",
+    "canonicalOriginEmbeddedFiles": [
+      ".open-next/assets/_next/static/chunks/0zglkh_ie3yxh.js",
+      ".open-next/middleware/.next/server/chunks/[root-of-the-server]__1yrllwk._.js",
+      ".open-next/middleware/handler.mjs",
+      ".open-next/server-functions/default/.next/server/chunks/[root-of-the-server]__05ckvtn._.js",
+      ".open-next/server-functions/default/.next/server/chunks/[root-of-the-server]__063gjs-._.js",
+      ".open-next/server-functions/default/.next/server/chunks/[root-of-the-server]__0slrt13._.js",
+      ".open-next/server-functions/default/.next/server/chunks/[root-of-the-server]__1yrllwk._.js",
+      ".open-next/server-functions/default/.next/server/chunks/ssr/_08_s5z2._.js",
+      ".open-next/server-functions/default/.next/server/chunks/ssr/_1lbhlap._.js",
+      ".open-next/server-functions/default/handler.mjs"
+    ],
+    "artifactInventorySHA256": "c4c21e9702b5003d154473f84925d6e361b1ec63e9a7e3023644bd4c90271670",
+    "configurationSHA256": "b0235142c475954846596137b1116f4b6f72128183793a2d078fd6cb7c922326"
+  },
+  "uploadInventorySHA256": "e4c79913e81b8c5150a4934bdf22063e499f6a82f5c451ee973fc202f8ddc800",
+  "dryRunUploadKiB": 13856.01,
+  "dryRunGzipKiB": 3218.88,
+  "startupMs": 20,
+  "privateRuntimeSecretNames": [
+    "ANTE_AUTH_LIMIT_HMAC_SECRET",
+    "SUPABASE_SECRET_KEY"
+  ],
+  "operatorModesSet": [],
+  "previewVersionUrlsEnabled": false,
+  "observabilityEnabled": false,
+  "pagesPreserved": {
+    "project": "ante-website",
+    "productionBranch": "main",
+    "productionCommit": "3915a7c1857ecf36e528127eb4629f136d4b32dc",
+    "domains": [
+      "ante-website.pages.dev",
+      "antedotal.com",
+      "www.antedotal.com"
+    ],
+    "buildCommand": "npx @cloudflare/next-on-pages@1",
+    "destination": ".vercel/output/static",
+    "zoneRouteCount": 0
+  },
+  "httpIngress": {
+    "observedAt": "2026-10-01T04:00:04Z",
+    "canonicalOrigin": "https://ante-website-backend-preview.walihavish.workers.dev",
+    "rows": [
+      {
+        "name": "marketing",
+        "method": "GET",
+        "path": "/",
+        "status": 200,
+        "contentType": "text/html; charset=utf-8",
+        "cacheControl": "s-maxage=31536000",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 88741,
+        "bodySHA256": "fc1bea85e20e78eb96908b9e3bfd6fdab63f9a0856e8aae9efc1481bb2f26507",
+        "wallMs": 801,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "static-image",
+        "method": "GET",
+        "path": "/logoicon.png",
+        "status": 200,
+        "contentType": "image/png",
+        "cacheControl": "public, max-age=0, must-revalidate",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 87064,
+        "bodySHA256": "1d3a52fd79ba2edae2baf75a4f3e47823092d03364b830245c395cf71a1c9963",
+        "wallMs": 502,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "framework-image-fallback",
+        "method": "GET",
+        "path": "/_next/image?url=%2Flogoicon.png&w=256&q=75",
+        "status": 200,
+        "contentType": "image/png",
+        "cacheControl": null,
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 87064,
+        "bodySHA256": "1d3a52fd79ba2edae2baf75a4f3e47823092d03364b830245c395cf71a1c9963",
+        "wallMs": 509,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "missing-session-account",
+        "method": "GET",
+        "path": "/account",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 31,
+        "bodySHA256": "9163f42eabe34c6747afe525756dd04e8be5c2571458d78ca404562cc689c572",
+        "wallMs": 540,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "missing-session-profile",
+        "method": "GET",
+        "path": "/api/account/profile",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 31,
+        "bodySHA256": "9163f42eabe34c6747afe525756dd04e8be5c2571458d78ca404562cc689c572",
+        "wallMs": 140,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "malformed-session-profile",
+        "method": "GET",
+        "path": "/api/account/profile",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 31,
+        "bodySHA256": "9163f42eabe34c6747afe525756dd04e8be5c2571458d78ca404562cc689c572",
+        "wallMs": 143,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "closed-photo-read",
+        "method": "GET",
+        "path": "/api/account/profile/photo",
+        "status": 405,
+        "contentType": null,
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 0,
+        "bodySHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "wallMs": 84,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "closed-photo-write",
+        "method": "PUT",
+        "path": "/api/account/profile/photo",
+        "status": 403,
+        "contentType": "application/json",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 26,
+        "bodySHA256": "21c92bc1e8cfc5226b2d0df8dfe3a2ea11c8f773d9f48796ac04c73851ccec01",
+        "wallMs": 238,
+        "fixedPublicBody": {
+          "error": "Invalid origin"
+        }
+      },
+      {
+        "name": "closed-email-change",
+        "method": "POST",
+        "path": "/api/account/email-change/request",
+        "status": 400,
+        "contentType": "application/json",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 27,
+        "bodySHA256": "813fbadb296113682d365bbe15a95a5f30a2344fcb232373e3706e3400427718",
+        "wallMs": 159,
+        "fixedPublicBody": {
+          "error": "Invalid request"
+        }
+      },
+      {
+        "name": "missing-origin-email",
+        "method": "POST",
+        "path": "/auth/email/request",
+        "status": 403,
+        "contentType": "application/json",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 26,
+        "bodySHA256": "21c92bc1e8cfc5226b2d0df8dfe3a2ea11c8f773d9f48796ac04c73851ccec01",
+        "wallMs": 87,
+        "fixedPublicBody": {
+          "error": "Invalid origin"
+        }
+      },
+      {
+        "name": "hostile-origin-email",
+        "method": "POST",
+        "path": "/auth/email/request",
+        "status": 403,
+        "contentType": "application/json",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": null,
+        "setCookieCount": 0,
+        "bytes": 26,
+        "bodySHA256": "21c92bc1e8cfc5226b2d0df8dfe3a2ea11c8f773d9f48796ac04c73851ccec01",
+        "wallMs": 86,
+        "fixedPublicBody": {
+          "error": "Invalid origin"
+        }
+      },
+      {
+        "name": "malformed-email-input",
+        "method": "POST",
+        "path": "/auth/email/request",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 38,
+        "bodySHA256": "fdb625b198be3320c6ab1b1ce8e2c6f04d021738eeed7f0fd3f7d37b2788f918",
+        "wallMs": 88,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "invalid-email-code",
+        "method": "POST",
+        "path": "/auth/email/verify",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 38,
+        "bodySHA256": "fdb625b198be3320c6ab1b1ce8e2c6f04d021738eeed7f0fd3f7d37b2788f918",
+        "wallMs": 264,
+        "fixedPublicBody": null
+      },
+      {
+        "name": "actual-authorized-otp-request",
+        "method": "POST",
+        "path": "/auth/email/request",
+        "status": 503,
+        "contentType": "text/plain;charset=UTF-8",
+        "cacheControl": "private, no-store",
+        "location": null,
+        "retryAfter": "60",
+        "setCookieCount": 0,
+        "bytes": 38,
+        "bodySHA256": "fdb625b198be3320c6ab1b1ce8e2c6f04d021738eeed7f0fd3f7d37b2788f918",
+        "wallMs": 97,
+        "fixedPublicBody": null
+      }
+    ],
+    "actualRequestAccepted": false,
+    "deliveryVerified": false,
+    "sessionVerified": false
+  },
+  "tailDiagnosis": {
+    "tailStopped": true,
+    "rows": [
+      {
+        "keys": [
+          "wallTime",
+          "cpuTime",
+          "truncated",
+          "executionModel",
+          "outcome",
+          "scriptVersion",
+          "scriptName",
+          "diagnosticsChannelEvents",
+          "exceptions",
+          "logs",
+          "eventTimestamp",
+          "event"
+        ],
+        "outcome": "ok",
+        "scriptName": "ante-website-backend-preview",
+        "eventType": null,
+        "httpStatus": 503,
+        "cpuTime": 7,
+        "wallTime": 11,
+        "fixedLogs": [
+          "Auth callback admission unavailable"
+        ],
+        "exceptionNames": []
+      },
+      {
+        "keys": [
+          "wallTime",
+          "cpuTime",
+          "truncated",
+          "executionModel",
+          "outcome",
+          "scriptVersion",
+          "scriptName",
+          "diagnosticsChannelEvents",
+          "exceptions",
+          "logs",
+          "eventTimestamp",
+          "event"
+        ],
+        "outcome": "ok",
+        "scriptName": "ante-website-backend-preview",
+        "eventType": null,
+        "httpStatus": 503,
+        "cpuTime": 64,
+        "wallTime": 67,
+        "fixedLogs": [
+          "Account visitor admission unavailable"
+        ],
+        "exceptionNames": []
+      }
+    ],
+    "stderrBytes": 0,
+    "stdoutBytes": 9089
+  },
+  "supabaseReadOnlySettings": {
+    "projectRef": "yxilmwxptfnebnjsikwo",
+    "customSMTPEnabled": true,
+    "googleEnabled": true,
+    "emailEnabled": true,
+    "emailConfirmationsEnabled": true,
+    "otpLength": 8,
+    "settingsChanged": false,
+    "otpTemplatesAccepted": false
+  },
+  "directSupabaseDiagnostic": {
+    "publicAndServerKeyAuthSettingsStatus": 200,
+    "bothLimiterStatus": 200,
+    "bothLimiterExactAllowedReply": true,
+    "identityResponseBytes": 43,
+    "contentEncoding": null,
+    "credentialShapeValid": true,
+    "hmacAtLeast32Bytes": true
+  },
+  "remainingGates": [
+    "exact ordinary Worker admission cause/correction",
+    "actual authorized OTP delivery",
+    "real Worker session cookies and protected reads",
+    "replay/throttle acceptance",
+    "Google/email linking and browser refresh",
+    "complete private photo pipeline"
+  ],
+  "cloudflareSetup": {
+    "instructionsRead": "https://developers.cloudflare.com/agent-setup/prompt.md",
+    "existingPluginAndWranglerSufficient": true,
+    "globalInstallOrConfigurationChange": false
+  }
+}

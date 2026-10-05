@@ -9,7 +9,7 @@ export function Footer() {
   return (
     <footer
       data-cursor-color="#ffffff"
-      className="bg-[#003949] text-white px-6 py-16 md:py-20"
+      className="bg-[#4A8B9F] text-white px-6 py-16 md:py-20"
     >
       <div className="container mx-auto max-w-6xl flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
         <div className="text-3xl md:text-4xl font-serif-custom">

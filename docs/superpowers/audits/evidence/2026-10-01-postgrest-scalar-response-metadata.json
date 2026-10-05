@@ -1,0 +1,25 @@
+{
+  "classification": "read-only/provider scalar metadata diagnostic; not photo serving or Auth-session acceptance",
+  "projectRef": "yxilmwxptfnebnjsikwo",
+  "noStorageReadOrMutation": true,
+  "rows": [
+    {
+      "fixedRPC": "consume_website_account_limit",
+      "status": 200,
+      "rangeUnit": null,
+      "contentRange": "0-0/*",
+      "contentEncoding": null,
+      "declaredBytes": "43",
+      "actualBytes": 43
+    },
+    {
+      "fixedRPC": "profile_photo_read_manifest_v1",
+      "status": 200,
+      "rangeUnit": null,
+      "contentRange": "0-0/*",
+      "contentEncoding": null,
+      "declaredBytes": "21",
+      "actualBytes": 21
+    }
+  ]
+}

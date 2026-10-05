@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource/google-sans-flex";
 import "./globals.css";
 import { CustomCursor } from "@/components/ui/CustomCursor";
 import { LenisProvider } from "@/components/ui/LenisProvider";
@@ -23,6 +22,14 @@ export const metadata: Metadata = {
   },
 };
 
+/**
+ * RootLayout: Top-level layout providing HTML head setup, CDN fonts,
+ * global styling, and smooth scroll orchestration.
+ *
+ * Performance note:
+ * The previously used fixed fullscreen SVG noise overlay (feTurbulence with mixBlendMode: overlay)
+ * has been removed to resolve GPU compositing bottlenecks and eliminate scroll stutter.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -31,6 +38,19 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        {/* Preconnect links to establish early connections to Google Fonts CDN, preventing layout shifts */}
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link
+          rel="preconnect"
+          href="https://fonts.gstatic.com"
+          crossOrigin="anonymous"
+        />
+        {/* Load Google Sans Flex variable font via Google Fonts CDN with opsz, wdth, wght, and ROND axes (sorted alphabetically per Google Fonts API spec) */}
+        {/* eslint-disable-next-line @next/next/no-page-custom-font */}
+        <link
+          rel="stylesheet"
+          href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..151,1..1000,0..100&display=swap"
+        />
         {/* Material Symbols Rounded — used for the Android download icon */}
         {/* eslint-disable-next-line @next/next/no-page-custom-font */}
         <link
@@ -45,20 +65,11 @@ export default function RootLayout({
           minHeight: '100vh'
         }}
       >
-        {/* Smooth scrolling manager using Lenis. */}
+        {/* Smooth scrolling manager using Lenis synchronized with GSAP. */}
         <LenisProvider />
         {/* Custom cursor follows the pointer and adapts to section colors.
             Set enabled={true} to re-enable the animated dot + ring cursor. */}
         <CustomCursor enabled={false} />
-        {/* Noise overlay */}
-        <div
-          className="fixed inset-0 pointer-events-none"
-          style={{
-            backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='6' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E")`,
-            opacity: '0.10',
-            mixBlendMode: 'overlay'
-          }}
-        />
         <div className="relative z-10">
           {children}
         </div>

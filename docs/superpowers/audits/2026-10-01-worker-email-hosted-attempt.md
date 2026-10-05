@@ -1,0 +1,29 @@
+# Worker and email hosted attempt — 1 October 2026
+
+**Historical initial attempt:** the Worker version documented below was deployed at that time and is not the current version. This audit is superseded by the [corrected Worker audit](2026-10-01-worker-correction-and-next-steps.md), which records the current checkpoint. The original failed request receipt and historical observations below are retained.
+
+The separate staging Worker is deployed at [ante-website-backend-preview.walihavish.workers.dev](https://ante-website-backend-preview.walihavish.workers.dev), version `f5251860-ba3d-457f-a406-eb2bcef4402f`. This attempt does **not** accept account/email functionality: ordinary durable admission returns private 503 before provider Auth. The existing antedotal.com Pages deployment, main source, domains, build settings and zone routes are unchanged.
+
+## Deployed artifact and isolation
+
+The ordinary OpenNext Worker uses accepted application `c32417f1fda7ab12b426ad3f4664bab13a9322d0`, with documentation HEAD `cf79985fd25c7a75a94a4db8ec885d872d47a74c`. Fresh independent review approved the exact private operational configuration. Its SHA256 is `b0235142c475954846596137b1116f4b6f72128183793a2d078fd6cb7c922326`. The canonical staging origin is compiled into the browser/server/proxy bundles and matches runtime configuration. The public-only build passed; all 1,426 ordinary artifact files and seven upload files were scanned for both private runtime values and their encoded forms, without matches. The 24 internal dependency symlinks all resolve within the already scanned build tree. Dotenv-derived environment exports are empty; no app or ancestor dotenv was available to the build.
+
+Strict Wrangler dry-run and deployment passed. Upload is 13,856.01KiB uncompressed / 3,218.88KiB gzip; startup is20ms. Current Cloudflare limits document64MiB uncompressed for both plans and no compressed-size limit, so the historical3MiB assumption is superseded. Actual runtime CPU/memory/egress acceptance remains separate; one cold account denial tail used64ms CPU and a canonical email denial7ms. A successful upload does not establish sustained Workers Free resource suitability. No paid plan or binding was selected.
+
+Wrangler device authorization succeeded for Havish account only, with the previously requested seven scopes. The installed Cloudflare plugin and project Wrangler cover the user's [agent setup instructions](https://developers.cloudflare.com/agent-setup/prompt.md); no duplicate global skills/MCP configuration or optional beta CLI was installed. Public version-preview URLs and observability are disabled. The only private runtime values are the server key and the admission HMAC. Photo serving/publication, email change and financial modes remain unset.
+
+## Actual HTTP observations
+
+Marketing, static PNG and the framework image route returned200. Without an Images binding, the installed OpenNext1.20.6 route serves the original PNG bytes; its87064-byte hash equals direct `/logoicon.png`. Image optimization remains absent. Missing/hostile email Origin returned403 without cookies. Canonical malformed email, invalid code and the authorized recipient's request returned private/no-store503 with Retry-After60 and zero cookies. The authorized `POST /auth/email/request` returned 503 before Auth, so no sign-in code was issued. No delivered code was read, and no authenticated session or test account was created. After the user took over email testing, no further request was made.
+
+Read-only shared Auth configuration confirms custom SMTP, Google and email enabled, email confirmations enabled and eight-digit OTP. No setting changed. Direct server-key Auth settings and both fixed shared admission RPCs pass: exact200 allowed/zero-retry records, unencoded43-byte replies, matching declared length. Local credential shape and HMAC bounds are valid. The ordinary local workerd reproduces the503 under canonical upstream and trusted synthetic ingress. A fresh implementation agent traced this to workerd rejecting `RequestInit.redirect="error"` before transport and is preparing a meaningful runtime regression and the smallest correction. Source correction and independent review are pending; this receipt preserves the failed deployed attempt.
+
+Actual OTP template/delivery, secure SSR cookie exchange, protected account reads, replay/throttling, Google/email identity linking and browser refresh remain open. The authorized recipient is `daniel@antedotal.com`; the currently connected personal Gmail account differs, so an inbox handoff may still be necessary once issuance works. Generic202 must never be reported as delivery.
+
+## Photo capability check
+
+The earlier reviewed Images diagnostic was uploaded unchanged for one available fixed synthetic PNG. It returned200 and4032×3024 became1440×1080JPEG,130977bytes. The three other fixed source fixtures no longer exist locally, so HEIC, large JPEG and portrait/alpha acceptance were not run. The temporary Worker was deleted, then an independent inventory confirmed no remaining Worker and unchanged Pages/routes before deploying the account stage. This is partial binding capability evidence, not a complete normalizer, resource or private-photo pipeline result. [Partial probe receipt](evidence/2026-10-01-cloudflare-images-partial-probe.json).
+
+[Initial deployed attempt receipt](evidence/2026-10-01-worker-email-initial-hosted-attempt.json). [Operational acceptance plan](../plans/2026-10-01-worker-email-hosted-acceptance.md). [Runtime correction plan](../plans/2026-10-01-worker-admission-runtime-fix.md).
+
+References: [Workers limits](https://developers.cloudflare.com/workers/platform/limits/), [Cloudflare Images binding](https://developers.cloudflare.com/images/optimization/binding/). These establish platform constraints; the receipts establish the actual attempt.

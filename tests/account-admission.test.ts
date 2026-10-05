@@ -38,7 +38,7 @@ describe('account visitor admission', () => {
       expect(url).toBe(rpcUrl)
       expect(init?.method).toBe('POST')
       expect(init?.cache).toBe('no-store')
-      expect(init?.redirect).toBe('error')
+      expect(init?.redirect).toBe('manual')
       expect(JSON.parse(String(init?.body))).toEqual({ p_visitor_hash: digest(canonical) })
       expect(JSON.parse(String(init?.body)).p_visitor_hash).not.toBe(createHmac('sha256', secret).update(`website-auth-callback:v1:${canonical}`).digest('hex'))
       const headers = new Headers(init?.headers)

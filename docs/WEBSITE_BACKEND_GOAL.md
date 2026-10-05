@@ -1,6 +1,6 @@
 # Website backend goal
 
-Updated 28 September 2026. Requested scope: Ante-Website backend only.
+Updated 1 October 2026. Requested scope: Ante-Website backend only.
 
 ## Objective
 
@@ -33,7 +33,15 @@ Existing code supports Google sign-in only. The user has now requested email sig
 
 The user removed the previous paused cross-project goal. The website-backend replacement goal was successfully registered as active on 25 September 2026, without a token budget. This document records its scope and acceptance gates.
 
-## Current handoff — 27 September 2026
+## Current handoff — 1 October 2026
+
+The reviewed website source `c32417f1fda7ab12b426ad3f4664bab13a9322d0` is now on remote `develop`. Current Pages production still uses main `3915a7c1857ecf36e528127eb4629f136d4b32dc`. Fresh verification passed **366 application tests and 170 local acceptance tests**, typecheck and authored-source ESLint. Plain lint encountered generated ignored bundles under `.superpowers/`; excluding only that generated directory passed, so the unscoped command is not recorded as green.
+
+Shared Supabase now has the mediated profile-reader privacy prerequisite (migration `20260930145446`, fourteen postconditions and twenty-two unchanged protected row fingerprints) and difficulty-label compatibility (migration `20260930153540`, ten postconditions, twenty-nine preserved NULL labels and the same row preservation). These schema prerequisites activate neither profile routes nor task/proof authority. [Paired current integration evidence and remaining work](../../Ante/docs/superpowers/audits/2026-10-01-supabase-develop-integration.md).
+
+Cloudflare access is verified and the corrected separate preview Worker is running version `60629d28-85b3-476a-b5c3-0cb15bb7cd0a`; Pages/main remains unchanged. The reviewed runtime fix9e17e91 is on website develop06efe61 and passes384 application tests, typecheck, authored lint and the final public-only build. Live anonymous/protected-route denials pass. The exact Auth template/callback update preserves all 240 other settings. At the user's request, actual email delivery/code/session/linking will be tested manually; no OTP was sent or account created. Photo publication/serving and email-change modes remain closed. The proof ledger is a reviewed closed source candidate; originating publication, safe cleanup and mobile cutover still precede hosted authority activation. [Current evidence and ordered next steps](superpowers/audits/2026-10-01-worker-correction-and-next-steps.md). All earlier handoffs below are historical evidence.
+
+## Earlier handoff — 27 September 2026
 
 ### Latest: complete mediated photo reader accepted locally
 
@@ -199,7 +207,7 @@ The paired backend release is now applied as `20260926023351_photo_retention_con
 
 The legacy SQL purge is a no-op. Task/payment-hold hard deletion, protected-table truncation, and client proof-object deletion/overwrite are held. Existing reads/new-object uploads and soft archive remain. No scheduled job was rescheduled, no image or financial row was deleted, and live-money endpoints remain paused. Some account hard-deletion flows are temporarily blocked.
 
-Next required photo work: immutable proof/asset history and protected final-resolution/dispute/financial holds; generation-safe avatar replacement; server-normalized orientation-aware1080p compressed-only storage; bounded exact-key cleanup after seven days for definitively resolved nonfinancial proof. Current review/proof projections remain mutable and service-role Storage bypass still exists. The blanket hold is a precursor, not final retention or compression acceptance. Continue shared schema work in the paired Ante repository, and keep website photo activation closed pending the new contract and hosted acceptance.
+Next required photo work: immutable proof/asset history and protected final-resolution/dispute/financial holds; generation-safe avatar replacement; server-normalized orientation-aware 1080p compressed-only storage; bounded exact-key cleanup after seven days for definitively resolved nonfinancial proof. Current review/proof projections remain mutable and service-role Storage bypass still exists. The blanket hold is a precursor, not final retention or compression acceptance. Continue shared schema work in the paired Ante repository, and keep website photo activation closed pending the new contract and hosted acceptance.
 
 
 ### Photo policy and normalization research — 26 September 2026

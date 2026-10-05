@@ -39,7 +39,7 @@ describe('profile photo provider adapter', () => {
     expect(await putProfilePhoto(owner, photo)).toEqual({ kind: 'ok' })
     const [url, init] = vi.mocked(fetch).mock.lastCall!
     expect(url).toBe(`${origin}/storage/v1/object/${object}`)
-    expect(init).toMatchObject({ method: 'POST', cache: 'no-store', redirect: 'error' })
+    expect(init).toMatchObject({ method: 'POST', cache: 'no-store', redirect: 'manual' })
     expect(new Uint8Array(init?.body as ArrayBuffer)).toEqual(photo.bytes)
     const headers = new Headers(init?.headers)
     expect(headers.get('apikey')).toBe(secret)
@@ -158,10 +158,45 @@ describe('mediated selected-asset integrity', () => {
         expect(headers.get('authorization')).toBe(legacy ? `Bearer ${service}` : null)
       }
       for (const [, init] of transport.mock.calls) {
-        expect(init).toMatchObject({ cache: 'no-store', redirect: 'error' })
+        expect(init).toMatchObject({ cache: 'no-store', redirect: 'manual' })
         for (const name of ['cookie', 'range', 'if-none-match', 'if-modified-since']) expect(new Headers(init.headers).has(name)).toBe(false)
       }
     }
+  })
+
+  it('accepts exact singleton metadata on both fixed caller resolver passes', async () => {
+    const store = await import('../lib/server/profile-photo-store')
+    const singleton = () => {
+      const response = reply({ kind: 'current', asset_id: asset })
+      response.headers.set('content-range', '0-0/*')
+      return response
+    }
+    vi.stubGlobal('fetch', vi.fn(async () => singleton()))
+    const selected = await store.resolveCurrentProfilePhoto(owner, caller)
+    expect(selected.kind).toBe('current')
+    if (selected.kind !== 'current') throw new Error('missing selection')
+    expect(await store.confirmCurrentProfilePhoto(selected.selection, caller)).toEqual({ kind: 'current' })
+  })
+
+  it('accepts exact singleton metadata on the fixed service manifest RPC', async () => {
+    const store = await import('../lib/server/profile-photo-store')
+    const selection = await selectCurrent()
+    const manifest = reply(frozenManifest)
+    manifest.headers.set('content-range', '0-0/*')
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(manifest).mockResolvedValueOnce(bytesReply()))
+    expect(await store.readSelectedProfilePhoto(selection)).toEqual({ kind: 'found', manifest: frozenManifest, bytes: frozenBytes, contentType: 'image/png' })
+  })
+
+  it('keeps singleton range metadata unavailable on Storage and the legacy profile SELECT', async () => {
+    const store = await import('../lib/server/profile-photo-store')
+    const selection = await selectCurrent()
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValueOnce(reply(frozenManifest))
+      .mockResolvedValueOnce(bytesReply(frozenBytes, { 'content-range': '0-0/*' })))
+    expect(await store.readSelectedProfilePhoto(selection)).toEqual({ kind: 'unavailable' })
+    const profile = reply([{ id: owner }])
+    profile.headers.set('content-range', '0-0/*')
+    vi.stubGlobal('fetch', vi.fn(async () => profile))
+    expect(await store.photoOwnerProfile(owner, caller)).toEqual({ kind: 'unavailable' })
   })
 
   it('denies legacy, malformed and absent selections without loading the photo-read credential or starting service I/O', async () => {

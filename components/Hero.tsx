@@ -40,14 +40,14 @@ export function Hero() {
           stagger: 0.15,
         }
       );
-      // App mockup fades and slides in from the right
+      // App mockup entrance: slides in smoothly along the X axis without suppressing opacity
+      // to 0 or adding a delay. Keeping initial opacity at 1 ensures the Largest Contentful Paint (LCP)
+      // element is painted immediately during the initial render rather than blocked by animation delays.
       if (mockupRef.current) {
         gsap.from(mockupRef.current, {
-          opacity: 0,
-          x: 60,
-          duration: 1.1,
+          x: 40,
+          duration: 0.9,
           ease: NATURAL_EASE,
-          delay: 0.3,
         });
       }
     }, sectionRef);
@@ -102,7 +102,7 @@ export function Hero() {
       <div style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
         <Grainient
           color1="#236597"
-          color2="#003949"
+          color2="#4A8B9F"
           color3="#00b0df"
           timeSpeed={0.25}
           colorBalance={0}
@@ -162,7 +162,7 @@ export function Hero() {
           <div ref={actionRef} className="flex flex-wrap justify-start gap-3">
             <Link
               href="/signup"
-              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
+              className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#4A8B9F] text-base sm:text-lg font-semibold transition-colors duration-200"
             >
               Join Waitlist
               <ArrowRightIcon className="w-5 h-5" />
@@ -172,6 +172,8 @@ export function Hero() {
 
         {/* Right column — app mockup (visible on all breakpoints, overflows grid cell for dramatic size) */}
         <div ref={mockupRef} className="flex items-center justify-center overflow-visible">
+          {/* Hero task list mockup — explicitly marked with priority, high fetchpriority, and eager loading
+              so the browser preloader and render pipeline prioritize downloading and painting this LCP element immediately. */}
           <Image
             src={heroMockup}
             alt="Ante app mockup showing task list"
@@ -179,6 +181,8 @@ export function Hero() {
             sizes="(max-width: 640px) 140vw, (max-width: 1024px) 120vw, 94vw"
             quality={95}
             priority
+            fetchPriority="high"
+            loading="eager"
           />
         </div>
       </div>

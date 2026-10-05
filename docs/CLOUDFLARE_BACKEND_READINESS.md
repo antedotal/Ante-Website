@@ -28,7 +28,7 @@ The separate local Worker build is configured with OpenNext 1.20.6, Next 16.3.3 
 
 A correctly named synthetic auth cookie initially made `getClaims()` throw on a missing JWT expiry and produced a private 500 in the Worker. The proxy now catches thrown verification errors, redirects protected account paths to the configured site's sign-in route, and keeps sign-in reachable. Focused tests cover both paths; the corrected Worker preview result is recorded in the task report.
 
-The existing marketing pages render optimized Next images. OpenNext requires a Cloudflare Images binding or a custom image loader for those requests; Cloudflare Images may incur charges. Neither was enabled in this backend-only preparation, so verify image delivery and choose its resource before any hosted Worker replaces Pages. No R2 cache is configured.
+The marketing pages use Next image routes. Installed OpenNext1.20.6 serves the original bytes when its Images binding is absent; actual staging `/logoicon.png` and `/_next/image` both return200 with identical PNG bytes. Optimized delivery needs a separately selected resource or loader, but an absent binding does not block original-image delivery. No paid Images resource or R2 cache was selected.
 
 1. Finish and independently review callback admission. Trust only the explicit Cloudflare deployment's `cf-connecting-ip`, with no fallback to arbitrary forwarding headers. Reject malformed identity and fail closed when configuration or the durable store is unavailable.
 2. Add pinned, compatible Workers build tooling and configuration. Preserve the existing Pages deployment, marketing files and routes. Do not publish or change DNS as part of local preparation. Keep secrets out of tracked files and assets.
