@@ -112,16 +112,22 @@ Key config files:
 
 - **Tailwind CSS v4** (`tailwindcss` and `@tailwindcss/postcss` in `devDependencies`).
 - Global stylesheet: `app/globals.css`.
-- **Fonts**:
-  - `Google Sans Flex` loaded via `@fontsource/google-sans-flex` in `app/layout.tsx`.
+- **Primary Color Palette**:
+  - The primary blue theme color is `#4A8B9F`.
+  - CSS theme tokens `--color-background`, `--color-primary`, and `--color-accent` are configured to `#4A8B9F` across top-level `@theme`, `@theme inline`, and `:root`/`.dark` layers to prevent token shadowing.
+  - Background gradients, WebGL Grainient color palettes, CTA buttons, and footer elements use `#4A8B9F`.
+  - Top toolbar (`Navbar`): The floating pill toolbar background uses Ante color (`rgba(74, 139, 159, 0.92)` with backdrop blur and subtle border), while brand copy, CTA links, mobile hamburger, and dropdown menu use `#4A8B9F`.
+- **Fonts & Typography**:
+  - `Google Sans Flex` loaded via Google Fonts CDN in `app/layout.tsx` (`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:opsz,wdth,wght,ROND@6..144,25..151,1..1000,0..100&display=swap" />`) with early preconnect links (`fonts.googleapis.com` and `fonts.gstatic.com`). The axes are strictly sorted alphabetically (`opsz,wdth,wght,ROND`) with matching numerical range groups to strictly adhere to the Google Fonts CSS2 API specification. The local `@fontsource/google-sans-flex` import is removed and the package is pruned from `package.json` dependencies.
   - Fonts are exposed as CSS variables (`--font-google-sans`) and applied via classes like `font-sans`, `font-serif-custom`.
+  - Variable font axis configuration:
+    - Base text and body copy default to `"ROND" 50` (roundness axis) on `body` and `.font-sans-flex`.
+    - Emphasised text elements (titles, main headings `h1`–`h6`, `[role="heading"]`, `.font-serif-custom`, `.font-subheading`, `.font-immersive`, `.font-heading`) apply width axis `"wdth" 125` alongside `"ROND" 50`.
 
 **Global theme (from `app/layout.tsx`):**
-- `body` has a teal/blue **diagonal gradient** background:
-  - `linear-gradient(135deg, #003A4A 0%, #003040 33%, #002530 66%, #001A20 100%)`
-- **Noise overlay**:
-  - A full-screen `div` with an inline SVG `feTurbulence` filter creates subtle noise.
-  - Positioned `fixed` with `pointer-events: none`, blended via `opacity` and `mixBlendMode: overlay`.
+- `body` has `#FAFBFC` background with white inset panel and brand styling.
+- **Scroll performance & Noise overlay**:
+  - The previously used fixed fullscreen SVG `feTurbulence` noise overlay (`mixBlendMode: overlay`) has been removed to resolve GPU compositing bottlenecks and eliminate scroll stutter.
 - Base text color: white, with Tailwind utility classes for variations (e.g., `text-white/80`).
 
 ### 2.3 UI, Animations & Visual Libraries
@@ -132,10 +138,16 @@ From `package.json` `dependencies`:
   - `framer-motion`
   - `motion`
   - `gsap`
-  - `lenis` for smooth scrolling behavior
-  - GSAP ScrollTrigger is used for pinned scroll sections and sequential fades.
+  - `lenis` for smooth scrolling behavior:
+    - Core layout, overscroll, and pointer-event rules loaded via `@import "lenis/dist/lenis.css"`.
+    - Synchronized with GSAP ScrollTrigger via `lenis.on('scroll', ScrollTrigger.update)`.
+    - Centered & Smooth Scrubbed Pinning: Both `CopySection` ("You suck at keeping yourself accountable.") and `HowItWorks` ("Let's fix that.") trigger pinning at the vertical middle of the screen (`start: "center center"`). `HowItWorks` runs on a continuous scrubbed GSAP timeline (`scrub: 0.8`) with smooth sequential crossfade transitions between all 5 steps and their paired media mockups, eliminating discrete `onUpdate` pops and auto-snap conflicts with Lenis. In `CopySection`, words illuminate smoothly via direct scrub (`scrub: 0.8`) without disruptive auto-scroll locks.
+    - Dedicated Step Number Columns: In `HowItWorks`, step numbers ("01"–"05") use an independent fixed-width flex column (`w-14 sm:w-18 shrink-0`) separated by a distinct gap (`gap-4 sm:gap-6`), completely preventing glyph overlap with wide variable-width heading titles.
+    - Features ("What else can Ante do?"): Carousel cards render clean imagery directly paired with the headline title and description, with legacy uppercase blue category labels removed.
+    - Lenis smooth scrolling tuned with `lerp: 0.1` for tactile responsiveness, and anchor links in `Navbar` coordinate smoothly via `window.__lenis.scrollTo(element, { offset: -100 })`.
   - A GSAP-driven custom cursor adapts its color based on section data attributes.
 - **3D / visual effects**:
+  - `ogl`: WebGL animated gradient in `components/ui/Grainient.tsx`. Its animation loop uses an `IntersectionObserver` to cleanly pause rendering when offscreen and restart without creating duplicate animation frames or unthrottled WebGL renders. Canvas drawing buffers immediately paint on resize and mount, and `WEBGL_lose_context` is explicitly released on unmount to prevent browser context exhaustion.
   - `three`
   - `@react-three/fiber`
   - `@react-three/drei`
@@ -184,6 +196,17 @@ High-level layout under the repo root:
 - `app/` – Next.js App Router entry point (layouts, pages, global styles).
 
 ### Recent Changes
+
+#### 2026-10-03 — Primary Blue Refresh, Google Sans Flex CDN Typography & Scroll Optimization
+- **Primary Blue (#4A8B9F)**: Refreshed primary blue branding across the site. Updated CSS theme tokens `--color-background`, `--color-primary`, and `--color-accent` to `#4A8B9F` across `@theme`, `@theme inline`, and `:root` custom properties (preventing downstream shadowing from default gray/black values). Updated WebGL Grainient `color2` prop in `Hero.tsx`, `signup/page.tsx`, `terms/page.tsx`, and `privacy/page.tsx` from `#003949` to `#4A8B9F`. Updated `CallToAction.tsx` background/button text and `Footer.tsx` background to `#4A8B9F`.
+- **Google Sans Flex CDN & Variable Axes**: Migrated from local `@fontsource/google-sans-flex` package to Google Fonts CDN with preconnect headers in root `<head>`. Configured CSS `font-variation-settings` so body copy defaults to `"ROND" 50`, and emphasised text elements (titles, main headings, subheadings, `[role="heading"]`, `.font-serif-custom`, `.font-subheading`, `.font-immersive`, `.font-heading`) render with `"wdth" 151` and `"ROND" 50` across both base and utility layers.
+- **Scroll Performance Optimization**:
+  - Removed fixed fullscreen SVG `feTurbulence` filter overlay with `mixBlendMode: overlay` in `app/layout.tsx` to eliminate GPU compositing bottlenecks on scroll.
+  - Imported `lenis/dist/lenis.css` to properly configure `html.lenis` height calculations, iframe pointer-event gating, and overscroll containment.
+  - Synchronized Lenis with GSAP ScrollTrigger and bound Lenis updates to the GSAP ticker (`lagSmoothing(0)`), eliminating duplicate RAF loops and frame conflicts.
+  - Exposed global Lenis reference for smooth programmatic anchor links in `Navbar.tsx` (`lenis.scrollTo`), eliminating scroll-locking conflicts.
+  - Refactored `Grainient.tsx` animation loop with `IntersectionObserver` to prevent duplicate animation frames, reliably pause WebGL rendering when offscreen, redrawing immediately on canvas resize when paused/reduced-motion, and releasing WebGL contexts via `WEBGL_lose_context` on teardown.
+  - Removed wheel event interception in `HowItWorks.tsx` that previously fought with Lenis, eliminating rubber-banding and frame stutter through pinned sections.
 
 #### 2026-02-14 — Features Image Fit Adjustment
 - **Features**: Updated feature card images from `object-cover` to `object-contain` in `components/Features.tsx` so full mockups remain visible inside the fixed `aspect-4/3` frame (no edge cropping).
@@ -688,3 +711,27 @@ Replaced all waitlist/early access CTAs with platform-aware download buttons.
 - **Modified** `components/CallToAction.tsx`:
   - Replaced `ShimmerButton` + `MagneticButton` "Join the waitlist" with a plain "Download the app" button that scrolls to `#download`.
   - Removed `ShimmerButton` and `MagneticButton` imports (no longer used here).
+
+### 11.3 Performance Optimization & Layout Refinements
+
+- **LCP Render Delay Optimization (`components/Hero.tsx`, `components/ui/Grainient.tsx`)**:
+  - Removed `opacity: 0` hiding and the 300ms GSAP entrance delay on `mockupRef.current` in `Hero.tsx`. The mockup element now renders immediately at initial paint without blocking LCP metric calculation.
+  - Added explicit `fetchPriority="high"` and `loading="eager"` attributes to the Hero app mockup `<Image>`.
+  - Deferral of WebGL setup in `Grainient.tsx` via `requestIdleCallback` (with fallback timer) so that WebGL2 context allocation, shader compilation, and synchronous `getBoundingClientRect()` layout calculations do not block the critical rendering path. Added CSS radial gradient fallback on the container for instantaneous paint.
+- **Main Thread Work & Monolithic Hydration Reduction (`app/page.tsx`, `components/Features.tsx`)**:
+  - Code-split below-the-fold components (`CopySection`, `HowItWorks`, `Features`, `CallToAction`, `Footer`) in `app/page.tsx` using `next/dynamic`.
+  - Halved DOM node count and image instances in `Features.tsx` carousel by reducing card sets from 6 (30 cards) to 3 (15 cards), adjusting infinite-scroll wrapping bounds (`oneSetWidth * 2` and `0`) to retain seamless looping with 50% fewer elements.
+- **"How It Works" Subtitle Removal & Layout Cleanup (`components/HowItWorks.tsx`)**:
+  - Removed subtitle description text (`<p data-how-desc>`) under each list item across all 5 steps.
+  - Cleaned up `descriptions` selectors and tweens from the GSAP desktop scrub timeline.
+  - Vertically centered step numbers with step titles on desktop.
+
+### 11.4 Custom 404 Not Found Page (`app/not-found.tsx`)
+
+- **Added & Updated** `app/not-found.tsx` — A dedicated, minimalist 404 error page matching the visual language of the landing page:
+  - Inset card with rounded borders (`rounded-2xl md:rounded-3xl`) and outer white framing filling the viewport.
+  - Full WebGL `Grainient` animated gradient background (`#236597`, `#4A8B9F`, `#00b0df`).
+  - Google Sans Flex font styling (`ROND 50`) and font-serif-custom headline (`wdth 125`).
+  - High-visibility background `404` watermark glyph (`text-white/[0.14]`).
+  - Clean, distraction-free layout with navbar, footer, subtitle, and status pill removed.
+  - Bold, centered headline, primary "Back to Home" button, and secondary "Join Waitlist" action.

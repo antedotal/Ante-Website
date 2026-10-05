@@ -9,7 +9,7 @@ export default function TermsPage() {
       <div style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
         <Grainient
           color1="#236597"
-          color2="#003949"
+          color2="#4A8B9F"
           color3="#00b0df"
           timeSpeed={0.25}
           colorBalance={0}

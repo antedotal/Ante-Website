@@ -1,10 +1,16 @@
+import dynamic from "next/dynamic";
 import { Hero } from "@/components/Hero";
-import { HowItWorks } from "@/components/HowItWorks";
-import { Features } from "@/components/Features";
 import { Navbar } from "@/components/Navbar";
-import { Footer } from "@/components/Footer";
-import { CallToAction } from "@/components/CallToAction";
-import { CopySection } from "@/components/CopySection";
+
+// Dynamically import below-the-fold sections to code-split large client components
+// (GSAP timelines, SVG graphics, horizontal scroll loops, and footer).
+// This reduces the initial JavaScript bundle parsed by V8, preventing monolithic hydration
+// long tasks and eliminating main-thread contention during Largest Contentful Paint (LCP).
+const CopySection = dynamic(() => import("@/components/CopySection").then((m) => m.CopySection));
+const HowItWorks = dynamic(() => import("@/components/HowItWorks").then((m) => m.HowItWorks));
+const Features = dynamic(() => import("@/components/Features").then((m) => m.Features));
+const CallToAction = dynamic(() => import("@/components/CallToAction").then((m) => m.CallToAction));
+const Footer = dynamic(() => import("@/components/Footer").then((m) => m.Footer));
 
 export default function Home() {
   return (

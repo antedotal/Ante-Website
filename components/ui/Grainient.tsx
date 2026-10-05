@@ -237,120 +237,187 @@ export default function Grainient({
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
-
-    /* Set up OGL renderer with WebGL2 context */
-    const renderer = new Renderer({
-      webgl: 2,
-      alpha: true,
-      antialias: false,
-      dpr: Math.min(window.devicePixelRatio || 1, 2),
-    });
-
-    const gl = renderer.gl;
-    const canvas = gl.canvas as HTMLCanvasElement;
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
-    canvas.style.display = "block";
-
     const container = containerRef.current;
-    container.appendChild(canvas);
+    if (!container) return;
 
-    /* Full-screen triangle geometry + shader program */
-    const geometry = new Triangle(gl);
-    const program = new Program(gl, {
-      vertex,
-      fragment,
-      uniforms: {
-        iTime: { value: 0 },
-        iResolution: { value: new Float32Array([1, 1]) },
-        uTimeSpeed: { value: timeSpeed },
-        uColorBalance: { value: colorBalance },
-        uWarpStrength: { value: warpStrength },
-        uWarpFrequency: { value: warpFrequency },
-        uWarpSpeed: { value: warpSpeed },
-        uWarpAmplitude: { value: warpAmplitude },
-        uBlendAngle: { value: blendAngle },
-        uBlendSoftness: { value: blendSoftness },
-        uRotationAmount: { value: rotationAmount },
-        uNoiseScale: { value: noiseScale },
-        uGrainAmount: { value: grainAmount },
-        uGrainScale: { value: grainScale },
-        uGrainAnimated: { value: grainAnimated ? 1.0 : 0.0 },
-        uContrast: { value: contrast },
-        uGamma: { value: gamma },
-        uSaturation: { value: saturation },
-        uCenterOffset: { value: new Float32Array([centerX, centerY]) },
-        uZoom: { value: zoom },
-        uColor1: { value: new Float32Array(hexToRgb(color1)) },
-        uColor2: { value: new Float32Array(hexToRgb(color2)) },
-        uColor3: { value: new Float32Array(hexToRgb(color3)) },
-      },
-    });
+    let cancelled = false;
+    let cleanupFn: (() => void) | null = null;
 
-    const mesh = new Mesh(gl, { geometry, program });
+    /**
+     * init: Asynchronously initializes the WebGL context, shaders, and geometry.
+     * Purpose & Functionality: Deferring WebGL setup via requestIdleCallback avoids blocking
+     * the main thread during initial parsing, layout, and LCP (Largest Contentful Paint) paint.
+     */
+    const init = () => {
+      if (cancelled || !containerRef.current) return;
 
-    /* Resize canvas to match container dimensions */
-    const setSize = () => {
-      const rect = container.getBoundingClientRect();
-      const width = Math.max(1, Math.floor(rect.width));
-      const height = Math.max(1, Math.floor(rect.height));
-      renderer.setSize(width, height);
-      const res = program.uniforms.iResolution.value as Float32Array;
-      res[0] = gl.drawingBufferWidth;
-      res[1] = gl.drawingBufferHeight;
-    };
+      /* Set up OGL renderer with WebGL2 context */
+      const renderer = new Renderer({
+        webgl: 2,
+        alpha: true,
+        antialias: false,
+        dpr: Math.min(window.devicePixelRatio || 1, 2),
+      });
 
-    const ro = new ResizeObserver(setSize);
-    ro.observe(container);
-    setSize();
+      const gl = renderer.gl;
+      const canvas = gl.canvas as HTMLCanvasElement;
+      canvas.style.width = "100%";
+      canvas.style.height = "100%";
+      canvas.style.display = "block";
 
-    /* Animation loop — updates iTime and renders each frame.
-       Pauses when scrolled off-screen via IntersectionObserver.
-       Respects prefers-reduced-motion by rendering a single static frame. */
-    let raf = 0;
-    const t0 = performance.now();
-    let isVisible = true;
+      container.appendChild(canvas);
 
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      /* Full-screen triangle geometry + shader program */
+      const geometry = new Triangle(gl);
+      const program = new Program(gl, {
+        vertex,
+        fragment,
+        uniforms: {
+          iTime: { value: 0 },
+          iResolution: { value: new Float32Array([1, 1]) },
+          uTimeSpeed: { value: timeSpeed },
+          uColorBalance: { value: colorBalance },
+          uWarpStrength: { value: warpStrength },
+          uWarpFrequency: { value: warpFrequency },
+          uWarpSpeed: { value: warpSpeed },
+          uWarpAmplitude: { value: warpAmplitude },
+          uBlendAngle: { value: blendAngle },
+          uBlendSoftness: { value: blendSoftness },
+          uRotationAmount: { value: rotationAmount },
+          uNoiseScale: { value: noiseScale },
+          uGrainAmount: { value: grainAmount },
+          uGrainScale: { value: grainScale },
+          uGrainAnimated: { value: grainAnimated ? 1.0 : 0.0 },
+          uContrast: { value: contrast },
+          uGamma: { value: gamma },
+          uSaturation: { value: saturation },
+          uCenterOffset: { value: new Float32Array([centerX, centerY]) },
+          uZoom: { value: zoom },
+          uColor1: { value: new Float32Array(hexToRgb(color1)) },
+          uColor2: { value: new Float32Array(hexToRgb(color2)) },
+          uColor3: { value: new Float32Array(hexToRgb(color3)) },
+        },
+      });
 
-    if (prefersReducedMotion) {
-      // Render a single static frame and skip the animation loop
-      program.uniforms.iTime.value = 0;
-      renderer.render({ scene: mesh });
-    } else {
+      const mesh = new Mesh(gl, { geometry, program });
+
+      /* Animation loop state & time anchor */
+      let raf = 0;
+      const t0 = performance.now();
+      // Default isVisible to true so initial paint renders immediately without waiting for asynchronous IO callback
+      let isVisible = true;
+
+      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+      /**
+       * render: Draws a single WebGL frame with current time uniform.
+       * Purpose & Functionality: Computes elapsed seconds and invokes OGL renderer.
+       */
+      const render = (time: number) => {
+        program.uniforms.iTime.value = (time - t0) * 0.001;
+        renderer.render({ scene: mesh });
+      };
+
+      /**
+       * loop: Continuously schedules animation frames when visible in viewport.
+       */
       const loop = (t: number) => {
         if (!isVisible) return;
-        program.uniforms.iTime.value = (t - t0) * 0.001;
-        renderer.render({ scene: mesh });
+        render(t);
         raf = requestAnimationFrame(loop);
       };
-      raf = requestAnimationFrame(loop);
-    }
 
-    // Pause/resume the rAF loop based on viewport visibility
-    const io = new IntersectionObserver(([entry]) => {
-      isVisible = entry.isIntersecting;
-      if (isVisible && !prefersReducedMotion) {
-        raf = requestAnimationFrame(function loop(t: number) {
-          if (!isVisible) return;
-          program.uniforms.iTime.value = (t - t0) * 0.001;
-          renderer.render({ scene: mesh });
-          raf = requestAnimationFrame(loop);
-        });
-      }
-    });
-    io.observe(container);
+      /**
+       * startLoop: Starts the animation loop or renders a single frame for reduced motion.
+       */
+      const startLoop = () => {
+        if (prefersReducedMotion) {
+          render(t0);
+          return;
+        }
+        cancelAnimationFrame(raf);
+        raf = requestAnimationFrame(loop);
+      };
 
-    /* Cleanup: stop loop, disconnect observers, remove canvas */
+      /**
+       * stopLoop: Cancels any active requestAnimationFrame callback to pause GPU rendering.
+       */
+      const stopLoop = () => {
+        cancelAnimationFrame(raf);
+        raf = 0;
+      };
+
+      /**
+       * setSize: Resizes canvas and WebGL drawing buffer to match container bounding box.
+       * Also immediately redraws a frame on mount or when static/reduced-motion to prevent blank or stretched frames.
+       */
+      const setSize = () => {
+        const rect = container.getBoundingClientRect();
+        const width = Math.max(1, Math.floor(rect.width));
+        const height = Math.max(1, Math.floor(rect.height));
+        renderer.setSize(width, height);
+        const res = program.uniforms.iResolution.value as Float32Array;
+        res[0] = gl.drawingBufferWidth;
+        res[1] = gl.drawingBufferHeight;
+
+        if (prefersReducedMotion || raf === 0) {
+          render(performance.now());
+        }
+      };
+
+      const ro = new ResizeObserver(setSize);
+      ro.observe(container);
+      setSize();
+
+      // Pause/resume the rAF loop based on viewport visibility
+      const io = new IntersectionObserver(([entry]) => {
+        if (!entry) return;
+        const nextVisible = entry.isIntersecting;
+        if (nextVisible === isVisible) return;
+        isVisible = nextVisible;
+
+        if (isVisible) {
+          startLoop();
+        } else {
+          stopLoop();
+        }
+      });
+      io.observe(container);
+
+      cleanupFn = () => {
+        stopLoop();
+        ro.disconnect();
+        io.disconnect();
+        try {
+          container.removeChild(canvas);
+        } catch {
+          // Canvas may already be removed if component unmounts quickly
+        }
+        try {
+          // Explicitly release WebGL context to prevent browser context exhaustion
+          gl.getExtension("WEBGL_lose_context")?.loseContext();
+        } catch {
+          // Fallback if extension is not supported
+        }
+      };
+    };
+
+    // Schedule initialization when browser is idle to prioritize critical FCP and LCP painting
+    const idleId =
+      typeof window !== "undefined" && "requestIdleCallback" in window
+        ? (window as unknown as { requestIdleCallback: (cb: () => void, opts?: { timeout: number }) => number }).requestIdleCallback(init, { timeout: 150 })
+        : setTimeout(init, 30);
+
+    /* Cleanup: cancel idle task or invoke cleanup function if already initialized */
     return () => {
-      cancelAnimationFrame(raf);
-      ro.disconnect();
-      io.disconnect();
-      try {
-        container.removeChild(canvas);
-      } catch {
-        // Canvas may already be removed if component unmounts quickly
+      cancelled = true;
+      if (typeof window !== "undefined" && "cancelIdleCallback" in window && typeof idleId === "number") {
+        (window as unknown as { cancelIdleCallback: (id: number) => void }).cancelIdleCallback(idleId);
+      } else {
+        clearTimeout(idleId as unknown as NodeJS.Timeout);
+      }
+      if (cleanupFn) {
+        cleanupFn();
       }
     };
   }, [
@@ -381,7 +448,13 @@ export default function Grainient({
   return (
     <div
       ref={containerRef}
-      style={{ width: "100%", height: "100%", position: "relative", overflow: "hidden" }}
+      style={{
+        width: "100%",
+        height: "100%",
+        position: "relative",
+        overflow: "hidden",
+        background: `radial-gradient(ellipse at 50% 50%, ${color2} 0%, ${color1} 60%, ${color3} 100%)`,
+      }}
       className={className}
     />
   );

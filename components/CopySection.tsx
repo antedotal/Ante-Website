@@ -49,7 +49,8 @@ export function CopySection() {
                     start: "center center",
                     end: "+=100%",
                     pin: true,
-                    scrub: 0.5,
+                    anticipatePin: 1,
+                    scrub: 0.8,
                 }
             });
         }, sectionRef);
@@ -62,7 +63,7 @@ export function CopySection() {
             ref={sectionRef}
             id="why-ante"
             data-cursor-color="#1a1a1a"
-            className="relative px-4 sm:px-6 pt-24 sm:pt-32 md:pt-40 pb-12 sm:pb-16 md:pb-20 bg-[#FAFBFC] text-[#1a1a1a] flex items-center justify-center"
+            className="relative px-4 sm:px-6 py-16 sm:py-24 md:py-32 min-h-screen bg-[#FAFBFC] text-[#1a1a1a] flex items-center justify-center"
         >
             <div ref={innerRef} className="container mx-auto max-w-3xl text-justify">
                 <WordSplitter>

@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en" data-resolution="landscape">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <title>Ante Launch Video</title>
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <style>
+      *, *::before, *::after {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #001217;
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+        overflow: hidden;
+      }
+      [data-composition-id="root"] > div[data-composition-src] {
+        position: absolute;
+        inset: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <div
+      id="root"
+      data-composition-id="root"
+      data-width="1920"
+      data-height="1080"
+      data-duration="18.5"
+    >
+      <!-- Scene 1: The University Struggle & Hook -->
+      <div
+        id="el-intro"
+        data-composition-id="intro"
+        data-composition-src="compositions/intro.html"
+        data-start="0"
+        data-duration="3.8"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 2: Putting Money on the Line (The Ante) -->
+      <div
+        id="el-stakes"
+        data-composition-id="stakes"
+        data-composition-src="compositions/stakes.html"
+        data-start="3.8"
+        data-duration="5.0"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 3: Social Accountability & Proof -->
+      <div
+        id="el-proof"
+        data-composition-id="proof"
+        data-composition-src="compositions/proof.html"
+        data-start="8.8"
+        data-duration="5.2"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Scene 4: Outro & Call to Action -->
+      <div
+        id="el-outro"
+        data-composition-id="outro"
+        data-composition-src="compositions/outro.html"
+        data-start="14.0"
+        data-duration="4.5"
+        data-track-index="1"
+        data-width="1920"
+        data-height="1080"
+      ></div>
+
+      <!-- Root Audio Layer: Music + Synced SFX -->
+      <audio
+        id="bg-music"
+        src="assets/music/happy-beats-business-moves-vol-1-by-ende-dot-app.mp3"
+        data-start="0"
+        data-duration="18.5"
+        data-track-index="10"
+        data-volume="0.34"
+      ></audio>
+
+      <!-- SFX: Card slide entrance in Scene 2 -->
+      <audio
+        id="sfx-card"
+        src="assets/sfx/casino/card-slide-1.ogg"
+        data-start="3.8"
+        data-duration="0.60"
+        data-track-index="11"
+        data-volume="0.75"
+      ></audio>
+
+      <!-- SFX: Chip placed on $10 stake selection -->
+      <audio
+        id="sfx-chip"
+        src="assets/sfx/casino/chip-lay-1.ogg"
+        data-start="5.0"
+        data-duration="0.17"
+        data-track-index="12"
+        data-volume="0.80"
+      ></audio>
+
+      <!-- SFX: UI selection click in Scene 3 -->
+      <audio
+        id="sfx-click"
+        src="assets/sfx/interface/click_001.ogg"
+        data-start="9.0"
+        data-duration="0.10"
+        data-track-index="13"
+        data-volume="0.75"
+      ></audio>
+
+      <!-- SFX: Verification success in Scene 3 -->
+      <audio
+        id="sfx-success"
+        src="assets/sfx/casino/chips-collide-1.ogg"
+        data-start="11.5"
+        data-duration="0.26"
+        data-track-index="14"
+        data-volume="0.80"
+      ></audio>
+
+      <!-- SFX: Outro Brand Bell (Beat-locked to 17.02s strong beat cue) -->
+      <audio
+        id="sfx-bell"
+        src="assets/sfx/impact/impactBell_heavy_000.ogg"
+        data-start="17.02"
+        data-duration="1.48"
+        data-track-index="15"
+        data-volume="0.85"
+      ></audio>
+    </div>
+
+    <script>
+      window.__timelines["root"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

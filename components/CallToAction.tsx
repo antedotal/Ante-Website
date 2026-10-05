@@ -72,7 +72,7 @@ export function CallToAction() {
     <section
       ref={sectionRef}
       data-cursor-color="#ffffff"
-      className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden bg-[#003949]"
+      className="py-24 sm:py-32 md:py-40 px-4 sm:px-6 text-center relative overflow-hidden bg-[#4A8B9F]"
     >
       {/* Subtle radial glow on matching background */}
       <div
@@ -104,7 +104,7 @@ export function CallToAction() {
         <div ref={buttonRef} className="flex justify-center">
           <Link
             href="/signup"
-            className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#003949] text-base sm:text-lg font-semibold transition-colors duration-200"
+            className="inline-flex items-center gap-2 px-8 py-4 md:px-10 md:py-5 rounded-full bg-white hover:bg-white/90 text-[#4A8B9F] text-base sm:text-lg font-semibold transition-colors duration-200"
           >
             Join Waitlist
             <ArrowRightIcon className="w-5 h-5" />

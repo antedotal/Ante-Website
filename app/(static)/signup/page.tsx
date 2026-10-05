@@ -7,16 +7,16 @@
  * Collects emails for marketing onboarding via the waitlist Supabase table.
  *
  * Design system:
- * - Grainient background (#236597, #003949, #00b0df) — same as Hero
+ * - Grainient background (#236597, #4A8B9F, #00b0df) — same as Hero
  * - Glassmorphism card (bg-white/5, backdrop-blur, border-white/10)
  * - font-serif-custom for headings, DM Sans for body
- * - Teal accent CTA (#00A4C6) — same as Navbar
+ * - Ante accent CTA (#4A8B9F) — matches Navbar CTA
  */
 
 // Brand Kit Configuration — single source of truth for copy and accent color
 const BRAND_CONFIG = {
   BRAND_NAME: 'Ante',
-  PRIMARY_COLOR: '#00A4C6', // Teal accent — matches Navbar CTA
+  PRIMARY_COLOR: '#4A8B9F', // Ante accent — matches Navbar CTA
   COPY_HEADLINE: 'Be the first to try Ante.',
   COPY_SUBTEXT: 'Join the waitlist and we\'ll email you when we launch — no spam, just an invite.',
 } as const;
@@ -119,7 +119,7 @@ export default function SignUpPage() {
       <div style={{ position: 'fixed', inset: 0, width: '100%', height: '100%', zIndex: 0 }}>
         <Grainient
           color1="#236597"
-          color2="#003949"
+          color2="#4A8B9F"
           color3="#00b0df"
           timeSpeed={0.25}
           colorBalance={0}
@@ -160,7 +160,7 @@ export default function SignUpPage() {
             <div className="mb-4">
               <Link
                 href="/"
-                className="inline-flex items-center opacity-40 hover:opacity-80 transition-opacity h-10 w-10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#00A4C6]"
+                className="inline-flex items-center opacity-40 hover:opacity-80 transition-opacity h-10 w-10 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-[#4A8B9F]"
                 aria-label="Back to home"
               >
                 <ArrowLeft className="h-5 w-5 text-white mx-auto" />
@@ -229,7 +229,7 @@ export default function SignUpPage() {
                     autoCapitalize="off"
                     spellCheck="false"
                     data-1p-ignore
-                    className="w-full rounded-xl sm:rounded-2xl border border-white/[0.12] bg-white/[0.06] px-12 py-4 text-base sm:text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-[#00A4C6]/60 focus:ring-2 focus:ring-[#00A4C6]/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="w-full rounded-xl sm:rounded-2xl border border-white/[0.12] bg-white/[0.06] px-12 py-4 text-base sm:text-sm text-white placeholder:text-white/30 outline-none transition-all focus:border-[#4A8B9F]/60 focus:ring-2 focus:ring-[#4A8B9F]/20 disabled:opacity-50 disabled:cursor-not-allowed"
                   />
                 </div>
                 {/* Honeypot field for bot detection — hidden from real users */}
@@ -282,7 +282,7 @@ export default function SignUpPage() {
                 </motion.div>
               )}
 
-              {/* Join Waitlist button — teal accent, full width */}
+              {/* Join Waitlist button — Ante accent, full width */}
               <motion.div
                 variants={itemVariants}
                 className="mb-8"
@@ -292,7 +292,7 @@ export default function SignUpPage() {
                   disabled={isLoading || success}
                   whileHover={!isLoading && !success ? { scale: 1.02 } : {}}
                   whileTap={!isLoading && !success ? { scale: 0.98 } : {}}
-                  className="flex w-full items-center justify-center gap-2 rounded-xl sm:rounded-2xl px-6 py-4 text-base sm:text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#00A4C6] hover:bg-[#008da8]"
+                  className="flex w-full items-center justify-center gap-2 rounded-xl sm:rounded-2xl px-6 py-4 text-base sm:text-sm font-semibold text-white shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed bg-[#4A8B9F] hover:bg-[#3d7485]"
                 >
                   {isLoading ? (
                     <>
