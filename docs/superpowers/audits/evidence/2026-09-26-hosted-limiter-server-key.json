@@ -1,0 +1,24 @@
+[
+  {
+    "function": "consume_website_callback_limit",
+    "synthetic_digest": "4439b8f7304ed10f809fbf486b87f1c06380830ed6d803d3880f1bf6ab373afa",
+    "calls": 6,
+    "allowed": 5,
+    "denied": 1,
+    "unexpected": 0,
+    "anonymous_status": 401,
+    "elapsed_seconds": 0.51,
+    "pass": true
+  },
+  {
+    "function": "consume_website_account_limit",
+    "synthetic_digest": "e346aaae2d54878afbc0e075da464a22406becf547b2b57c71bd830c458cade7",
+    "calls": 61,
+    "allowed": 60,
+    "denied": 1,
+    "unexpected": 0,
+    "anonymous_status": 401,
+    "elapsed_seconds": 1.08,
+    "pass": true
+  }
+]

@@ -1,0 +1,222 @@
+{
+  "project": "yxilmwxptfnebnjsikwo",
+  "runId": "acd0d275-5f73-40b8-846c-8085c7e089fc",
+  "startedAt": "2026-09-27T02:07:46.025Z",
+  "outcome": "passed",
+  "cleanupComplete": true,
+  "counters": {
+    "data": 28,
+    "auth": 8,
+    "create": 2,
+    "delete": 2
+  },
+  "assertions": [
+    {
+      "check": "identity-A",
+      "status": null,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "identity-B",
+      "status": null,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-set-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-get-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-set-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-get-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "name-A-unchanged",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-unset-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-unset-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-set-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-get-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-set-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "preset-get-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "owner-get_my_profile_name",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-set_my_profile_name",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-get_my_ante_presets",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "owner-set_my_ante_presets",
+      "status": 404,
+      "code": "PGRST202",
+      "passed": true
+    },
+    {
+      "check": "direct-name-A",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "direct-name-B",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "direct-private",
+      "status": 406,
+      "code": "PGRST106",
+      "passed": true
+    },
+    {
+      "check": "photo-A",
+      "status": 403,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "photo-anon",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "anonymous-name",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "anonymous-presets",
+      "status": 401,
+      "code": "42501",
+      "passed": true
+    },
+    {
+      "check": "final-name-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-preset-A",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-name-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "final-preset-B",
+      "status": 200,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "missing-profile-get",
+      "status": 500,
+      "code": "P0002",
+      "passed": true
+    },
+    {
+      "check": "missing-profile-set",
+      "status": 500,
+      "code": "P0002",
+      "passed": true
+    },
+    {
+      "check": "signout-B",
+      "status": null,
+      "code": null,
+      "passed": true
+    },
+    {
+      "check": "revoked-getUser-B",
+      "status": 400,
+      "code": "unclassified",
+      "passed": true
+    },
+    {
+      "check": "revoked-refresh-B",
+      "status": 400,
+      "code": "refresh_token_not_found",
+      "passed": true
+    }
+  ],
+  "failures": [],
+  "catalog": "6ecb70845fc10d9d80ba6f43b2810300d934fb6889fe880fde2146ff5d6799a5",
+  "implementation": "e9cc199",
+  "preservation": {
+    "tables": 22,
+    "unchanged": true
+  },
+  "fixtures_cleaned": true,
+  "scope": "Hosted Auth JWT and account RPC acceptance only, not website/browser/OTP/photo/payment readiness."
+}

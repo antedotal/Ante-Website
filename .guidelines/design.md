@@ -1,4 +1,49 @@
+The mediated HTTP boundary durably records received website 5xx/429 uncertainty together with the completed-response counter before parsing or applying cookies. Rejected, malformed, deleted or foreign-identity session cookies cannot bypass the later bound settlement requirement: initial cleanup leaves admissions untouched and cannot complete. Failed body/transport reads retain their existing uncertainty path; dispatch reservations and observed-versus-reserved semantics are unchanged.
+
+The mediated acceptance journal now uses version 3 and its output receipt version 2. Both retain bounded append-only `directObservations` for all 308 Storage matrix and 16 Data exposure/boundary replies: fixed dispatch descriptors, numeric status, checked `denied|empty_list`, and `capability_unverified` on render rows. They contain no fixture IDs, object URLs or raw provider bodies. Exact unique coverage is mandatory before phase-one success, and reload/history validation rejects duplicate or rewritten evidence. Generic render 400 responses remain capability-unverified. This adds no requests or provider capability claims; older journal schemas fail closed.
+
+The fixed source-only mediated integration in `hosted-profile-photo-mediated-port.mjs` and `hosted-profile-photo-mediated.mjs` now connects the accepted transport, immutable journal, pinned backend Storage adapter and raw-query cleanup. Its one scenario exercises 24 photo requests, 11 complete ordinary Storage matrices (308 denials), 16 Data exposure checks, two generations, refresh, revoke/regrant and clear. Happy-path local synthetic tests consume exactly 1,184 run reservations plus 29 initial-cleanup reservations; no retries, continuation or quota changes are added. Run SQL uses 41 fixed slots, while cleanup owns its independent reservations. Binding receipts and ownership inventories are checked before subsequent mutation. G2 is read while prepared, then published within the existing lease.
+
+Operator CLI inputs have no historical pin defaults: exact private pins/receipt files, current website/backend commits, adapter/postconditions hashes and both local bundle hashes are verified before provider construction. Operational receipts are supplied attestations, never observations of live provider configuration. Credentials, complete sessions and independent cookie jars remain in memory; imports do no provider work. The preparation body and SHA256 are reconstructed exactly from immutable durable run/fixture identities and an intent precedes dispatch. Recovery conservatively marks interrupted website intents uncertain, preserves the original cleanup epoch, and requires a later bound settlement before consuming its one recovery epoch. Receipts permanently mark phase traces, races, browser, resources, profile-deletion and overall acceptance `not_accepted`; synthetic executions remain `not_attested`. Historical runners and ordinary production source/config remain unchanged. The separate preparation wrapper and ordinary bundle still require local build verification, and all hosted prerequisites remain open.
+
 # Ante Website – Design & Tech Stack
+
+The mediated cleanup driver in `scripts/acceptance/hosted-profile-photo-mediated-cleanup.mjs` consumes a raw `dbQuery(statement, {write})`-compatible SQL function and the existing HTTP `dispatch(descriptor, phase)` transport. Its fixed SQL wrapper selects statements by slots 1–20, validates the persisted 300-second epoch and reserves/fsyncs each slot once before dispatch; callers never supply SQL through that wrapper. It binds initial `cleanupStartedAt` before any cleanup dispatch and refuses to replay an already-started epoch after reconstruction. The full two-generation/clear cleanup uses exactly three Auth, six Storage and twenty CLI reservations. `quiescenceReceipt`, when supplied during explicit recovery, is the already-hashed operator settlement object including `sha256`; ordinary operational receipts remain preflight prerequisites.
+
+`hosted-profile-photo-mediated-sql.mjs` supplies exact Auth/profile/reference inventories, friendship transitions, partial-user metadata teardown and admission inspection/deletion. Metadata mutations repeat the catalog, ownership, protected-reference and manifest/revision checks transactionally in publication lock order. Cleanup reconciles committed create/reserve/bind/prepare/publish/clear acknowledgments without reissuing those operations. Full authenticated Storage reads must match the fixture bytes/hash before deletion, and a missing uncertain upload remains blocked. A lost teardown or deletion reply is reconciled through its fixed postcondition slot; it is never treated as rollback or retried inside the epoch. If teardown did not commit after friendship deletion intent was persisted, explicit recovery accepts either exact owned accepted/rejected friendship for guarded deletion while normal run-state checks stay strict. Every Auth ownership inspection compares creation instants at PostgreSQL microsecond precision, accepting equivalent timezone/fraction encodings and rejecting a one-microsecond change even after metadata has been removed. Independently owned Auth branches can finish after another branch fails.
+
+Admission IDs are canonical positive decimal strings within PostgreSQL bigint range, matching the installed identity column without precision loss. UTC microsecond timestamps and immutable row fields are retained in the append-only journal. Cleanup rejects unknown digests/IDs, changed known rows, out-of-interval admissions, nonzero baseline and counts above the reserved cases; exact deletion uses the same digest advisory locks as admission. Scheduled expiry may remove known rows. No scheduler or sequence is reset. Completion requires all 22 row fingerprints and the catalog to match, plus a final owned-state and admission inventory. That inventory is an observation, not proof that in-flight provider work has settled: uncertain website effects remain permanent and require a later bound operator settlement in explicit recovery. The service RPC transform is consistently `synthetic-mediated-reader-v1`. All Task 4 verification uses synthetic transports and the paired disposable PostgreSQL harness; no hosted cleanup or deployment was performed.
+
+
+The source-only mediated HTTP adapter in `scripts/acceptance/hosted-profile-photo-mediated-http.mjs` maps fixed protocol descriptors to pinned Auth, Data, Storage, preparation and website requests. Every dispatch reserves/fsyncs once before network I/O; a private Node HTTPS keep-alive agent avoids ambient proxy/fetch dispatchers and never retries or follows redirects. Fetch and streaming bodies share bounded monotonic deadlines, with separate observed external completions and reserved Worker envelopes. The private HTTPS adapter destroys null-body response streams immediately; only empty, non-transfer-encoded 204 cleanup replies are accepted, so a hidden 205 body cannot drain after the deadline is cleared. Initial cleanup now requires a once-bound durable `cleanupStartedAt`, distinct from the recovery epoch start, so reconstruction cannot reset its 300-second deadline. Task 4 must persist that start before its first cleanup HTTP or CLI reservation. Ownership/absence Storage checks both use exact authenticated full-object GETs; ownership still needs authoritative SQL and exact bytes/hash checks.
+
+`hosted-profile-photo-mediated-cookies.mjs` keeps independent, origin-pinned jars in memory, serializes complete provider sessions with installed SSR chunk utilities, and applies independent Set-Cookie fields atomically under the production path/Secure/SameSite policy. Dispatch validates the supplied jar against the website origin before decoding or cloning it, including induced expiry and the updated-A direct check. Case 10 induces client expiry only; a separately reserved direct A identity check reads the updated cookie token and updates A's in-memory direct session only after identity equality. Installed Supabase JS/Auth JS 2.106.0 and SSR 0.8.0 tests observe two Auth calls for ordinary successful verification and three with refresh; repeated provider failures and late SDK continuations stay within the unchanged 26-per-photo reservation and cannot start network I/O after shared abort. These are synthetic local compatibility and safety checks; full scenario, SQL cleanup, builds and hosted acceptance remain separate gates.
+
+The build-only mediated acceptance entry in `worker-mediated-acceptance-entry.mjs` and `wrangler.mediated-acceptance.jsonc` adds one isolated operator preparation path, `POST /__ante_acceptance/profile-read-digests-v1`. Its handler in `scripts/acceptance/mediated-preparation-worker.mjs` requires a pinned HTTPS origin, run UUID, fixed-length operator token, genuine Cloudflare visitor IP and three distinct fixture UUIDs. It consumes at most 1024 streamed body bytes in two seconds, checking monotonic elapsed time after every read as well as the stall timer, and derives one account visitor plus three photo-read user HMAC digests with the production domains and IP canonicalization. Its fixed ASCII JSON grammar rejects escapes and duplicate keys, so decoded key aliases cannot change the run or fixture fields. It makes no provider call and returns fixed private 404 JSON for invalid input. An absent Origin header is allowed for the fixed Node operator client; every present value, including empty, must match the pin. All other requests pass unchanged to the ordinary Worker entry. The normal `worker-entry.mjs` and `wrangler.jsonc` do not import or configure this path; bundle exclusion and hosted behavior remain final integration checks.
+
+The new source-only mediated hosted acceptance protocol lives in `scripts/acceptance/hosted-profile-photo-mediated-protocol.mjs` and `hosted-profile-photo-mediated.mjs`. It freezes 24 website cases, seven direct Storage views, and the 11 fixed matrix key passes, and reserves a uniform per-photo Worker envelope of 26 Auth, five Data and one Storage calls. A run can reserve 1,184 calls; initial cleanup and one explicit recovery epoch each have their own 29-call ceiling. `reserveDispatch` persists one immutable descriptor and its full counter envelope with an fsync before the caller makes a transport or query call; separately journaled observed counts cannot exceed reservations. Descriptor identity is independent of object key order, so the same operation cannot reserve a second attempt through reordered fields. The private journal rejects torn tails, live/stale locks without explicit recovery, changed pins, rebound identities or digests, counter rollback, repeated operation identities and incomplete or duplicate entries in the 22-table fingerprint. It records the two-generation revision path. An uncertain website dispatch binds an immutable uncertainty timestamp; top-level `cleanup_blocked` retains each fixture, generation, friendship and clear operation's last authority stage. Completion after such uncertainty requires a later operator settlement receipt bound to the same run, origin and deployment in an explicit recovery epoch whose start time cannot move. This is a local protocol and journal only: no credential load, provider call, SQL application or deployment is performed by these modules; the hosted acceptance gate remains open.
+
+The current profile-photo GET route completes the mediated read sequence under the server-only `ANTE_PROFILE_PHOTOS_MODE=mediated-read-v1` gate. A 30-second wall deadline starts before async route parameters and spans visitor admission, fresh initial Auth, user admission, the processing slot, exact caller selection, service manifest, immutable service Storage bytes and hash, full codec/dimension validation, fresh nonrefreshing exact-token Auth, final same-asset caller confirmation and response construction. A later abort or elapsed deadline yields 503, and the slot stays held until started decoding settles. All photo responses and explicit 405s share private no-store browser/CDN headers, `Vary: Cookie`, and no validators or range metadata; the initial verified refresh cookies survive downstream denials. Writes remain closed in every mode, and unset or older read modes deny. This replaces the historical direct caller-Storage rule. Local tests do not establish hosted Worker/cache/session, SQL or decoder resource acceptance; the serving gate remains unset. See `docs/contracts/profile-photos.md`.
+
+Task 2 provides the selected-asset integrity helpers used by the mediated GET route, without enabling hosted serving. `resolveCurrentProfilePhoto` accepts only exact caller resolver records and returns a frozen, internally branded current selection; legacy and not_found deny before any photo-read service credential is loaded. `readSelectedProfilePhoto` uses that owner/asset pair at the fixed service manifest RPC, validates its exact nine-field shape and PostgreSQL bigint revision string, then reads only the derived immutable object key with the existing opaque-secret or legacy-service credential form. The bounded transport checks status, encoding, streamed size and Content-Length; the adapter additionally requires manifest MIME, byte count and SHA-256 equality. Only precise HTTP 400 JSON NoSuchKey/NoSuchBucket replies mean missing. `confirmCurrentProfilePhoto` makes one fresh caller-token resolver request and confirms only the identical asset, without restart. The held route-processing scope performs full codec/dimension attestation. The old direct-download export has been removed; helpers alone do not enable serving.
+
+`reverifyProfilePhotoSession` uses a fresh public-key Supabase JS client with token refresh, persistence and URL-session detection disabled. It invokes only `getUser` with the original checked token, compares the canonical initial identity, and shares a ten-second cap across client initialization and SDK settlement while observing parent abort. Authentication denial or a changed valid identity returns 401; malformed identity, 429 and provider/deadline uncertainty return 503. It receives no cookie adapter and leaves the initial provisional refresh response untouched. The existing initial verification contract is unchanged. The raw photo Auth transport also bounds consecutive empty chunks to 32, discards empty chunks, copies producer buffers, and checks monotonic operation/error-body deadlines after settlement while retaining stall timers and fixed received-error sanitization. These source and synthetic-HTTP tests do not establish Worker CPU limits, hosted cache isolation or real-session compatibility.
+
+Shared server-only provider transport now bounds both fetch and streaming body reads under one monotonic deadline, with a ten-second default, a 16 KiB error-body cap, complete Content-Length checks, an identity-encoding request where the runtime permits it, and closed handling for redirects, partial replies and malformed bodies. Rejected or late streams are cancelled without waiting for cancellation to settle. Immediately ready empty chunks are discarded; a run of more than 32 consecutive empty chunks is denied even if the Worker clock and timer do not advance, with the count reset on nonempty progress. The monotonic deadline is checked after fetch/read settlement and before accepting a result when the clock advances. The photo store uses this transport for its existing resolver, Storage and dormant mutation/profile calls while retaining their receipt contracts. Both fixed admission RPCs use the same transport with a five-second deadline and 16 KiB JSON cap; they still send only their existing visitor digest and service credential and accept only exact two-field, HTTP 200 JSON records. Account visitor and per-user photo admission accept an optional caller signal, and account visitor admission also observes the incoming request signal. The shared transport now supports the mediated route; hosted serving mode remains unset.
+
+The fixed-purpose `scripts/acceptance/hosted-profile-photo-readers.mjs` runner exercises the deployed database/Auth/Storage reader boundary with three confirmed run-owned Auth users, one friendship, one legacy object, three service-RPC-generated immutable objects, and one clear operation. Its default `preflight` is read-only; `run --reviewed` requires explicit catalog, backend commit, and production Storage-adapter hash pins. The runner keeps a private fsynced intent journal outside Git, freezes established identities/manifests and monotonic counters across snapshots, allows exact fixture endpoints and keys only, and attempts guarded cleanup after test assertions. `cleanup --run-id` creates a separately bounded durable recovery epoch and reconciles uncertain Auth creation, service authority RPCs, teardown and deletion without replaying creation or publication. Teardown rejects private preset/quota and Storage ownership references before profile removal and runs the complete per-user inspector before Auth deletion. The website photo mode remains unset; this runner does not verify browser/Worker cookies, CDN/cache or deployed website behavior. See `docs/superpowers/audits/2026-09-27-profile-reader-hosted-operator.md`.
+
+The earlier `generation-read-v1` caller-Storage route and its local receipts are superseded by the mediated current reader above. They remain historical evidence only; `generation-read-v1` now denies.
+
+
+Photo session verification now has one 30-second deadline from entry through SDK initialization, refresh and exact-token `getUser`, with request or supplied caller abort able to end it sooner. Its raw Auth transport accepts only the configured HTTPS project's `/auth/v1` paths, rejects redirects and partial successes, combines request/init/owner aborts and gives each network-plus-body operation at most ten seconds. It buffers and validates successful Auth JSON at 65,536 bytes maximum; error bodies have a 2,048-byte/one-second recognition window before the existing shared sanitizer exposes only fixed errors and its existing revoked-session classification. A known error status survives a body deadline with an empty body; explicit caller abort still fails verification. Failed verification never returns provisional cookies. Cancellation bounds the returned result and prevents later SDK retries from starting new transport calls; an SDK operation or provider request already in progress may still settle after cancellation. This is a local Auth prerequisite, not a route-entry whole-read deadline or mediated reader integration; the photo gate remains unset pending the separate admission, SQL/manifest, two-pass authorization, cache and hosted acceptance work.
+
+The old `private-v1` gate no longer enables reads or fixed-key PUT/DELETE. Cheap write validation remains, but no write route reaches the dormant fixed-key helpers. The old direct-download export has been removed; ordinary direct Storage access must stay denied in the backend.
+
+
+`vitest.config.ts` excludes `scripts/acceptance/**` from `pnpm test` because those files use Node's test runner. `pnpm test:acceptance:local` runs the bounded local acceptance files explicitly, including their disposable PostgreSQL test.
+
+The validator shares a non-reading body assertion so cheap MIME, missing/locked/aborted body and content-length denials precede slot admission; reader acquisition rechecks races. Its private pipeline is reachable only through the shared scope, whose scoped validator permits one call and drains started validation before releasing if a callback returns early. Returned validator bytes belong to the caller after settlement.
 
 ## 1. Project Summary
 
@@ -10,19 +55,63 @@ The codebase is optimized for:
 - Adding **new static routes** (e.g., signup, legal pages).
 - Reusing a growing **library of UI primitives and section components**.
 
+### 1.1 Account session boundary (2026-09-23)
+
+Authenticated `POST /api/account/email-change/request` and `/confirm` now prepare email editing through public Supabase Auth. Both validate canonical same-origin requests and bounded JSON, require the server-only `ANTE_EMAIL_CHANGE_MODE=secure-two-inbox-otp` gate, then consume visitor admission before `getUser()` and a separate fixed five-per-minute per-user/action admission. The request uses `updateUser({email})`; confirmation binds an `email_change` OTP to the verified current/pending `new_email` pair. The route returns generic 202 for semantic request rejection or accepted pending request, 200 pending only after unchanged-pair postflight, and 200 completed only after matching returned user/session plus a fresh target/cleared-pending postflight. Isolated SSR cookie stages preserve verified baseline refreshes while discarding rejected mutation and SDK PKCE writes. Fixed private errors avoid provider/address/code detail. The complete response and operator contract is in `docs/contracts/account-email-change.md`; hosted two-inbox configuration, delivery, pending-field exposure and real browser/Worker cookie acceptance remain open. Keep the operator gate unset until those checks pass.
+
+`GET` and `PATCH /api/account/profile` now expose the signed-in owner's canonical profile name through `get_my_profile_name()` and `set_my_profile_name(p_full_name)` only. The route checks canonical headers, query and bounded PATCH JSON before account visitor admission and `auth.getUser()`. It accepts legacy/null names unchanged on GET, while PATCH applies the SQL name rule and requires the RPC to return the normalized name with a valid nonnull timestamp. The exact output omits all other profile, provider and payment fields. A missing profile is 404 and is not created by this route. Shared verified-session, cookie, provider-error and timestamp helpers in `lib/server/account-session.ts` also serve the preset endpoint. Both routes read PostgREST HTTP 429 from the top-level RPC response status, while Auth error status is read from its error object; verified refresh cookies remain attached to downstream denials. The account-data RPCs use a request-scoped public-key SSR client; the server-only key remains confined to admission. The HTTP contract is in `docs/contracts/account-profile.md`. The mobile companion still needs to read the canonical name RPC; email and private-avatar hosted acceptance remain incomplete. Hosted JWT owner isolation, real browser cookie refresh and direct Cloudflare ingress remain release gates.
+
+Protected `/account` pages and valid GET/PUT preset requests now consume the separate fixed `consume_website_account_limit` admission RPC before SSR construction or Auth verification. It accepts only a server-generated `website-account:v1:` HMAC of the canonical direct Cloudflare visitor IP and allows at most 60 requests per visitor in the shared SQL rolling minute. The callback and email admission RPC and their five-per-minute namespace remain separate. Missing ingress, invalid private credentials, or unavailable admission fails closed with private 503 and `Retry-After: 60`; a validated denial returns private 429 with the store's retry interval. The server-only key is used solely by the fixed admission RPC; account data and session calls continue through a request-scoped public-key SSR client. Preset input and canonical headers are checked before admission. Protected page requests check canonical URL, Host, optional Origin, and forwarded headers before admission; `/account/sign-in` remains a static public entrypoint without server Auth or admission. The proxy matches account pages only, so account API routes admit themselves once. With missing durable ingress a protected page now returns 503 locally rather than the earlier redirect expectation. Local fake-store tests and Worker smoke do not establish hosted ingress or SQL behavior.
+
+The website now has `GET` and `PUT /api/account/ante-presets` for signed-in owners to read and replace AUD task amount preferences. All other supported HTTP methods, including HEAD and OPTIONS, explicitly return a bodyless private 405 with `Allow: GET, PUT` before Auth. PUT accepts exactly three independent integer cents values from 100 through 5000. Both routes verify `auth.getUser()` before calling the authenticated, owner-derived Supabase RPCs. The RPCs impose the 60-read/30-write rolling quota, including direct Data API callers. The website validates full RPC reply shapes and returns private, fixed-error responses. Refreshed SSR cookies are carried onto outcomes after successful identity verification, including later RPC failures; failed identity does not return provisional cookies. `lib/server/account-request.ts` shares canonical origin checks and a 4096-byte JSON reader with email auth without changing its admission-before-body ordering. The HTTP contract and remaining hosted JWT/browser acceptance gate are in `docs/contracts/ante-presets.md`. These are stored preferences, not task-creation or payment enforcement.
+
+The prepared website backend now includes `POST /auth/email/request` and `/auth/email/verify` for public-key Supabase email OTP. Each requires canonical same-origin headers, an admitted Cloudflare IP, a bounded JSON body and a separate HMAC-keyed normalized-email admission before Auth. Request responses are generic 202; verification returns 200 only with a provider user and session and writes private SSR cookies. Both routes use fixed safe errors and no-store headers. Shared cookie options set `Secure` on HTTPS, `SameSite=Lax` and `Path=/` in browser, server, callback and proxy clients. The endpoint contract and provider acceptance limits are in `docs/contracts/email-auth.md`. The email flow is backend preparation only; no email UI or provider configuration has been enabled. The website pins `@supabase/supabase-js` 2.106.0. A real-SDK synthetic-transport test confirms that a first secure email-change confirmation parses as `{user:null,session:null,error:null}` without installing a session; this is pending-only for future email editing, while sign-in still requires both user and session. Hosted two-inbox delivery, secure-change/autoconfirm settings, fresh `getUser().new_email`, SSR cookie behavior and Google/email identity acceptance remain unverified.
+
+The marketing site remains available without account configuration. `/signup` is a marketing waitlist, not an account registration route. The separate `/account/sign-in` route offers Google OAuth only and is intentionally absent from public navigation until provider configuration and native-first/web-first identity checks pass. Apple sign-in, billing, subscriptions, and financial controls are outside this website slice.
+
+Account auth requires `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (or a legacy anon JWT in `NEXT_PUBLIC_SUPABASE_ANON_KEY`), plus `NEXT_PUBLIC_ANTE_SITE_ORIGIN` for the canonical website origin. Set them at website build time from the **same Supabase project as the mobile app**; the current mobile example points at `https://yxilmwxptfnebnjsikwo.supabase.co`. Missing, placeholder, or secret credentials fail closed. Only localhost may use an HTTP site origin. Browser sign-in and the OAuth callback reject requests on a different origin or host before using the code, so untrusted request headers cannot choose a redirect destination. Before deployment, compare the configured website and mobile project URLs and configure Google's provider plus the website `/auth/callback` redirect allow list in that shared project. The source alone cannot confirm those external settings or matching user UUIDs.
+
+`lib/supabase/client.ts` creates the browser cookie client; `lib/supabase/server.ts` creates request-scoped server and callback clients. `lib/supabase/auth-fetch.ts` supplies the server, callback, proxy and isolated-account SSR clients with one Auth-only fetch boundary. For the exact configured Supabase origin and `/auth/v1` path, it replaces thrown transport and failed HTTP details with fixed errors while retaining numeric HTTP status; it also hides malformed successful JSON parse text without consuming a valid success stream. It reads failed Auth bodies only within a small byte/time limit to recognize exact `session_not_found`, then gives the SDK a fixed safe classification so a revoked session and PKCE verifier are cleared. Other errors stay generic. Other project REST/RPC and Storage requests, as well as foreign and lookalike URLs, keep their original responses and rejections so SQL error codes remain available. This was checked with the installed SDK and synthetic transport; hosted provider and browser acceptance remain open. The old `lib/supabase.ts` exists solely for the waitlist and has placeholder fallback values; it is never an account authorization boundary. Next 16 `proxy.ts` matches only account pages, checks canonical request headers and account visitor admission, then verifies claims for refresh, forwards refreshed cookies to both the request and response, and marks responses private/no-store. The static `/account/sign-in` page skips server Auth and admission. Direct invocation of proxy on `/auth/callback` and `/api/account/*` also bypasses Auth work; their routes own admission. `/account` checks verified claims again during dynamic server rendering. `/auth/callback` checks canonical origin and Host first, then consumes shared admission before code validation or client construction. It exchanges one PKCE code after admission, redirects only to `/account`, and returns safe error codes without tokens. A Supabase token-endpoint 429 is returned as 429 with `Retry-After: 60` and a safe log entry. Do not use cookie `getSession().user` for authorization.
+
+If claim verification throws while parsing a malformed account cookie, the proxy redirects protected account paths to the configured site's sign-in route with private/no-store headers. The public sign-in path never invokes server claim verification, so the redirect cannot loop. Normal claim verification remains in place for protected paths, and the account page still independently requires verified claims.
+
+The website callback limiter targets a future direct Cloudflare Worker ingress and an atomic shared Supabase RPC. It is disabled unless `ANTE_AUTH_INGRESS=cloudflare`, a valid single `CF-Connecting-IP`, `ANTE_AUTH_LIMIT_HMAC_SECRET` of at least 32 bytes, and a server-only `SUPABASE_SECRET_KEY` or legacy `SUPABASE_SERVICE_ROLE_KEY` are present. `lib/server/callback-admission.ts` canonicalizes the visitor IP, rejects Worker subrequests and cross-zone sentinel values, and sends only a versioned HMAC digest to `lib/server/callback-limit-store.ts`. The store module is marked `server-only`; it calls the fixed REST RPC on the already-configured Supabase project with a five-second timeout, no caching and no redirects. Missing or invalid public account configuration at the route boundary, missing identity or private configuration, network failure or an invalid RPC result yields the same private/no-store 503 with `Retry-After: 60`. A valid denial yields 429 and the RPC retry interval. Logs use fixed labels and omit visitor data and credentials. The exact RPC and backend obligations are in `docs/contracts/callback-admission.md`.
+
+Cloudflare Pages remains the live static site. The separate `ante-website-backend-preview` Worker is configured through `wrangler.jsonc` and `open-next.config.ts`; it has no route, `workers.dev` URL or public preview URL. `pnpm run build:worker` produces `.open-next/worker.js` and assets, while `pnpm run preview:worker --port 8787` runs the built Worker locally on `127.0.0.1`. OpenNext's Node.js proxy support is experimental. A local preview with a synthetic `http://localhost:8787` canonical origin exercised protected-account and preset 503 denial without ingress, public sign-in 200, hostile origin 403, malformed input 400, and unsupported method 405. Session cookie refresh through a real provider and hosted deployment remain unverified. The paired SQL admission implementation is managed in Ante; these local website checks do not verify its live REST behavior. The Worker must receive requests through direct Cloudflare ingress, with no same-zone Worker rewrite or cross-zone subrequest, and Cloudflare Pseudo IPv4 **Overwrite Headers** disabled. Until Worker deployment, provider redirects and native/web identity checks are verified, the account sign-in route stays unlinked from public marketing. Local fake-store tests do not establish database atomicity or deployed behavior.
+
+The profile-photo validator in `lib/server/profile-photo.ts` is consumed by the gated GET route and remains available for future generation writes. Its `validateProfilePhoto(request)` accepts at most 2 MiB of a streamed JPEG/PNG body within a ten-second read deadline, validates complete format structure and dimensions before full decode, and returns the original bytes, MIME type and dimensions. Early MIME, length and abort denials cancel an attached body without awaiting an untrusted producer. PNG CRCs, IDAT inflation against the expected scanline size, palette/order constraints and final IEND are checked in the wrapper because the pinned codec ignores checksums; a legal empty IDAT adjacent to a complete IDAT stream is accepted. Animated/interlaced PNG and compressed ancillary metadata are unsupported. JPEG preflight walks baseline/progressive frames, scans and final EOI. The pinned JPEG codec can tolerate a premature entropy scan while emitting only a warning, so its instance-local output callbacks turn any decode warning into a generic invalid-image denial without logging the decoder text. Both the validator and codec helper are marked server-only. The exact accepted profile and local acceptance results are in `docs/superpowers/audits/2026-09-26-profile-photo-validator-local-acceptance.md`. `worker-entry.mjs` is a custom entrypoint for the **same** OpenNext Worker, statically importing the pinned jSquash WASM modules and passing them through the request context; `wrangler.jsonc` points at it. The temporary local acceptance route is created and removed only by `scripts/check-profile-photo-worker.mjs`, which uses an allowlisted synthetic environment and refuses local dotenv files. The validator does not authenticate a caller or authorize Storage ownership, and production photo serving remains closed. Local tiny-image success does not establish CPU or isolate-memory safety at 4 million pixels; the JPEG codec can grow its WASM heap well beyond the Worker memory limit, so hosted-plan resource acceptance remains a release gate.
+
+The same probe script's `--overlap` mode temporarily builds distinct holder and contender routes around the production processing scope, checks a shared per-isolate identity, and uses a bounded release barrier to test fail-fast rejection and recovery in the actual local Worker. Its temporary routes and state module are removed before a clean rebuild. The result in `docs/superpowers/audits/2026-09-26-photo-worker-overlap-results.md` establishes only local shared-scope behavior for diagnostic routes and the raw validator. It does not establish hosted behavior, full authenticated route overlap, CPU use, or peak memory; the operator gate remains closed.
+
+The optional `--boundary` mode in that same temporary Worker runner generates offline 2000×2000 PNG RGBA8/RGBA16 and baseline/progressive JPEG, a 2048×1953 PNG, exact and over-cap metadata-padded PNG, and a late bad PNG filter. It checks exact status, dimensions, type, bytes and recovery, records hashes and wall observations, and repeats the largest PNG/JPEG three warm times. The probe uses a per-run nonce, refuses occupied loopback ports, and waits for its owned preview process group to exit before removing the route and rebuilding clean artifacts. A failed first build still triggers source removal and a clean rebuild; if that rebuild also fails, generated build directories are discarded. Both quick and boundary requests observe the same deadline and interruption signal, and an interruption during final cleanup remains a failed run. This is sequential local screening only; profiling, concurrent overlap, hosted CPU and isolate-memory acceptance remain open. The receipt is `docs/superpowers/audits/2026-09-26-photo-boundary-worker-results.md`.
+
+The marketing pages use optimized Next `<Image>` components. OpenNext requires a Cloudflare Images binding or a custom loader for those image URLs; no image binding or paid image service is enabled in this preparation. Image delivery needs a separate deployment decision and check. The current Worker build uses OpenNext's default dummy incremental cache, with no R2 binding.
+
+Dependencies use pnpm and the pinned lockfile. `pnpm-workspace.yaml` permits the `sharp`, `unrs-resolver`, `esbuild` and `workerd` install checks and denies the Supabase CLI and unused `rclone.js` self-update scripts. The account uses `@supabase/ssr` 0.8.0 with `@supabase/supabase-js` pinned exactly to 2.106.0; its cookie setter has no cache-header argument, so the proxy and callback set private/no-store, Expires, and Pragma explicitly. Verification commands are `pnpm test`, `pnpm run typecheck`, `pnpm run lint`, `pnpm run build`, `pnpm run build:worker`, and `pnpm install --frozen-lockfile`.
+
+---
+
+### 1.2 Cloudflare build dependencies (2026-10-03)
+
+- `package.json` pins `pnpm@10.11.1`, matching Cloudflare's build image. The install-script policy now uses `onlyBuiltDependencies` and `ignoredBuiltDependencies`: pnpm 10.11.1 ignored the newer `allowBuilds` setting and skipped required native install checks. The allowed and blocked packages are unchanged. `.node-version` pins the hosted build runtime to Node 22.16.0; the tooling requires Node >=22.
+- `pnpm-lock.yaml` is the sole dependency lockfile. The stale npm lockfile described Next 16.1.1 and omitted the Worker and account dependencies, contradicting the actual manifest. `start.sh` now performs only a frozen pnpm install and does not install or upgrade ESLint independently.
+- This branch builds for Cloudflare Workers with `pnpm run build:worker`, using the installed OpenNext 1.20.6 and Wrangler 4.139.0. The current Pages command `npx @cloudflare/next-on-pages@1` creates a separate unpinned npm dependency tree: next-on-pages 1.13.16 requires Workers types v4, whereas the selected Wrangler requires v5. That adapter also only supports Next 14.3.0 through 15.5.2 and Edge routes, so bypassing its peer checks cannot support this Next 16 backend.
+- The existing production Pages deployment stays live. Worker previews use the separate Worker configuration and `worker-entry.mjs`, including its static decoder WASM imports. `.open-next/assets` is the Worker's asset directory, not a complete Pages deployment. Backend serving gates remain separate from build validation.
+- Workers Builds is connected to `antedotal/Ante-Website` on `codex/shared-web-account`, root `/`, with `pnpm run build:worker` and `pnpm exec wrangler versions upload`. Cloudflare stores the explicitly approved build token; no credential value is tracked. Other branches do not trigger this connection. Uploading versions preserves the active backend Worker and the production Pages site on `main`. Pages preview branch control includes `*` and excludes only this Worker branch; automatic production deployments remain enabled on `main`. Hosted Workers Build `6fc51b8b` and its GitHub check passed, with the existing Worker retaining 100% traffic. See `docs/CLOUDFLARE_BACKEND_READINESS.md` for the version-upload receipt.
+
 ---
 
 ## 2. Tech Stack
 
 ### 2.1 Core Runtime & Framework
 
-- **Framework**: Next.js `16.1.1`
+- **Framework**: Next.js `16.3.3`
 - **Language**: TypeScript `^5`
 - **UI Library**: React `19.2.3`, React DOM `19.2.3`
 - **Rendering model**:
   - App Router (`app/` directory)
   - Single `RootLayout` in `app/layout.tsx`
-  - Static marketing pages (no data fetching or APIs currently)
+  - Static marketing pages plus dynamic `/account` and `/auth/callback` routes
 
 Key config files:
 - `next.config.ts` – Next.js configuration.
@@ -75,21 +164,26 @@ From `package.json` `dependencies`:
 
 - **Linting**:
   - `eslint` `^9`
-  - `eslint-config-next` `16.1.1`
+  - `eslint-config-next` `16.3.3`
+  - `@opennextjs/cloudflare` `1.20.6`, Wrangler `4.139.0`, and required `rclone.js` peer `0.6.6` for Workers builds
   - Config: `eslint.config.mjs`
 - **Build pipeline**:
   - `postcss.config.mjs` – PostCSS/Tailwind integration.
-- **NPM scripts** (from `package.json`):
+- **Package scripts** (from `package.json`):
   - `dev`: `next dev`
   - `build`: `next build`
+  - `build:worker`: `opennextjs-cloudflare build`
+  - `preview:worker`: local Wrangler preview bound to `127.0.0.1`
   - `start`: `next start`
   - `lint`: `eslint`
+  - `test`: `vitest run`
+  - `typecheck`: `tsc --noEmit`
 
 **Recommended workflow:**
-- Start dev server: `npm run dev`
+- Start dev server: `pnpm run dev`
 - Type check: `tsc --noEmit` (or rely on IDE/Next build)
-- Lint: `npm run lint`
-- Production build: `npm run build` then `npm run start`
+- Lint: `pnpm run lint`
+- Production build: `pnpm run build` then `pnpm run start`
 
 ---
 
@@ -178,7 +272,7 @@ High-level layout under the repo root:
   - `postcss.config.mjs`
   - `components.json`
   - `README.md`
-  - `package.json`, `package-lock.json`
+  - `package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`, `.node-version`
 
 ### 3.1 `app/` Structure
 
@@ -246,7 +340,7 @@ This layout is shared by **all routes** under `app/`.
 Each of these pages:
 - Uses `<main className="min-h-screen text-white relative">`.
 - Wraps content in a `.container mx-auto px-4 py-16` layout.
-- Currently contains **placeholder copy** (“coming soon…”).
+- `/signup` is an active client-side waitlist form; the legal pages contain placeholder copy.
 
 **Where to add simple static pages:**
 - Duplicate one of these pages under `app/(static)/new-page-name/page.tsx`.
@@ -303,7 +397,7 @@ These are composed in `app/page.tsx`.
   - When adding reusable **non-UI** helpers, prefer placing them here.
 - `lib/gsap.ts` – shared GSAP custom ease registration for natural motion.
 - `lib/supabase.ts` – Supabase client initialization using environment variables.
-- `lib/waitlist.ts` – Waitlist signup function with enterprise-grade security (see Section 10).
+- `lib/waitlist_email_sanitisation.ts` – Existing marketing waitlist signup function (see Section 10).
 
 ### 3.4 `public/`
 
@@ -323,11 +417,14 @@ The App Router derives routes from the `app/` filesystem:
 
 - `/` → `app/page.tsx`
 - `/signup` → `app/(static)/signup/page.tsx`
+- `/account/sign-in` → `app/account/sign-in/page.tsx` (unlinked Google OAuth)
+- `/account` → `app/account/page.tsx` (verified, dynamic account view)
+- `/auth/callback` → `app/auth/callback/route.ts` (PKCE exchange)
 - `/privacy` → `app/(static)/privacy/page.tsx`
 - `/terms` → `app/(static)/terms/page.tsx`
 
 **Route groups**:
-- `(static)` is a **group only**, not part of the URL. It’s a good place to keep all mostly-static, simple pages (signup stub, legal docs, etc.).
+- `(static)` is a **group only**, not part of the URL. It contains the waitlist and legal pages.
 
 **Layouts:**
 - All routes currently share:
@@ -401,12 +498,9 @@ From `app/layout.tsx`:
 
 ### 6.2 Data & State
 
-- **Current state**: purely presentational.
-  - No API routes.
-  - No server actions.
-  - No client-side data fetching.
+- **Current state**: marketing sections are presentational; `/signup` writes to the waitlist, and the account routes use Supabase Auth cookies.
 - **Implication for onboarding**:
-  - Safe to treat all pages as static; ideal playground for adjusting copy, visuals, and layout.
+  - Marketing content can remain static; account responses must stay dynamic and private.
   - Adding dynamic behavior will require:
     - New client components (with `use client` if needed).
     - Potential `app/api` routes or integration with external backends.
@@ -418,9 +512,9 @@ From `app/layout.tsx`:
 ### 7.1 Getting Started
 
 1. Install dependencies:
-   - `npm install`
+   - `pnpm install --frozen-lockfile`
 2. Run the dev server:
-   - `npm run dev`
+   - `pnpm run dev`
 3. Visit:
    - `http://localhost:3000` for the home page.
 
@@ -474,7 +568,7 @@ From `app/layout.tsx`:
     - **Join Waitlist button**: Full-width, dark background using `PRIMARY_COLOR`, includes Send icon, with hover/tap animations via Framer Motion.
     - **Footer**: Small text with "Terms | Privacy Policy" links.
     - **Animations**: Staggered fade-in animations for all elements using Framer Motion variants.
-    - **Waitlist submission**: Uses `addToWaitlist` from `lib/waitlist.ts` with client-side validation and honeypot bot detection.
+    - **Waitlist submission**: Uses `addToWaitlist` from `lib/waitlist_email_sanitisation.ts` with client-side validation and honeypot bot detection.
   - As real signup flows are implemented (e.g., linking to a separate app or embedded form), document:
     - Where the logic lives.
     - Any external services used (Supabase, Auth0, custom backend, etc.).
@@ -515,7 +609,7 @@ From `app/layout.tsx`:
 
 ## 10. Security Implementation
 
-### 10.1 Waitlist Security (`lib/waitlist.ts`)
+### 10.1 Waitlist Security (`lib/waitlist_email_sanitisation.ts`)
 
 The waitlist signup function implements enterprise-grade security measures:
 

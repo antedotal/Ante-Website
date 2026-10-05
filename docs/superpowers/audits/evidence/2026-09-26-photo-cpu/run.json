@@ -1,0 +1,20 @@
+{
+  "commit": "2273029ec98eaf2f1d7efdf1a8fa7ee0976eb981",
+  "lockSha256": "c6062235e2ecbc4668bc6cee48d30d70990a0dddb40e67c46d18e7e138f779bd",
+  "node": "v26.8.2",
+  "wrangler": "4.139.0",
+  "openNext": "1.20.6",
+  "os": "darwin 27.0.0 arm64",
+  "cpu": "Apple M5 Pro",
+  "fixture": {
+    "name": "png_rgba16_max",
+    "sha256": "73d3c99b6e77e0b273fa74f12ca362374a7d974b928da0aa56adef82fd929fc5",
+    "bytes": 43271,
+    "width": 2000,
+    "height": 2000,
+    "depth": 16,
+    "color": "RGBA"
+  },
+  "httpPort": 18789,
+  "inspectorPort": 19231
+}
