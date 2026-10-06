@@ -1,18 +1,31 @@
 # Website backend goal
 
-Updated 1 October 2026. Requested scope: Ante-Website backend only.
+Updated 6 October 2026. Requested scope: Ante-Website backend and the required web payment experience. Earlier implementation slices and dated handoffs remain historical evidence.
 
 ## Objective
 
-Build and verify the server-side foundation for the website account portal, sharing the mobile app's Supabase identity and authoritative data. Continue the existing `codex/shared-web-account` worktree; preserve its completed sign-in scaffold rather than rebuilding it. UI, marketing and unrelated mobile implementation are outside this goal.
+Build and verify the server-side foundation for the website account portal, sharing the mobile app's Supabase identity and authoritative data. Continue the existing `codex/shared-web-account` worktree; preserve its completed sign-in scaffold rather than rebuilding it. The required Stripe web payment UI and its shared backend are in scope; unrelated marketing and mobile implementation remain outside this website goal.
 
 ## Execution order
 
 1. Harden shared authentication and sessions. Add durable, race-safe per-visitor abuse limits before callback processing or authentication network calls; enforce trusted client identity, safe redirects, private responses and safe logging. Verify shared-project configuration and distinguish local tests from actual provider acceptance.
 2. Define and implement server-side account/profile and AUD difficulty-preset contracts with validation, ownership checks and appropriate limits. Keep shared schema migrations in the Ante backend repository; do not create a competing website schema history.
 3. Add website server-side task and private proof-upload integration when the authoritative shared RPC contracts are ready. Enforce ownership/verifier permissions, current proof attempts, permitted object formats/sizes and replay protections. Do not bypass blocked backend authority by writing legacy tables directly.
-4. Prepare Stripe sandbox card setup only after consent and customer-ownership contracts are established. Keep settlement, capture and live-money activation closed. Short-task holds and long-task definitive-failure charges are the selected future direction; delayed holds remain an alternative. Reviewer silence and any possible 50% charge remain undecided.
+4. Implement the complete Stripe web payment lifecycle described below, including card setup/management, consent, task funding, payment holds, release/cancellation, definitive-failure collection and reconciliation. Establish consent and customer-ownership contracts as implementation prerequisites. Short-task holds and long-task definitive-failure collection are required implementation work, not a postponed future direction. Delayed-hold timing and reviewer-silence/50% policies remain unresolved details, not permission to omit payments. Keep live settlement/capture closed until financial acceptance and activation gates pass.
 5. Complete independent review, relevant integration checks and handoff documentation. Record configuration and external acceptance gaps explicitly.
+
+## Required web payments — scope confirmed 6 October 2026
+
+Daniel explicitly confirmed that the web release must include Stripe payments and payment holds. Payments are not postponed. This requirement supersedes earlier descriptions of funding as deferred, sandbox-only, or outside the website slice, including the older [shared financial design](../../Ante/docs/superpowers/audits/2026-09-21-web-first-financial-commitment-design.md). Historical audits still describe what was actually implemented or deployed at their recorded date.
+
+- Provide an authenticated payment experience using the same Supabase identity as mobile: Stripe card setup, payment-method management, versioned consent/mandates and server-owned customer references. Saving a card alone does not authorize a financial commitment.
+- Implement web Ante defaults/presets and task-specific financial settings with server-authoritative amount/currency/terms snapshots and consent. Changing defaults must not rewrite existing commitments; amendment timing and reduction/increase rules require a confirmed contract.
+- Implement task-linked Stripe authorization holds for eligible short tasks, including authorization expiry, failed authorization, cancellation/release on definitive success, and capture only on definitive authorized failure. Implement the documented long-task definitive-failure collection path with explicit customer-action and collection-failure recovery. Do not promise that a hold lasts indefinitely or treat saved-card setup as reserved funds; specify eligibility, timing and expiry behavior before enabling each path.
+- Complete the shared financial lifecycle: transactional outcome authority and durable settlement jobs, stable idempotency, verified Stripe webhooks, reconciliation of lost/unknown outcomes, audit history, user notices, financial review/disputes and conservative evidence retention. Pending proof, resubmission, appeal or reviewer silence must not create charge authority. Preserve the documented 72-hour silent-review escalation without automatic forfeiture.
+- Include the already documented monthly/annual web premium subscription flow and provider-verified entitlement handling, separately from task forfeitures. Pricing remains a product decision; subscriptions must not rewrite existing task commitments.
+- Verify ownership/authorization, rate limits, consent, holds/releases/capture, expiry, duplicate events, recovery, disputes and subscriptions in Stripe sandbox and the hosted web flow. Complete independent review and production configuration checks before financial activation.
+
+The deployed `financial_operations_paused` guard is an operational safety state, not a scope deferral. Implement and verify these features now; do not describe the full web release as complete with only card setup or nonfinancial functionality. This documentation change neither claims payment implementation is complete nor enables live charging.
 
 ## First implementation slice
 
@@ -27,7 +40,7 @@ Existing code supports Google sign-in only. The user has now requested email sig
 - Test limit concurrency, isolation, expiry, failure handling and request ordering, plus identity/authorization boundaries for each new endpoint.
 - Reuse the same Supabase project as mobile; verify deployed behavior separately from local source checks.
 - Preserve existing financial history, deployed paused financial endpoints and retained local database recovery evidence.
-- Do not make UI changes, invent financial consent or describe undeployed work as live.
+- Implement the required payment UI; avoid unrelated UI changes. Do not invent financial consent or describe undeployed work as live.
 
 ## Goal registration status
 
