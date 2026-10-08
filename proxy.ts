@@ -4,6 +4,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import { accountConfig, accountCookieOptions } from './lib/supabase/config'
 import { createAuthFetch } from './lib/supabase/auth-fetch'
 import { admitAccountVisitor } from './lib/server/callback-admission'
+import { closedFinancialPage } from './lib/payments/financial-page-source-gate'
+import { financialWebsiteSourceEnabled } from './lib/payments/financial-source-gate'
+import { paymentWebsiteSourceEnabled } from './lib/payments/website-source-gate'
+import { paymentReturnIngressResponse } from './lib/payments/payment-return-ingress'
 import { trustedAccountOrigin } from './lib/server/account-request'
 
 // Fixed private errors keep configuration and ingress details out of responses.
@@ -16,6 +20,15 @@ function gateError(status: 403 | 503) {
 }
 
 export async function proxy(request: NextRequest) {
+  // Preserve the accepted first-hop query discard before account configuration
+  // even when this proxy is invoked directly without the outer Worker.
+  const paymentReturn = paymentReturnIngressResponse(request)
+  if (paymentReturn) return new NextResponse(paymentReturn.body, { status: paymentReturn.status, headers: paymentReturn.headers })
+  if (closedFinancialPage(request.nextUrl.pathname, new URL(request.url).pathname, request.nextUrl.search || (request.url.includes('?') ? '?' : ''), request.method) || request.nextUrl.pathname === '/account/payments' && !paymentWebsiteSourceEnabled() || ['/account/financial-tasks','/account/premium'].includes(request.nextUrl.pathname) && !financialWebsiteSourceEnabled()) {
+    const response = NextResponse.next({ request })
+    response.headers.set('Cache-Control', 'private, no-store')
+    return response
+  }
   // API and callback routes own their admission; proxy protects account pages only.
   if (request.nextUrl.pathname === '/auth/callback' || request.nextUrl.pathname.startsWith('/api/account/')) {
     const response = NextResponse.next({ request })

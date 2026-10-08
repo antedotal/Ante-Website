@@ -14,7 +14,7 @@ function isReturnAlias(pathname: string): boolean {
 
 // Construct every handled reply from fixed values; no query, cookie, header or request body is read.
 // Browser/CDN caching and referrer propagation are disabled, and no validator or secret Vary is emitted.
-function returnReply(status: 303 | 403 | 405): Response {
+function returnReply(status: 303 | 403 | 405, location = PAYMENT_ACCOUNT_LOCATION): Response {
   const headers = new Headers({
     'Cache-Control': 'private, no-store',
     'CDN-Cache-Control': 'no-store',
@@ -24,7 +24,7 @@ function returnReply(status: 303 | 403 | 405): Response {
     Pragma: 'no-cache',
     Expires: '0',
   })
-  if (status === 303) headers.set('Location', PAYMENT_ACCOUNT_LOCATION)
+  if (status === 303) headers.set('Location', location)
   if (status === 405) headers.set('Allow', 'GET')
   return new Response(null, { status, headers })
 }
@@ -34,9 +34,25 @@ function returnReply(status: 303 | 403 | 405): Response {
 // HEAD/unsafe methods deny without redirect; unsafe origins and nonliteral return aliases fail closed.
 // All other hosts/paths retain the existing production and private-ingress behavior unchanged.
 export function paymentReturnIngressResponse(request: Request): Response | null {
+  const financialReturn = financialReturnIngressResponse(request)
+  if (financialReturn) return financialReturn
   const url = new URL(request.url)
   if (url.hostname !== PRODUCTION_APEX_HOST && url.hostname !== `www.${PRODUCTION_APEX_HOST}`) return null
   if (url.pathname !== PAYMENT_RETURN_PATH && !isReturnAlias(url.pathname)) return null
   if (url.protocol !== 'https:' || url.port !== '' || url.pathname !== PAYMENT_RETURN_PATH) return returnReply(403)
   return returnReply(request.method === 'GET' ? 303 : 405)
+}
+
+// Finite financial return purposes share the accepted fixed reply construction
+// and first-hop query discard, without another dependency in the Worker graph.
+function financialReturnIngressResponse(request: Request): Response | null {
+  const url = new URL(request.url)
+  if (url.hostname !== PRODUCTION_APEX_HOST && url.hostname !== `www.${PRODUCTION_APEX_HOST}`) return null
+  const family = (['financial-tasks', 'premium'] as const).find(name => {
+    try { return new RegExp('^/+account/+' + name + '/+return/*$').test(decodeURIComponent(url.pathname)) }
+    catch { return false }
+  })
+  if (!family) return null
+  if (url.protocol !== 'https:' || url.port !== '' || url.pathname !== `/account/${family}/return`) return returnReply(403)
+  return returnReply(request.method === 'GET' ? 303 : 405, `${PRODUCTION_SITE_ORIGIN}/account/${family}`)
 }

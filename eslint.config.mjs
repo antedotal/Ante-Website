@@ -5,6 +5,9 @@ import nextTs from "eslint-config-next/typescript";
 const eslintConfig = defineConfig([
   ...nextVitals,
   ...nextTs,
+  // Canonical backend bytes retain their accepted comments/unused capability
+  // argument; frontend lint does not rewrite this pinned source distribution.
+  { files: ["lib/payments/bridge-v1/**/*.ts", "lib/payments/bridge-v3/**/*.ts"], linterOptions: { reportUnusedDisableDirectives: "off" }, rules: { "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }] } },
   // Override default ignores of eslint-config-next.
   globalIgnores([
     // Default ignores of eslint-config-next:

@@ -1,0 +1,8 @@
+// Accept only the bounded ordinary notice DTO. Unknown provider state becomes
+// unknown in SQL; provider identities/raw facts cannot pass this exact parser.
+import {exact} from './bridge-v3/scripts/backend/web-payment-provider-contract.mjs'
+const id=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)
+export type OwnerNotice={notice_id:string;kind:'refund'|'dispute';status:string;recorded_at:string}
+export type OwnerNotices={notice_projection_version:1;items:OwnerNotice[];next_cursor:string|null}
+export const noticeStatuses={refund:['pending','requires_action','succeeded','failed','canceled','unknown'],dispute:['warning_needs_response','warning_under_review','warning_closed','needs_response','under_review','won','lost','prevented','unknown']} as const
+export function ownerNotices(value:unknown,after:string|null):OwnerNotices{if(!exact(value,['notice_projection_version','items','next_cursor']))throw Error('activation_closed');const v=value as OwnerNotices;if(v.notice_projection_version!==1||!Array.isArray(v.items)||v.items.length>25||v.next_cursor!==null&&!id(v.next_cursor))throw Error('activation_closed');let previous=after;for(const n of v.items){if(!exact(n,['notice_id','kind','status','recorded_at'])||!id(n.notice_id)||previous!==null&&n.notice_id<=previous||!['refund','dispute'].includes(n.kind)||!(noticeStatuses[n.kind] as readonly string[]).includes(n.status)||typeof n.recorded_at!=='string'||!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/.test(n.recorded_at)||!Number.isFinite(Date.parse(n.recorded_at)))throw Error('activation_closed');previous=n.notice_id}if(v.next_cursor!==null&&(v.items.length!==25||v.next_cursor!==previous))throw Error('activation_closed');return v}

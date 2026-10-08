@@ -1,0 +1,48 @@
+/* Account-scoped brand surfaces and visible focus states preserve the existing
+   blue palette without changing marketing styles or hiding mobile navigation. */
+.shell{min-height:100vh;background:#f8fbfc;color:#003a4a;padding:0 1.5rem 3rem;overflow-wrap:anywhere}
+.header{max-width:72rem;margin:0 auto;padding:2rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem;border-bottom:1px solid #003a4a26}
+.brand{min-height:44px;display:flex;align-items:center;font-size:1.7rem;font-weight:700;text-decoration:none;letter-spacing:-.04em}
+.accountLabel{font-size:.95rem}
+.layout{max-width:72rem;margin:2rem auto 0;display:grid;grid-template-columns:12rem minmax(0,1fr);gap:2.5rem;align-items:start}
+.navigation{display:grid;gap:.5rem}
+.navigationLink{display:block;min-height:44px;padding:.8rem 1rem;border:1px solid transparent;border-radius:.75rem;text-decoration:none;font-weight:600}
+.navigationLink:hover{background:#e9f2f5}
+.navigationLink[aria-current=page]{background:#003a4a;color:#fff;border-color:#003a4a}
+/* The skip target has its own visible focus ring. Shell spacing replaces the
+   differing page paddings; native controls retain their existing semantics and
+   disabled states while account-wide touch, text and width rules stay local. */
+.content{min-width:0;outline-offset:6px;line-height:1.6}
+.content:focus{outline:3px solid #176b85;border-radius:.5rem}
+.content :global(*){box-sizing:border-box}
+.content > :global(main){max-width:100%;padding:1rem 0}
+.content :global(form),.content :global(label){min-width:0}
+.content :global(button){min-height:44px;min-width:44px;max-width:100%;padding:.625rem 1rem;font:inherit;line-height:1.4;white-space:normal;text-align:center}
+.content :global(div.flex){flex-wrap:wrap}
+.content :global(input:not([type=checkbox]):not([type=radio])),.content :global(select),.content :global(textarea){display:block;width:100%;min-width:0;max-width:100%;min-height:44px;margin:.375rem 0 0;padding:.625rem .75rem;border:1px solid #5c7a84;border-radius:.625rem;background:#fff;color:inherit;font:inherit;font-size:1rem;line-height:1.5}
+.content :global(textarea){resize:vertical}
+.content :global(label:has(> input[type=checkbox])){min-height:44px}
+.content :global(button:focus-visible),.content :global(input:focus-visible),.content :global(select:focus-visible),.content :global(textarea:focus-visible){outline:3px solid #176b85;outline-offset:3px}
+/* All financial/consent/recovery sections share the existing overview card
+   surface; no selector targets Stripe iframe internals or financial state. */
+.feature,.content :global(section){background:#fff;border:1px solid #003a4a26;border-radius:1rem}
+.content :global(section){padding:1.5rem}
+.notice{padding:1rem 1.25rem;margin-bottom:1.5rem;background:#e9f2f5;border:1px solid #003a4a26;border-radius:1rem;font-size:.95rem;line-height:1.6}
+.notice p{margin:0}
+.skip{position:fixed;left:1rem;top:-8rem;z-index:1000;background:#fff;color:#003a4a;padding:.75rem 1rem;border:2px solid #003a4a;border-radius:.5rem;text-decoration:underline}
+.skip:focus{top:1rem}
+.shell a:focus-visible{outline:3px solid #176b85;outline-offset:4px}
+.shell a[aria-current=page]:focus-visible{outline-color:#176b85}
+.overview{padding:1rem 0}
+.overview h1{font-size:clamp(1.8rem,4vw,2.5rem);font-weight:650;line-height:1.2;margin:0 0 1rem}
+.identity{font-size:.95rem;line-height:1.6;margin:0 0 1.5rem}
+.introduction{max-width:42rem;line-height:1.7;margin:0 0 2rem}
+.features{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1rem}
+.feature{padding:1.5rem;display:flex;flex-direction:column;align-items:start}
+.feature h2{font-size:1.2rem;font-weight:600;margin:0 0 .75rem}
+.feature p{line-height:1.6;font-size:.95rem;margin:0 0 1.25rem}
+.feature a{margin-top:auto;color:#003a4a;text-decoration:underline;text-underline-offset:.25em;min-height:44px;display:flex;align-items:center;font-weight:600}
+@media(max-width:900px){.features{grid-template-columns:1fr}.layout{grid-template-columns:10rem minmax(0,1fr);gap:1.5rem}}
+/* Always-visible two-column mobile links avoid an extra menu/focus-trap state. */
+@media(max-width:640px){.shell{padding:0 1rem 2rem}.header{padding:1.5rem 0}.layout{display:block;margin-top:1.25rem}.navigation{grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:1.5rem;gap:.5rem}.navigationLink{padding:.75rem;text-align:center;border-color:#003a4a26}.feature,.content :global(section){padding:1.25rem}.overview{padding:0}}
+@media(forced-colors:active){.navigationLink[aria-current=page]{border:2px solid LinkText}.shell a:focus-visible,.content:focus,.content :global(button:focus-visible),.content :global(input:focus-visible),.content :global(select:focus-visible),.content :global(textarea:focus-visible){outline-color:Highlight}}

@@ -1,0 +1,10 @@
+// The actual accepted AEAD codec fences read admissions from report/task effects.
+import {expect,it,vi} from 'vitest'
+import {NextRequest} from 'next/server'
+vi.mock('server-only',()=>({}))
+import {newReviewReadAdmission,decodeReviewReadAdmission,reviewReadCookie} from '../lib/server/review-read-admission'
+import {encodePaymentIntent,newPaymentIntent} from '../lib/server/payment-cookies'
+const owner='00000000-0000-0000-0000-000000000001',commitment='00000000-0000-0000-0000-000000000002',key=Buffer.alloc(32,9)
+const request=(token:string)=>new NextRequest('https://antedotal.com/api/account/payment-review/progress',{headers:{cookie:reviewReadCookie+'='+token}})
+it('fresh independent admission contains only read identity and cannot cross owner or action',()=>{const admission=newReviewReadAdmission(owner,commitment,1),token=encodePaymentIntent(admission,key);expect(decodeReviewReadAdmission(request(token),key,owner)).toEqual(admission);expect(admission.action).toBe('review.read');expect(admission.input).toEqual({commitment_id:commitment,commitment_revision:1});expect(()=>decodeReviewReadAdmission(request(token),key,commitment)).toThrow();const report=encodePaymentIntent(newPaymentIntent(owner,crypto.randomUUID(),'appeal',{commitment_id:commitment,commitment_revision:1}),key);expect(()=>decodeReviewReadAdmission(request(report),key,owner)).toThrow()})
+it('tampering and expiry fail closed; a new read does not mutate an old operation',()=>{const original=newReviewReadAdmission(owner,commitment,1),bytes=encodePaymentIntent(original,key);expect(()=>decodeReviewReadAdmission(request(bytes.slice(0,-2)+'aa'),key,owner)).toThrow();const now=Date.now(),clock=vi.spyOn(Date,'now').mockReturnValue(now+1800001);expect(()=>decodeReviewReadAdmission(request(bytes),key,owner)).toThrow();const fresh=newReviewReadAdmission(owner,commitment,1);expect(fresh.admissionId).not.toBe(original.admissionId);expect(original.expiresAt).toBeLessThan(fresh.expiresAt);expect(original.operationId).not.toBe(fresh.operationId);clock.mockRestore()})
