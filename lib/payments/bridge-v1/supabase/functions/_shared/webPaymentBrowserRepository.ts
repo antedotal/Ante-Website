@@ -1,5 +1,5 @@
 /** Exact adapters feed the one frozen provider repository/executor, never another dispatcher. */
-import { ProviderRepository, type PrivateRpc } from "./webPaymentProviderRepository.ts";
+import { ProviderRepositoryJoint as ProviderRepository, type PrivateRpc } from "../../../../owned-card-joint/supabase/functions/_shared/webPaymentProviderRepositoryJoint.ts";
 import { exact, internalId } from "./webPaymentProviderContract.ts";
 import { createPaymentSupabase, type PaymentLifetime } from "./webPaymentOwnerSupabase.ts";
 import { paymentDigest } from "./webPaymentHttpIntake.ts";
@@ -22,14 +22,19 @@ export function createPaymentProviderRepository(services: PaymentSupabase, worke
   if (!("claim" in port)) throw new Error("activation_closed");
   const rpc: PrivateRpc = async (name, args) => {
     switch (name) {
-      case "claim": {
+      case "claim_v4": {
         if (!exact(args, ["p_limit", "p_worker"]) || args.p_worker !== workerIdentity) throw new Error("invalid_input");
         const reply = await port.claim!(Number(args.p_limit));
         if (!exact(reply, ["principal_id", "permits"]) || (reply as Record<string, unknown>).principal_id !== workerIdentity) throw new Error("repository_unknown");
-        return (reply as Record<string, unknown>).permits;
+        // This existing gateway owns only the original five card operations. The
+        // selected Joint engine supports other purposes, but this port cannot
+        // dispatch task, Premium or canonical-notice work through a card channel.
+        const permits=(reply as Record<string, unknown>).permits;
+        if(!Array.isArray(permits)||permits.some(p=>!p||typeof p!=='object'||!['customer.create','setup.create','setup.retrieve','customer.default','card.detach'].includes(String(p.kind))))throw new Error('repository_unknown');
+        return permits;
       }
-      case "record_dispatch": if (!exact(args, ["p_subaction", "p_generation", "p_revision", "p_plan", "p_object_id"])) throw new Error("invalid_input"); return await port.dispatch!({ subaction_id: args.p_subaction, generation: args.p_generation, operation_revision: args.p_revision, plan: args.p_plan, object_id: args.p_object_id });
-      case "record_observation": if (!exact(args, ["p_subaction", "p_generation", "p_revision", "p_observation"])) throw new Error("invalid_input"); return await port.observation!({ subaction_id: args.p_subaction, generation: args.p_generation, operation_revision: args.p_revision, observation: args.p_observation });
+      case "record_dispatch_v4": if (!exact(args, ["p_subaction", "p_generation", "p_revision", "p_plan", "p_object_id"])) throw new Error("invalid_input"); return await port.dispatch!({ subaction_id: args.p_subaction, generation: args.p_generation, operation_revision: args.p_revision, plan: args.p_plan, object_id: args.p_object_id });
+      case "record_observation_v4": if (!exact(args, ["p_subaction", "p_generation", "p_revision", "p_observation"])) throw new Error("invalid_input"); return await port.observation!({ subaction_id: args.p_subaction, generation: args.p_generation, operation_revision: args.p_revision, observation: args.p_observation });
       default: throw new Error("activation_closed");
     }
   };

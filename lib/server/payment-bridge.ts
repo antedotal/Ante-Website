@@ -5,7 +5,7 @@ import { accountConfig } from '../supabase/config'
 import { paymentWebsiteSourceEnabled } from '../payments/website-source-gate'
 import { createPaymentSupabase } from '../payments/bridge-v1/supabase/functions/_shared/webPaymentOwnerSupabase'
 import { createPaymentOwnerHttp, type PaymentHttpOptions } from '../payments/bridge-v1/supabase/functions/_shared/webPaymentOwnerHttp'
-import { guardedTransport, type Provisioning } from '../payments/bridge-v1/supabase/functions/_shared/webPaymentProviderClient'
+import { guardedTransportJoint, type Provisioning } from '../payments/owned-card-joint/supabase/functions/_shared/webPaymentProviderClientJoint'
 import { paymentCookieKey } from './payment-cookies'
 export type PaymentWebsiteBindings = { handler: ReturnType<typeof createPaymentOwnerHttp>; cookieKey: Buffer; publishableKey: string; enabled: boolean }
 // Explicit immutable-reference maps have no latest-key/default credential path.
@@ -26,6 +26,6 @@ export function configuredPaymentWebsite(): PaymentWebsiteBindings | null {
   const account=accountConfig(),credentials=references(process.env.ANTE_WEB_PAYMENT_PROVIDER_CREDENTIALS),keys=references(process.env.ANTE_WEB_PAYMENT_RETURN_KEYS),provision=JSON.parse(process.env.ANTE_WEB_PAYMENT_PROVIDER_PROVISIONING ?? 'null') as Provisioning;
   if(!credentials || !keys || !provision || provision.enabled!==true || provision.fixture_only!==false || !credentials[provision.credential_reference])return null
   const services=createPaymentSupabase({projectUrl:account.url,publicKey:account.key,enabled:true,transportAccepted:true,acceptedB0AuthoritySha256:'6799e95ac25d0fa3c2a6a2f89dd0113d25f2bdcc3cb06c1b4a766c551b978f89',gatewayCredential:process.env.ANTE_WEB_PAYMENT_GATEWAY_CREDENTIAL,secretReadCredential:process.env.ANTE_WEB_PAYMENT_SECRET_READ_CREDENTIAL,secretReadBearer:process.env.ANTE_WEB_PAYMENT_SECRET_READ_BEARER,capsuleBindCredential:process.env.ANTE_WEB_PAYMENT_BIND_CREDENTIAL,capsuleBindBearer:process.env.ANTE_WEB_PAYMENT_BIND_BEARER});
-  return composePaymentWebsite({services,provider:{provision,credential:()=>credentials[provision.credential_reference],transport:guardedTransport(fetch)},loadReturnKey:async(reference,revision)=>{const key=paymentCookieKey(keys[reference+':'+revision]);return key?new Uint8Array(key):null}},cookieKey,publishableKey)
+  return composePaymentWebsite({services,provider:{provision,credential:()=>credentials[provision.credential_reference],transport:guardedTransportJoint(fetch)},loadReturnKey:async(reference,revision)=>{const key=paymentCookieKey(keys[reference+':'+revision]);return key?new Uint8Array(key):null}},cookieKey,publishableKey)
  }catch{return null}
 }
