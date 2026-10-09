@@ -1,0 +1,18 @@
+// Exercise strict redaction/order/page validation and actual owner HTTP intake.
+import {beforeEach,expect,it,vi} from 'vitest'
+import {NextRequest,NextResponse} from 'next/server'
+vi.mock('server-only',()=>({}))
+const gate=vi.hoisted(()=>({verify:vi.fn()}))
+vi.mock('../lib/supabase/config',()=>({accountConfig:()=>({siteOrigin:'https://antedotal.com'})}))
+vi.mock('../lib/server/callback-admission',()=>({admitAccountVisitor:async()=>null}))
+vi.mock('../lib/server/profile-photo-session',()=>({verifyProfilePhotoSession:gate.verify}))
+import {ownerNotices} from '../lib/payments/owner-notices-model'
+import {createPaymentNoticesHandler} from '../lib/server/account-payment-notices'
+import type {FinancialWebsiteBindings} from '../lib/server/financial-bridge'
+import {FinancialRateError} from '../lib/server/financial-transport'
+const id=(n:number)=>`00000000-0000-0000-0000-${String(n).padStart(12,'0')}`,owner=id(1),notice=(n=2)=>({notice_id:id(n),kind:'refund',status:'pending',recorded_at:'2026-10-08T00:00:00.000000Z'}),page={notice_projection_version:1,items:[notice()],next_cursor:null}
+beforeEach(()=>gate.verify.mockResolvedValue({kind:'verified',session:{ownerId:owner,token:'a.b.c',provisional:NextResponse.json({})}}))
+const request=(body:unknown={after:null},own=owner)=>new NextRequest('https://antedotal.com/api/account/payment-notices',{method:'POST',headers:{host:'antedotal.com',origin:'https://antedotal.com','content-type':'application/json','X-Ante-Payment-Owner':own},body:JSON.stringify(body)})
+it('safe DTO rejects raw/provider facts, unknown keys, unordered/cross-page rows and fabricated pagination',()=>{expect(ownerNotices(page,null)).toEqual(page);for(const item of [{...notice(),facts:{}},{...notice(),provider_account:'acct_secret'},{...notice(),status:'pi_secret'},{...notice(),task_id:id(5)}])expect(()=>ownerNotices({...page,items:[item]},null)).toThrow();expect(()=>ownerNotices({...page,items:[notice(3),notice(2)]},null)).toThrow();expect(()=>ownerNotices(page,id(3))).toThrow();expect(()=>ownerNotices({...page,next_cursor:id(2)},null)).toThrow();const items=Array.from({length:25},(_,i)=>notice(i+2));expect(ownerNotices({...page,items,next_cursor:id(26)},null).items).toHaveLength(25);expect(()=>ownerNotices({...page,items:[...items,notice(27)]},null)).toThrow()})
+it('actual owner bearer is captured and invalid body/header never reaches service',async()=>{const notices=vi.fn(async()=>page),service=vi.fn(async(req:Request)=>{expect(req.headers.get('authorization')).toBe('Bearer a.b.c');return {ownerId:owner,notices}}),binding={enabled:true,services:{owner:service}} as unknown as FinancialWebsiteBindings,run=createPaymentNoticesHandler(()=>binding);expect((await run(request({after:null,owner_id:id(9)}))).status).toBe(400);expect((await run(request({after:null},id(9)))).status).toBe(409);expect(service).not.toHaveBeenCalled();const response=await run(request());expect(response.status).toBe(200);expect(await response.json()).toEqual(page);expect(notices).toHaveBeenCalledWith(null);expect(response.headers.get('cache-control')).toContain('no-store')})
+it('rate limits preserve bounded Retry-After and unsafe responses close',async()=>{let value:unknown=page;const notices=vi.fn(async()=>{if(value instanceof Error)throw value;return value}),run=createPaymentNoticesHandler(()=>({enabled:true,services:{owner:async()=>({ownerId:owner,notices})}} as unknown as FinancialWebsiteBindings));value=new FinancialRateError(7);const limited=await run(request());expect(limited.status).toBe(429);expect(limited.headers.get('retry-after')).toBe('7');value={...page,items:[{...notice(),object_id:'re_private'}]};expect((await run(request())).status).toBe(503)})

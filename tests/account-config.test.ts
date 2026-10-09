@@ -1,6 +1,8 @@
 // Exercise the account configuration boundary so marketing placeholders cannot authorize users.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { accountConfig, accountCookieOptions } from '../lib/supabase/config'
+import configureNext from '../next.config'
+import { PHASE_DEVELOPMENT_SERVER, PHASE_PRODUCTION_BUILD } from 'next/constants'
 
 const originalEnv = { ...process.env }
 
@@ -48,5 +50,20 @@ describe('account configuration', () => {
     expect(() => accountConfig()).toThrow(/site origin/i)
     process.env.NEXT_PUBLIC_ANTE_SITE_ORIGIN = 'https://example.com'
     expect(() => accountConfig()).toThrow(/site origin/i)
+  })
+})
+
+// Production compilation must enforce the runtime account boundary before public values are frozen.
+describe('production build account configuration', () => {
+  it('fails closed on missing public configuration without blocking development startup', () => {
+    delete process.env.NEXT_PUBLIC_SUPABASE_URL
+    expect(() => configureNext(PHASE_PRODUCTION_BUILD)).toThrow(/NEXT_PUBLIC_SUPABASE_URL/)
+    expect(() => configureNext(PHASE_DEVELOPMENT_SERVER)).not.toThrow()
+  })
+  it('accepts the same checked public configuration used at runtime', () => {
+    process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://yxilmwxptfnebnjsikwo.supabase.co'
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_testvalue'
+    process.env.NEXT_PUBLIC_ANTE_SITE_ORIGIN = 'https://ante.test'
+    expect(configureNext(PHASE_PRODUCTION_BUILD)).toHaveProperty('images')
   })
 })
