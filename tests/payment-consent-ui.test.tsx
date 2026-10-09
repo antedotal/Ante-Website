@@ -137,3 +137,56 @@ it('independent Fix2: recorded consent keeps legal policy version without exposi
  const {component,props}=actualPanel({customer:{reservation_revision:1},policies:[{...policy,available:false}],consents:[oldConsent]});
  const text=renderedText(render(component,props));expect(text).toContain('v1');expect(text).toContain('Revoke consent');expect(text).not.toContain('revision');
 });
+
+// Component-only regression: local recorded HTTP responses reproduce a lost
+// execution ACK, then successful owner reads. No browser/provider is involved.
+it.each([['lost execution ACK',503,null,'outcome is unknown'],['recorded unknown execution',200,'unknown','Outcome unknown'],['recorded pending execution',200,'pending','Processing']] as const)('%s keeps its live action announcement after successful owned rereads',async(_case,status,resultStatus,expectedMessage)=>{
+ let prepared=false
+ const original={request_id:'11111111-2222-4333-8444-555555555555',operation_id:'66666666-7777-4888-8999-000000000000',action:'card.default.set'}
+ const fetcher=vi.fn(async(path:unknown,init?:RequestInit)=>{
+  const url=String(path)
+  if(url.endsWith('/prepare')){prepared=true;original.request_id=JSON.parse(String(init?.body)).request_id;return Response.json({operation_id:original.operation_id})}
+  if(url.endsWith('/execute'))return status===503?Response.json({error_code:'transport_unavailable'},{status}):Response.json({status:resultStatus,result:null})
+  if(url.endsWith('/intent'))return Response.json(prepared?original:{request_id:null,operation_id:null,action:null})
+  if(url.includes('/operation?'))return Response.json({result:{summary:{operation_id:original.operation_id,action:original.action,status:'unknown',recovery:'resume_original'},original_receipt:{status:'unknown',result:null},current_receipt:{status:'unknown',result:null}}})
+  if(url.includes('/operations?'))return Response.json({result:{operations:[]}})
+  if(url.includes('/consents/history?'))return Response.json({result:{entries:[],next_cursor:null}})
+  if(url.endsWith('/cards'))return Response.json({cards:[{card_id:'cccccccc-dddd-4eee-8fff-111111111111',revision:1,state:'active',is_default:false,brand:'visa',last4:'4242',expiry_month:12,expiry_year:2030}]})
+  if(url.endsWith('/context'))return Response.json({result:{customer:{provider_revision:2},policies:[],consents:[],unfinished_operations:[]}})
+  throw new Error('Unexpected local request '+url+' '+init?.method)
+ });vi.stubGlobal('fetch',fetcher)
+ render(AccountPayments as never,pageProps);await flushEffects()
+ const ready=render(AccountPayments as never,pageProps),ensure=button(ready,'Make default')!
+ expect(ensure).toBeDefined();await (ensure.props.onClick as ()=>Promise<void>)();await new Promise(resolve=>setTimeout(resolve,0));await new Promise(resolve=>setTimeout(resolve,0))
+ const after=render(AccountPayments as never,pageProps),announcement=elements(after).find(e=>e.props.role==='status')!
+ expect(announcement.props['aria-live']).toBe('polite');expect(renderedText(announcement)).toContain(expectedMessage);if(resultStatus===null)expect(renderedText(announcement)).toContain('original intention')
+ expect(button(after,'Resume original action')).toBeDefined()
+ const writes=fetcher.mock.calls.filter(([path])=>String(path).endsWith('/prepare')||String(path).endsWith('/execute'));expect(writes).toHaveLength(2)
+ const execution=JSON.parse(String(writes[1][1]?.body));expect(execution).toEqual({request_id:original.request_id,expected_operation_id:original.operation_id})
+})
+
+// A message carried by an old owner's delayed recovery read must not survive
+// the existing owner/generation fence or overwrite the replacement owner's UI.
+it('late recovery reread cannot announce an old owner action on the new owner',async()=>{
+ let prepared=false,release:(reply:Response)=>void=()=>{}
+ const other='22222222-2222-4222-8222-222222222222',original={request_id:'11111111-2222-4333-8444-555555555555',operation_id:'66666666-7777-4888-8999-000000000000',action:'card.default.set'}
+ const fetcher=vi.fn(async(path:unknown,init?:RequestInit)=>{
+  const url=String(path),old=(init?.headers as Record<string,string>)['X-Ante-Payment-Owner']===pageProps.ownerId
+  if(url.endsWith('/prepare')){prepared=true;original.request_id=JSON.parse(String(init?.body)).request_id;return Response.json({operation_id:original.operation_id})}
+  if(url.endsWith('/execute'))return Response.json({error_code:'transport_unavailable'},{status:503})
+  if(url.endsWith('/intent'))return Response.json(old&&prepared?original:{request_id:null,operation_id:null,action:null})
+  if(url.includes('/operation?'))return Response.json({result:{summary:{operation_id:original.operation_id,action:original.action,status:'unknown'},original_receipt:{status:'unknown',result:null},current_receipt:{status:'unknown',result:null}}})
+  if(url.includes('/operations?'))return Response.json({result:{operations:[]}})
+  if(url.includes('/consents/history?'))return Response.json({result:{entries:[],next_cursor:null}})
+  if(url.endsWith('/cards'))return Response.json({cards:old?[{card_id:'cccccccc-dddd-4eee-8fff-111111111111',revision:1,state:'active',is_default:false,brand:'visa',last4:'4242',expiry_month:12,expiry_year:2030}]:[]})
+  if(url.endsWith('/context')){if(old&&prepared)return new Promise<Response>(resolve=>{release=resolve});return Response.json({result:{customer:{provider_revision:2},policies:[],consents:[],unfinished_operations:[]}})}
+  throw new Error('Unexpected local request')
+ });vi.stubGlobal('fetch',fetcher)
+ render(AccountPayments as never,pageProps);await flushEffects();const ready=render(AccountPayments as never,pageProps);hooks.effects=[]
+ void (button(ready,'Make default')!.props.onClick as ()=>void)();await new Promise(resolve=>setTimeout(resolve,0))
+ const next={...pageProps,ownerId:other};render(AccountPayments as never,next);await flushEffects()
+ release(Response.json({result:{customer:{provider_revision:2},policies:[],consents:[],unfinished_operations:[]}}));await new Promise(resolve=>setTimeout(resolve,0))
+ const after=render(AccountPayments as never,next),announcement=elements(after).find(e=>e.props.role==='status')!
+ expect(renderedText(announcement)).toBe('');expect(button(after,'Resume original action')).toBeUndefined();expect(renderedText(after)).not.toContain('4242')
+ expect(fetcher.mock.calls.filter(([path])=>String(path).endsWith('/execute'))).toHaveLength(1)
+})

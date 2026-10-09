@@ -73,7 +73,10 @@ export default function AccountPayments({ enabled, publishableKey, ownerId, cons
  // Parallel owned reads do not make history dependent on current cards/policy.
  // Clear all old snapshots at the start and fence every subsequent reply. The
  // fixed owner header prevents mixed-owner results during a browser account swap.
- const refresh = useCallback(async (historyAfter?: string) => {
+ // Carry the current action announcement through snapshot rereads. A successful
+ // read confirms data availability, not the outcome of an unknown execution.
+ // This call-local message stays inside the existing owner/generation fence.
+ const refresh = useCallback(async (historyAfter?: string, announcement = '') => {
   if (!enabled) return
   const revision = generation.current.next(); setView({ ...emptyPaymentView, ownerId }); setRecovery(null); setRevokeRecovery(null); setIntentReady(false); clearTicket()
   try {
@@ -102,7 +105,7 @@ export default function AccountPayments({ enabled, publishableKey, ownerId, cons
    }
    const operations = details.map(detail => separateOperation(originalOperations.current.find(previous => previous.summary.operation_id === detail.summary.operation_id), detail)); originalOperations.current = operations
    const available = contextReply.status === 'fulfilled' && cardsReply.status === 'fulfilled'
-   setView({ ownerId, phase: available ? 'ready' : 'unavailable', context: contextReply.status === 'fulfilled' ? contextReply.value.result as Context : null, cards: cardsReply.status === 'fulfilled' ? cardsReply.value.cards as Card[] : [], operations, history: consentReplies.flatMap(reply => reply.status === 'fulfilled' ? [reply.value.result as Consent] : []), historyReady: historyReply.status === 'fulfilled' && consentReplies.every(reply => reply.status === 'fulfilled'), historyCursor: historyReply.status === 'fulfilled' ? historyReply.value.result.next_cursor : null, message: available ? '' : 'Current cards or policies are unavailable. Owned consent history and original operation recovery are shown separately.' })
+   setView({ ownerId, phase: available ? 'ready' : 'unavailable', context: contextReply.status === 'fulfilled' ? contextReply.value.result as Context : null, cards: cardsReply.status === 'fulfilled' ? cardsReply.value.cards as Card[] : [], operations, history: consentReplies.flatMap(reply => reply.status === 'fulfilled' ? [reply.value.result as Consent] : []), historyReady: historyReply.status === 'fulfilled' && consentReplies.every(reply => reply.status === 'fulfilled'), historyCursor: historyReply.status === 'fulfilled' ? historyReply.value.result.next_cursor : null, message: available ? announcement : [announcement, 'Current cards or policies are unavailable. Owned consent history and original operation recovery are shown separately.'].filter(Boolean).join(' ') })
   } catch {
    if (generation.current.current(revision)) setView({ ...emptyPaymentView, ownerId, phase: 'unavailable', message: 'Payments are temporarily unavailable. Check the original intention before another action.' })
   }
@@ -119,10 +122,11 @@ export default function AccountPayments({ enabled, publishableKey, ownerId, cons
   if (!original.operationId) throw new Error('Check the original intention.')
   const reply = await request('execute', { request_id: original.requestId, expected_operation_id: original.operationId })
   if (!generation.current.current(revision)) return
-  setView(v => ({ ...v, message: operationMessage(reply.status, reply.result?.operation?.recovery ?? 'none') }))
+  const announcement = operationMessage(reply.status, reply.result?.operation?.recovery ?? 'none')
+  setView(v => ({ ...v, message: announcement }))
   if (['completed', 'denied'].includes(reply.status)) { if (revokeSlot) { revokeIntent.current = null; setRevokeRecovery(null) } else { intent.current = null; setRecovery(null) } }
   else { if (revokeSlot) setRevokeRecovery(original); else setRecovery(original); setView(v => ({ ...v, phase: 'unknown' })) }
-  await refresh()
+  await refresh(undefined, announcement)
  }
  async function resumeOriginal(revokeSlot = false) {
   const original = revokeSlot ? revokeRecovery : recovery
@@ -149,7 +153,7 @@ export default function AccountPayments({ enabled, publishableKey, ownerId, cons
    if (!generation.current.current(revision)) return
    original.operationId = prepared.operation_id; if (revokeSlot) setRevokeRecovery(original); else setRecovery(original)
    await executeOriginal(original, revokeSlot, revision)
-  } catch { if (generation.current.current(revision)) { setView(v => ({ ...v, phase: 'unknown', message: 'The outcome is unknown. Check the original intention before another action.' })); await refresh() } } finally { setBusy(false) }
+  } catch { if (generation.current.current(revision)) { const announcement = 'The outcome is unknown. Check the original intention before another action.'; setView(v => ({ ...v, phase: 'unknown', message: announcement })); await refresh(undefined, announcement) } } finally { setBusy(false) }
  }
  async function continueSetup() {
   if (!enabled || busy) return; setBusy(true); const revision = generation.current.next()
@@ -157,7 +161,7 @@ export default function AccountPayments({ enabled, publishableKey, ownerId, cons
  }
  async function checkSetup() {
   if (!enabled || busy) return; setBusy(true); clearTicket(); const revision = generation.current.next()
-  try { const reply = await request('setup/return/consume', {}); if (!generation.current.current(revision)) return; setView(v => ({ ...v, message: operationMessage(reply.status, 'none') })); await refresh() } catch { if (generation.current.current(revision)) setView(v => ({ ...v, message: 'The setup outcome is unknown. Its original operation remains recorded.' })) } finally { setBusy(false) }
+  try { const reply = await request('setup/return/consume', {}); if (!generation.current.current(revision)) return; const announcement = operationMessage(reply.status, 'none'); setView(v => ({ ...v, message: announcement })); await refresh(undefined, announcement) } catch { if (generation.current.current(revision)) setView(v => ({ ...v, message: 'The setup outcome is unknown. Its original operation remains recorded.' })) } finally { setBusy(false) }
  }
  // Captured callbacks from an old frame can never initiate current-cookie
  // recovery after refresh, ticket replacement or the keyed owner's unmount.
