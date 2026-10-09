@@ -42,7 +42,6 @@ function ConsentPanel({ purpose, title, context, scopeKey=purpose, policyOverrid
   {!historyOnly&&(!currentTerms ? <p className="mt-3 text-sm">{message || 'Approved terms are unavailable. No authorization can be granted.'}</p> : <>
    <p className="mt-3 text-sm">Version {currentTerms.policy_version}</p>
    <div className="mt-3 max-h-64 overflow-auto whitespace-pre-wrap rounded-lg bg-[#f4f8f9] p-4 text-sm">{currentTerms.approved_text}</div>
-   <p className="mt-2 text-xs">Approved text reference: {currentTerms.policy_hash}</p>
    {active ? <p className="mt-4">Consent active for this version</p> : <>
     <label className="mt-4 flex items-start gap-3"><input type="checkbox" checked={affirmed} disabled={busy || acceptanceBlocked} onChange={e => setAffirmedPolicy(e.target.checked ? policyIdentity : null)} /><span>I agree to these {purpose === 'card.save' ? 'card saving' : purpose==='premium'?'Premium subscription':'accountability'} terms.</span></label>
     <button disabled={busy || acceptanceBlocked || !affirmed || !(policyOverride?.customer_revision||context?.customer)} className="mt-4 rounded-lg bg-[#003a4a] px-4 py-2 text-white disabled:opacity-50" onClick={() => void act('consent.accept', { customer_revision: policyOverride?.customer_revision??context!.customer!.reservation_revision, policy_id: currentTerms.policy_id, policy_version: currentTerms.policy_version, policy_revision: currentTerms.revision, policy_hash: currentTerms.policy_hash, affirmative: true })}>Accept this version</button>
@@ -53,8 +52,8 @@ function ConsentPanel({ purpose, title, context, scopeKey=purpose, policyOverrid
   {grants.map(grant => <div key={grant.consent_id} className="mt-3 rounded-lg bg-[#f4f8f9] p-4 text-sm">
    <p>Version {grant.policy_version} · {grant.state}</p>
    {grant.approved_text && <div className="mt-2 max-h-64 overflow-auto whitespace-pre-wrap">{grant.approved_text}</div>}
-   <p className="mt-2">Approved text reference: {grant.policy_hash}</p>
-   <p className="mt-2">Accepted: {grant.accepted_at}{grant.revoked_at ? ' · Revoked: ' + grant.revoked_at : ''}</p>
+   {/* Display the recorded dates using the existing Australian account date style; authorization still compares the full immutable policy hash. */}
+   <p className="mt-2">Accepted: {grant.accepted_at ? <time dateTime={grant.accepted_at}>{new Date(grant.accepted_at).toLocaleString('en-AU')}</time> : 'Not confirmed'}{grant.revoked_at && <> · Revoked: <time dateTime={grant.revoked_at}>{new Date(grant.revoked_at).toLocaleString('en-AU')}</time></>}</p>
    {grant.state === 'active' && <button disabled={busy} className="mt-3 rounded-lg border px-4 py-2 disabled:opacity-50" onClick={() => void act('consent.revoke', { consent_id: grant.consent_id, consent_revision: grant.revision })}>Revoke consent</button>}
   </div>)}</>}
   {purpose === 'accountability' && <p className="mt-3 text-sm">Saving a card does not accept these terms or create a hold.</p>}
