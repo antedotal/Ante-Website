@@ -1,0 +1,12 @@
+// Bundle actual client entry points and inspect their emitted browser imports.
+// Package dependencies stay external; authored helper chains are traversed with
+// normal TypeScript resolution, so closed runtime gates cannot hide Node imports.
+import {builtinModules,createRequire} from 'node:module'
+import {readFileSync,readdirSync} from 'node:fs'
+import {resolve,relative} from 'node:path'
+import {expect,it} from 'vitest'
+const require=createRequire(import.meta.url),wranglerRequire=createRequire(require.resolve('wrangler')),bundler=wranglerRequire('esbuild'),core=new Set(builtinModules.map(name=>name.replace(/^node:/,'')))
+function clientEntries(directory:string):string[]{return readdirSync(directory,{withFileTypes:true}).flatMap(entry=>{const path=resolve(directory,entry.name);return entry.isDirectory()?clientEntries(path):/\.[cm]?[jt]sx?$/.test(entry.name)&&/^\s*(['"])use client\1/.test(readFileSync(path,'utf8'))?[path]:[]})}
+async function browserImports(entries:string[]){const result=await bundler.build({entryPoints:entries,outdir:'/private/tmp/ante-payment-client-dependencies-unused-output',bundle:true,write:false,format:'esm',platform:'browser',packages:'external',metafile:true,logLevel:'silent',loader:{'.png':'dataurl','.jpg':'dataurl','.jpeg':'dataurl','.webp':'dataurl','.gif':'dataurl','.svg':'dataurl','.woff2':'dataurl'}});const imports=(Object.values(result.metafile.outputs) as {imports:{path:string}[]}[]).flatMap(output=>output.imports.map(item=>item.path));return {inputs:Object.keys(result.metafile.inputs),nodeImports:imports.filter(name=>name.startsWith('node:')||core.has(name))}}
+it.each(['components/account/LongCollectionRecovery.tsx','components/account/AccountPaymentNotices.tsx','components/account/AccountPaymentReview.tsx'])('%s compiles a browser closure without Node core imports',async entry=>{const result=await browserImports([resolve(entry)]);expect(result.nodeImports).toEqual([]);expect(result.inputs.some(path=>path.endsWith('browser-dto-v1/primitives.mjs'))).toBe(true)})
+it('all authored client entries have browser-only dependency closures',async()=>{const entries=['app','components','lib'].flatMap(directory=>clientEntries(resolve(directory)));expect(entries.map(entry=>relative(process.cwd(),entry))).toContain('components/account/HoldAuthentication.tsx');expect(entries.length).toBeGreaterThan(20);const result=await browserImports(entries);expect(result.nodeImports).toEqual([])})

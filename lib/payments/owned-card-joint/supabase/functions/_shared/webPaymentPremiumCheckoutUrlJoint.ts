@@ -1,0 +1,2 @@
+// Exact accepted hosted Checkout URL validator; only original private provider reads supply this value.
+export function safeCheckoutUrl(value:unknown):value is string {if(typeof value!=='string'||value.length>4096)return false;try{const u=new URL(value);return u.protocol==='https:'&&u.hostname==='checkout.stripe.com'&&!u.port&&!u.username&&!u.password&&!u.search&&/^\/c\/pay\/cs_[A-Za-z0-9_]+$/.test(u.pathname)}catch{return false}}

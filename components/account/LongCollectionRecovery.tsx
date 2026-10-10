@@ -4,14 +4,16 @@
 // callbacks are fenced to this owner's exact mounted generation.
 import {useCallback,useEffect,useRef,useState} from 'react'
 import HoldAuthentication from './HoldAuthentication'
-import type {SetupTicket} from './CardSetup'
-import {exact,internalId} from '../../lib/payments/bridge-v3/scripts/backend/web-payment-provider-contract.mjs'
+import {parseOriginalCardAction,type OriginalCardActionTicket} from '../../lib/payments/original-card-action'
+// Browser DTO helpers retain the original exact-object and UUID semantics
+// without importing the backend canonical hash codec or Node core modules.
+import {exact,internalId} from '../../lib/payments/browser-dto-v1/primitives.mjs'
 type Props={enabled:boolean;ownerId?:string;commitmentId:string;commitmentRevision:number;publishableKey?:string}
 type RecoveryView={identity:string;message:string;available:boolean;pending:boolean}
 // Present only the mounted owner's selected commitment, including before passive
 // cleanup. Pending is visible accessibility feedback for the existing action lock.
 const initialView=(identity:string):RecoveryView=>({identity,message:'Check the original payment progress.',available:false,pending:false})
-type IssuedTicket={owner:string;generation:number;value:SetupTicket;identity:string}
+type IssuedTicket={owner:string;generation:number;value:OriginalCardActionTicket;identity:string}
 const labels:Record<string,string>={pending:'Payment verification pending',requires_action:'Authentication required',unknown:'Payment outcome unknown',failed:'Payment did not complete',expired_unsecured:'Original payment expired',settled:'Payment verified'}
 export default function LongCollectionRecovery({enabled,ownerId='',commitmentId,commitmentRevision,publishableKey=''}:Props){
  const identityKey=enabled+':'+ownerId+':'+commitmentId+':'+commitmentRevision,identity=useRef(identityKey);identity.current=identityKey
@@ -29,7 +31,7 @@ export default function LongCollectionRecovery({enabled,ownerId='',commitmentId,
  async function act(authenticate=false){if(!enabled||!ownerId||busy.current||!alive.current||identity.current!==identityKey)return;busy.current=true;updateStatus({pending:true,message:'Checking original payment…'});const g=++generation.current,valid=()=>alive.current&&generation.current===g&&identity.current===identityKey;activeTicket.current=null;confirmationPending.current=false;setTicket(null)
   try{await request('prepare',{commitment_id:commitmentId,commitment_revision:commitmentRevision});if(!valid())return;const view=await progress();if(!valid())return;updateStatus({message:labels[view.collection_state],available:view.continuation_available})
    if(authenticate&&view.continuation_available){await request('return/issue');if(!valid())return;const value=await request('return/continue');if(!valid())return
-    if(!exact(value,['purpose','commitment_id','commitment_revision','provider_intent_id','client_secret','expires_at','return_route_key']))throw new Error();const v=value as SetupTicket&{purpose:string;commitment_id:string;commitment_revision:number;provider_intent_id:string};if(v.purpose!=='task.long_collection.continue'||v.commitment_id!==commitmentId||v.commitment_revision!==commitmentRevision||!/^pi_[A-Za-z0-9_]{1,240}$/.test(v.provider_intent_id)||!/^[A-Za-z0-9_-]{1,512}$/.test(v.client_secret)||!Number.isFinite(Date.parse(v.expires_at))||Date.parse(v.expires_at)<=Date.now()||(v as unknown as {return_route_key:string}).return_route_key!=='account_payments')throw new Error();const issued={owner:ownerId,generation:g,value:v,identity:identityKey};activeTicket.current=issued;setTicket(issued)
+    const v=parseOriginalCardAction(value,'task.long_collection.continue',commitmentId,commitmentRevision),issued={owner:ownerId,generation:g,value:v,identity:identityKey};activeTicket.current=issued;setTicket(issued)
    }
   }catch(error){if(valid()){updateStatus({available:false,message:error instanceof Error?error.message:'Outcome unknown. Check the original payment.'})}}finally{if(valid()){busy.current=false;updateStatus({pending:false})}}
  }
@@ -44,5 +46,5 @@ export default function LongCollectionRecovery({enabled,ownerId='',commitmentId,
 
  if(!enabled)return <main><h1 className="text-3xl font-semibold">Payment recovery</h1><p>Payment recovery is currently unavailable.</p></main>
  if(!internalId(commitmentId)||!Number.isInteger(commitmentRevision)||commitmentRevision<1)return <main><p>Payment recovery is unavailable.</p></main>
- return <main aria-busy={view.pending}><h1 className="text-3xl font-semibold">Original task payment</h1><p className="mt-4">Review the original payment. Authentication does not change the task outcome or create another payment.</p><p role="status" className="mt-4">{view.message}</p><div className="mt-6 flex flex-wrap gap-3"><button className="rounded-xl border px-5 py-3 disabled:opacity-50" disabled={view.pending} onClick={()=>void act()}>Check original payment</button>{view.available&&<button className="rounded-xl bg-[#003a4a] px-5 py-3 text-white disabled:opacity-50" disabled={view.pending} onClick={()=>void act(true)}>Resume authentication</button>}</div>{current&&<HoldAuthentication key={current.generation} kind="collection" ticket={current.value} publishableKey={publishableKey} onConfirmed={confirmed} onExpired={expired}/>}</main>
+ return <main aria-busy={view.pending}><h1 className="text-3xl font-semibold">Original task payment</h1><p className="mt-4">Review the original payment. Authentication does not change the task outcome or create another payment.</p><p role="status" className="mt-4">{view.message}</p><div className="mt-6 flex flex-wrap gap-3"><button className="rounded-xl border px-5 py-3 disabled:opacity-50" disabled={view.pending} onClick={()=>void act()}>Check original payment</button>{view.available&&<button className="rounded-xl bg-[#003a4a] px-5 py-3 text-white disabled:opacity-50" disabled={view.pending} onClick={()=>void act(true)}>Resume authentication</button>}</div>{current&&<HoldAuthentication key={current.generation} kind="collection" ticket={current.value} publishableKey={publishableKey} onConfirmed={confirmed} onExpired={expired} isCurrent={validIssued}/>}</main>
 }

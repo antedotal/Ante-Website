@@ -1,8 +1,8 @@
 /** One accepted provider engine; committed dispatch remains the only I/O admission. */
 import { boundedPaymentBody, PAYMENT_RESPONSE_HEADERS } from "./webPaymentHttpIntake.ts";
 import { exact } from "./webPaymentProviderContract.ts";
-import { dispatchProvider } from "./webPaymentProvider.ts";
-import type { GuardedTransport, Provisioning } from "./webPaymentProviderClient.ts";
+import { dispatchProviderJoint as dispatchProvider } from "../../../../owned-card-joint/supabase/functions/_shared/webPaymentProviderJoint.ts";
+import type { GuardedTransport, Provisioning } from "../../../../owned-card-joint/supabase/functions/_shared/webPaymentProviderClientJoint.ts";
 import { createPaymentProviderRepository, type PaymentSupabase } from "./webPaymentBrowserRepository.ts";
 import type { PaymentLifetime } from "./webPaymentOwnerSupabase.ts";
 export async function runPaymentProviderWork(services: PaymentSupabase, workerIdentity: string, limit: number, provision: Provisioning, credential: () => string, transport: GuardedTransport, observe: PaymentLifetime) {

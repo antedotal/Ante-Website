@@ -1,6 +1,8 @@
 // Accept only the bounded ordinary notice DTO. Unknown provider state becomes
 // unknown in SQL; provider identities/raw facts cannot pass this exact parser.
-import {exact} from './bridge-v3/scripts/backend/web-payment-provider-contract.mjs'
+// This model is also imported by browser notice/review surfaces; the pure DTO
+// primitive preserves exact key/prototype validation without server hash imports.
+import {exact} from './browser-dto-v1/primitives.mjs'
 const id=(v:unknown):v is string=>typeof v==='string'&&/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(v)
 export type OwnerNotice={notice_id:string;kind:'refund'|'dispute';status:string;recorded_at:string}
 export type OwnerNotices={notice_projection_version:1;items:OwnerNotice[];next_cursor:string|null}

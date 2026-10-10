@@ -3,8 +3,8 @@ import { parseBrowserOperation, parseBrowserReply } from "../../../scripts/backe
 import { parseProviderReceipt } from "../../../scripts/backend/web-payment-provider-contract.mjs";
 import { createReturnCapsule, returnCapsuleDigest, returnCapsuleMetadataHash } from "../../../scripts/backend/web-payment-browser-return-capsule.mjs";
 import { exact } from "./webPaymentProviderContract.ts";
-import { readProviderContinuation } from "./webPaymentProvider.ts";
-import type { GuardedTransport, Provisioning } from "./webPaymentProviderClient.ts";
+import { readProviderContinuationJoint as readProviderContinuation } from "../../../../owned-card-joint/supabase/functions/_shared/webPaymentProviderJoint.ts";
+import type { GuardedTransport, Provisioning } from "../../../../owned-card-joint/supabase/functions/_shared/webPaymentProviderClientJoint.ts";
 import { createPaymentContinuationRepository, internalBrowserEnvelope, type PaymentSupabase } from "./webPaymentBrowserRepository.ts";
 import { createPaymentLifetime } from "./webPaymentProviderRunner.ts";
 import { PAYMENT_RESPONSE_HEADERS, paymentDigest, paymentId, paymentRevision, readPaymentInput, type PaymentAction } from "./webPaymentHttpIntake.ts";

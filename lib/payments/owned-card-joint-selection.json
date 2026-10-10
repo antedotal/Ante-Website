@@ -1,0 +1,162 @@
+{
+  "schema": 1,
+  "purpose": "Pin the complete selected backend runtime; source acceptance does not enable financial serving.",
+  "backendFreezeSha256": "8fdb2ee78fe66a70d2705b2aa7e29ca91b397cb2f8c4f25415573c5de846aa0a",
+  "backendSourceLeaves": 3082,
+  "stripeSpecifierTransform": {
+    "npm:stripe@23.0.0": "stripe"
+  },
+  "runtime": [
+    {
+      "path": "lib/proofPhotos/preparedProofPhoto.ts",
+      "sourceSha256": "440fee1b840fde0eb6b9133c9a7b02ee914746a5e32b39a4c188d674b877959b",
+      "websiteSha256": "440fee1b840fde0eb6b9133c9a7b02ee914746a5e32b39a4c188d674b877959b"
+    },
+    {
+      "path": "scripts/backend/photo/native-facade-v1/stream.mjs",
+      "sourceSha256": "eb922a29a80f0f6ff399216cff6706d85a7607f070b7a23f8b2f21a5ce056798",
+      "websiteSha256": "eb922a29a80f0f6ff399216cff6706d85a7607f070b7a23f8b2f21a5ce056798"
+    },
+    {
+      "path": "scripts/backend/web-payment-collection-contract.mjs",
+      "sourceSha256": "df8c950b4fba4e153b40bc5efa100ce7a573cf1fbde4ce9503fcfa214de3b4f0",
+      "websiteSha256": "df8c950b4fba4e153b40bc5efa100ce7a573cf1fbde4ce9503fcfa214de3b4f0"
+    },
+    {
+      "path": "scripts/backend/web-payment-contract.mjs",
+      "sourceSha256": "df42ef9fb38e26b403bdcc5891aa9c595e0a19632b7ef2d84ed39d0d9368cacf",
+      "websiteSha256": "df42ef9fb38e26b403bdcc5891aa9c595e0a19632b7ef2d84ed39d0d9368cacf"
+    },
+    {
+      "path": "scripts/backend/web-payment-premium-return-capsule.mjs",
+      "sourceSha256": "f539055b0712d7a46d348383d93c5621cedaf667984764600e8ac0e0b77890c7",
+      "websiteSha256": "f539055b0712d7a46d348383d93c5621cedaf667984764600e8ac0e0b77890c7"
+    },
+    {
+      "path": "scripts/backend/web-payment-provider-contract.mjs",
+      "sourceSha256": "44e22d5be65f6583a6d80f3ca391b45daaed906a36822d9bb6beb1c1f3eec76c",
+      "websiteSha256": "44e22d5be65f6583a6d80f3ca391b45daaed906a36822d9bb6beb1c1f3eec76c"
+    },
+    {
+      "path": "scripts/backend/web-payment-short-hold-contract.mjs",
+      "sourceSha256": "01bf1c97984d0caab3f28b4c9cda5303bd11d691c235179aca42d5d7d74b2c29",
+      "websiteSha256": "01bf1c97984d0caab3f28b4c9cda5303bd11d691c235179aca42d5d7d74b2c29"
+    },
+    {
+      "path": "scripts/backend/web-payment-subscription-contract.mjs",
+      "sourceSha256": "41a58f0ebfed36200c97feacea92b39a3304bd172ee530950de9e455b36d4173",
+      "websiteSha256": "41a58f0ebfed36200c97feacea92b39a3304bd172ee530950de9e455b36d4173"
+    },
+    {
+      "path": "supabase/functions/_shared/photoRetentionCleanup.ts",
+      "sourceSha256": "fef28dd10618d891639360429e49524c926e5c26cdab42365930b6d068d6ea9a",
+      "websiteSha256": "fef28dd10618d891639360429e49524c926e5c26cdab42365930b6d068d6ea9a"
+    },
+    {
+      "path": "supabase/functions/_shared/privatePhotoAssetStore.ts",
+      "sourceSha256": "ee8b7e4e733e53d4cac7dc6680ddabd28320eee99304cc31d8e8ae8c22dce186",
+      "websiteSha256": "ee8b7e4e733e53d4cac7dc6680ddabd28320eee99304cc31d8e8ae8c22dce186"
+    },
+    {
+      "path": "supabase/functions/_shared/privatePhotoNormalizer.ts",
+      "sourceSha256": "8af399f7bac2f7d9c5f477e8c0a1e04c9e0ab04a588e74f1c83dd97c9dcd59b2",
+      "websiteSha256": "8af399f7bac2f7d9c5f477e8c0a1e04c9e0ab04a588e74f1c83dd97c9dcd59b2"
+    },
+    {
+      "path": "supabase/functions/_shared/privatePhotoTransport.ts",
+      "sourceSha256": "358eb98763a66750f801ec93b5263559ea83ebf609fc7e78ddd1278b6129a13e",
+      "websiteSha256": "358eb98763a66750f801ec93b5263559ea83ebf609fc7e78ddd1278b6129a13e"
+    },
+    {
+      "path": "supabase/functions/_shared/profilePhotoAssetStore.ts",
+      "sourceSha256": "2c64d3dbba5c6355ab07964b228c03d254694c7b650cbb5cb7e11bacc36d8769",
+      "websiteSha256": "2c64d3dbba5c6355ab07964b228c03d254694c7b650cbb5cb7e11bacc36d8769"
+    },
+    {
+      "path": "supabase/functions/_shared/profilePhotoPublication.ts",
+      "sourceSha256": "365b0e6674c2f08034dee587afc6fad4ffd8cd81776af04fc81b9327b1f00bf3",
+      "websiteSha256": "365b0e6674c2f08034dee587afc6fad4ffd8cd81776af04fc81b9327b1f00bf3"
+    },
+    {
+      "path": "supabase/functions/_shared/proofPhotoPublication.ts",
+      "sourceSha256": "103f197d5a096c082264061c07fc1fc3b049edc3c34328cf3415165fdd49f251",
+      "websiteSha256": "103f197d5a096c082264061c07fc1fc3b049edc3c34328cf3415165fdd49f251"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentJointNotice.ts",
+      "sourceSha256": "822eb739217a41bafe072c587182993199fa093231215ffdf3924ec4bde6cbfa",
+      "websiteSha256": "a036f743e88cfaae9fc07af89c7013a7496360dcd76399c1f357ff08c61d121e"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentJointNoticeIdentity.ts",
+      "sourceSha256": "7a900d24f3f6af3d847e4919ccd57745ba76e83bcc6d79e2b8a0bd617ee9b37f",
+      "websiteSha256": "7a900d24f3f6af3d847e4919ccd57745ba76e83bcc6d79e2b8a0bd617ee9b37f"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentJointNoticeTransport.ts",
+      "sourceSha256": "ee496b2eda833ced76da392f70ed1426bbd1888dff36d40aae5425085e074037",
+      "websiteSha256": "ee496b2eda833ced76da392f70ed1426bbd1888dff36d40aae5425085e074037"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentJointRetrieval.ts",
+      "sourceSha256": "54db3f2112df991c539549085126b826ae3cc6daf7c85d5492d05459628d7ab8",
+      "websiteSha256": "caca4554d0db05ac8a4dae499b4d21319a09359f4718fefb46a059b9f7822f35"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentNoticeEvents.ts",
+      "sourceSha256": "543713f0067c9a6ced3d4704c3a74da28c102d2b7bee56b332ffadc5902bbc74",
+      "websiteSha256": "543713f0067c9a6ced3d4704c3a74da28c102d2b7bee56b332ffadc5902bbc74"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentPremiumCheckoutUrlJoint.ts",
+      "sourceSha256": "19a89b137b750b2c3ffe0554ec8b2bd72bbc72c2c4676d28df412ec32fd27249",
+      "websiteSha256": "19a89b137b750b2c3ffe0554ec8b2bd72bbc72c2c4676d28df412ec32fd27249"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentPremiumContinuationJoint.ts",
+      "sourceSha256": "4d9430b45768669bdefa8a65429d8bb3992ba6c084fe17323d2d0cadca4e4231",
+      "websiteSha256": "4d9430b45768669bdefa8a65429d8bb3992ba6c084fe17323d2d0cadca4e4231"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentPremiumReturnBindingJoint.ts",
+      "sourceSha256": "a9a03399421eb70a130998482a3d2b79d46fd4beeb37771f51b448b221f2f5db",
+      "websiteSha256": "a9a03399421eb70a130998482a3d2b79d46fd4beeb37771f51b448b221f2f5db"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentPremiumReturnDispatchJoint.ts",
+      "sourceSha256": "fd7ab10a2fc8398bf272ac74def6359988d40cfc46b10d5f546fa3295cc6206e",
+      "websiteSha256": "fd7ab10a2fc8398bf272ac74def6359988d40cfc46b10d5f546fa3295cc6206e"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderClientJoint.ts",
+      "sourceSha256": "c42e6153683bdbe278132e63f8460e1a5d6581d5c159d70458c656a6c7cba780",
+      "websiteSha256": "c3745c2d884660c16938edf3eca049301f6765bb898c54692648c5da88d03101"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderClientV4.ts",
+      "sourceSha256": "75d6d4d9a2ce02a1eea0c90624e31710ff5aaee59fbef3a345b152c1cb93cffc",
+      "websiteSha256": "ce94b4a802f9a4f8c6a4832d6d7d7c7cad6409c0e58bb914af51c095676f7240"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderContractJoint.ts",
+      "sourceSha256": "a3efaf01caf2748db33ef0c4a093e33856ea91855318a8a0a832921dc674dce3",
+      "websiteSha256": "a3efaf01caf2748db33ef0c4a093e33856ea91855318a8a0a832921dc674dce3"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderContractV4.ts",
+      "sourceSha256": "f2572e449b7a5cf4c241ff7330f2b14d3671e1537971a0fb40ffa9d34ba66416",
+      "websiteSha256": "f2572e449b7a5cf4c241ff7330f2b14d3671e1537971a0fb40ffa9d34ba66416"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderJoint.ts",
+      "sourceSha256": "fd4983facd7021ec7e9872cf45de1b7a77fa138b2bdbbb7fc1effdf5fa4fe895",
+      "websiteSha256": "a5f136d98be719089ded9f3da43424e36dd60fc8b1b48ca53dc622937c9e767f"
+    },
+    {
+      "path": "supabase/functions/_shared/webPaymentProviderRepositoryJoint.ts",
+      "sourceSha256": "63c83ae441989f6861753d2d8bad4448c0c8313df3962161981736cfdf7731c0",
+      "websiteSha256": "63c83ae441989f6861753d2d8bad4448c0c8313df3962161981736cfdf7731c0"
+    }
+  ],
+  "activation": false
+}
